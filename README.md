@@ -362,20 +362,68 @@ Próximos pasos del Sprint 2: añadir pruebas unitarias/contract para servicios 
 
 ---
 
+### ⏭️ Próximo Sprint Prioritario – Sprint 3 (Inscripciones y cuotas)
+
+Con los Sprint 0, 1 y 2 completados, el siguiente hito obligatorio es **Sprint 3**, que habilita la cadena de valor completa al generar inscripciones y cuotas automáticas:
+
+1. **Modelado de datos**: agregar tablas de inscripciones, cuotas y configuración económica en Drizzle, con migraciones versionadas.
+2. **Endpoints `/api/inscripciones` y `/api/cuotas`**: flujo de alta de socio → creación de inscripción → generación automática de cuotas iniciales y estado financiero.
+3. **UI operativa**: formularios y paneles en `/admin` para iniciar inscripciones, revisar cuotas emitidas y monitorear pendientes.
+4. **Validaciones y pruebas**: reglas de negocio (montos, fechas, estado) cubiertas con pruebas unitarias/contract y seeds mínimos de datos.
+
+Completar este sprint primero permite desbloquear los sprints siguientes (pagos, reportes) porque establece la base financiera que todos los módulos consumen.
+
+#### 🆕 Subpágina `/admin/inscripciones` – ¿Cómo usarla?
+
+> Disponible desde Sprint 3. Accedé desde el panel principal (`/admin`) con el botón **“Ir a Inscripciones y cuotas”**.
+
+**Sección 1 · Gestión de inscripciones**
+
+- Botón “+ Nueva inscripción” abre un modal con el formulario `EnrollmentCreateForm`.
+- Campos: socio (combo con todos los activos), fecha de inicio, plan (opcional), monto mensual y cantidad de cuotas a generar.
+- Al confirmar, el backend crea la inscripción y genera las cuotas en una transacción (servicio `createEnrollment`).
+- Cada fila muestra socio, plan/monto, estado, fecha de inicio y número de cuotas generadas.
+- Botón “Editar” abre `EnrollmentEditForm` para cambiar estado (Activa/Cancelada) y notas asociadas.
+- Filtros disponibles: búsqueda libre (nombre/correo/documento) + estado, con paginación sincronizada a través de `useEnrollmentFiltersStore`.
+
+**Sección 2 · Seguimiento de cuotas**
+
+- Tabla `DueTable` lista todas las cuotas emitidas con filtros combinables: estado (pendiente/pagada/vencida), socio, inscripción y rango de fechas.
+- Cada cuota muestra vencimiento, monto, estado y los datos del socio + inscripción origen.
+- Botón “Marcar como pagada” llama al endpoint `/api/cuotas` (mutación `usePayDue`) y registra el pago con fecha actual, tras una confirmación del usuario.
+- La UI destaca cuotas vencidas en rojo, pendientes en ámbar y pagadas en verde, reutilizando los estilos “glass”.
+
+**Consideraciones operativas**
+
+- Ambos listados usan React Query (`useEnrollmentsList`, `useDuesList`) y se invalidan automáticamente cuando hay altas, ediciones o pagos.
+- Los formularios validan con Zod (lógica compartida en `src/lib/validations/enrollments.ts`), evitando datos inconsistentes con la API.
+- Toda la sección exige sesión ADMIN; los endpoints están protegidos con `requireAdminSession`.
+
+---
+
+## 🌌 Página Showcase Pública
+
+- Ruta: `/showcase`
+- Ubicación del archivo: `src/app/showcase/page.tsx`
+- Propósito: pitch visual para directorio, inversores y equipo técnico.
+
+### Contenido
+
+1. **Hero futurista** con CTA hacia `/admin` y contacto para deck ejecutivo.
+2. **Project overview** con métricas destacadas del flujo operativo.
+3. **Core features** en grid glass-card reutilizando identidad visual.
+4. **Integraciones y coverage** listando Mercado Pago, NextAuth, Neon, etc., con estados (Live / En progreso / Planeado).
+5. **System logic flow** que describe cada etapa (Alta → Inscripción → Cuotas → Pagos → Reportes).
+6. **Tech stack** dividido en Frontend / Backend / Infra.
+7. **Roadmap** con hitos próximos y estado.
+8. **CTA final** con enlaces al repositorio y contacto.
+
+La página sigue los lineamientos definidos en `docs/implementShowcase.md` y utiliza los mismos componentes, estilos glass y tipografías configuradas en `layout.tsx`. Sirve como referencia pública del estado actual del sistema y guía de arquitectura para stakeholders externos.
+
+---
+
 ### 🎨 Identidad Visual
 
 La guía completa de colores, tipografías y lineamientos UI se encuentra en [`docs/identidadVisual.md`](docs/identidadVisual.md). Todas las vistas (landing, `/admin`, `/socio`) siguen esta referencia: paleta dark institucional (negro, gris carbón, acentos rojo), tipografías **Inter** + **Space Grotesk** y componentes “glass” descritos en el documento.
 
 ---
-
-### 🟢 Estado Sprint 1 – Infraestructura (actualizado)
-
-Entregables completados en `club-app/`:
-
-1. **Conexión Neon/Drizzle**: schema base (`src/db/schema.ts`) y cliente (`src/db/client.ts`) funcionando contra la base de Neon, más migración inicial generada con Drizzle Kit.
-2. **Gestión de entornos**: `.env.example` documenta todas las variables y `.env.local` aloja credenciales reales; `src/lib/env.ts` valida cada clave (URLs, secretos, credenciales admin) con Zod.
-3. **Autenticación NextAuth v5**: configuración central en `src/auth.ts`, ruta `/api/auth/[...nextauth]`, provider de credenciales, roles persistidos en JWT y helper de contraseñas (`src/lib/password.ts`).
-4. **Seed administrador**: script `npm run seed:admin` (`scripts/seed-admin.ts`) crea/actualiza el usuario ADMIN usando `AUTH_ADMIN_EMAIL` + password/hash definidos en entorno.
-5. **Middleware + stores**: guardias de rol en `src/middleware.ts`, stores `useAuthStore` y `useUiStore`, y `AppProviders` (Session + React Query + sincronización con Zustand) montados en `app/layout.tsx`.
-
-Con esto queda listo el esqueleto de infraestructura para avanzar al Sprint 2 (CRUD de socios).

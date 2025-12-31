@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { MemberTable } from "@/components/members/member-table";
@@ -71,6 +72,25 @@ export default function AdminMembersPage() {
   return (
     <div className="min-h-screen bg-base-primary px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-base-muted">
+              Panel administrativo
+            </p>
+            <h1 className="text-3xl font-semibold font-[var(--font-space)]">
+              Gestión de socios
+            </h1>
+            <p className="mt-2 text-base text-base-muted">
+              Administrá el padrón de socios y accedé al módulo de inscripciones
+              y cuotas.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/admin/inscripciones" className="btn-secondary">
+              Ir a Inscripciones y cuotas →
+            </Link>
+          </div>
+        </header>
         {feedback && (
           <div
             className={`glass-card border-l-4 px-4 py-3 text-sm ${

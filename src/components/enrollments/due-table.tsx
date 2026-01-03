@@ -4,8 +4,11 @@ import { useCallback, useMemo, useState } from "react";
 
 import { DueFilters } from "./due-filters";
 import { useDueFiltersStore } from "@/store/due-filters-store";
-import { useDuesList, usePayDue } from "@/hooks/use-enrollments";
+import { useDuesList } from "@/hooks/use-enrollments";
 import type { DueDTO } from "@/types/enrollment";
+import { Modal } from "@/components/ui/modal";
+import { useRecordPayment } from "@/hooks/use-payments";
+import { clientLogger } from "@/lib/client-logger";
 
 type Feedback = {
   type: "success" | "error";
@@ -29,6 +32,10 @@ const DUE_STATUS_STYLES: Record<
     className:
       "text-accent-critical bg-accent-critical/10 border-accent-critical/30",
   },
+  FROZEN: {
+    label: "Congelada",
+    className: "text-base-muted bg-base-muted/10 border-base-muted/30",
+  },
 };
 
 function formatCurrency(value: number) {
@@ -42,35 +49,97 @@ function formatCurrency(value: number) {
 export function DueTable() {
   const filters = useDueFiltersStore();
   const { data, isLoading, error } = useDuesList();
-  const payMutation = usePayDue();
+  const recordPaymentMutation = useRecordPayment();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
+  const [manualPaymentError, setManualPaymentError] = useState<string | null>(
+    null,
+  );
+  const [manualPaymentForm, setManualPaymentForm] = useState({
+    amount: "",
+    method: "Transferencia",
+    reference: "",
+    notes: "",
+    paidAt: toDateTimeLocalInput(new Date()),
+  });
 
   const hasData = Boolean(data?.data?.length);
   const totalPages = data?.meta.totalPages ?? 1;
 
-  const handlePay = useCallback(
-    async (due: DueDTO) => {
-      const confirmed = window.confirm(
-        `¿Confirmás registrar el pago de ${formatCurrency(due.amount)} para ${due.member.name ?? "Sin nombre"}?`,
-      );
-      if (!confirmed) return;
+  const openManualPayment = useCallback((due: DueDTO) => {
+    setManualPaymentDue(due);
+    setManualPaymentError(null);
+    setManualPaymentForm({
+      amount: String(due.amount),
+      method: due.status === "PAID" ? "Ajuste manual" : "Transferencia",
+      reference: "",
+      notes: "",
+      paidAt: toDateTimeLocalInput(
+        due.paidAt ? new Date(due.paidAt) : new Date(),
+      ),
+    });
+  }, []);
 
-      try {
-        await payMutation.mutateAsync({ dueId: due.id });
-        setFeedback({
-          type: "success",
-          message: "Cuota marcada como pagada.",
-        });
-      } catch (mutationError) {
-        console.error(mutationError);
-        setFeedback({
-          type: "error",
-          message: "No se pudo registrar el pago.",
-        });
-      }
-    },
-    [payMutation],
-  );
+  const closeManualPayment = useCallback(() => {
+    setManualPaymentDue(null);
+  }, []);
+
+  const handleManualPaymentSubmit = useCallback(async () => {
+    if (!manualPaymentDue) return;
+    setManualPaymentError(null);
+    const amountNumber = Number(manualPaymentForm.amount);
+
+    if (Number.isNaN(amountNumber) || amountNumber <= 0) {
+      setManualPaymentError("El monto debe ser un número positivo.");
+      return;
+    }
+
+    if (!manualPaymentForm.method.trim()) {
+      setManualPaymentError("Debes indicar un método de pago.");
+      return;
+    }
+
+    const paidAtIso = manualPaymentForm.paidAt
+      ? new Date(manualPaymentForm.paidAt).toISOString()
+      : undefined;
+
+    try {
+      await recordPaymentMutation.mutateAsync({
+        dueId: manualPaymentDue.id,
+        amount: amountNumber,
+        method: manualPaymentForm.method.trim(),
+        reference: manualPaymentForm.reference.trim()
+          ? manualPaymentForm.reference.trim()
+          : undefined,
+        notes: manualPaymentForm.notes.trim()
+          ? manualPaymentForm.notes.trim()
+          : undefined,
+        paidAt: paidAtIso,
+      });
+
+      setFeedback({
+        type: "success",
+        message: "Pago manual registrado correctamente.",
+      });
+      closeManualPayment();
+    } catch (mutationError) {
+      clientLogger.error("Error en pago manual", mutationError);
+      setManualPaymentError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : "No se pudo registrar el pago manual.",
+      );
+    }
+  }, [
+    manualPaymentDue,
+    manualPaymentForm.amount,
+    manualPaymentForm.method,
+    manualPaymentForm.notes,
+    manualPaymentForm.paidAt,
+    manualPaymentForm.reference,
+    recordPaymentMutation,
+    closeManualPayment,
+  ]);
 
   const tableContent = useMemo(() => {
     if (isLoading) {
@@ -168,10 +237,10 @@ export function DueTable() {
                 <button
                   type="button"
                   className="btn-secondary px-3 py-1 text-xs"
-                  onClick={() => handlePay(due)}
-                  disabled={due.status === "PAID" || payMutation.isPending}
+                  onClick={() => openManualPayment(due)}
+                  disabled={recordPaymentMutation.isPending}
                 >
-                  {due.status === "PAID" ? "Pagada" : "Marcar como pagada"}
+                  {due.status === "PAID" ? "Editar pago" : "Pago manual"}
                 </button>
               </td>
             </tr>
@@ -179,7 +248,14 @@ export function DueTable() {
         })}
       </tbody>
     );
-  }, [data, error, hasData, isLoading, handlePay, payMutation.isPending]);
+  }, [
+    data,
+    error,
+    hasData,
+    isLoading,
+    openManualPayment,
+    recordPaymentMutation.isPending,
+  ]);
 
   return (
     <section className="space-y-6">
@@ -271,6 +347,156 @@ export function DueTable() {
           </div>
         )}
       </div>
+
+      <Modal
+        title="Pago manual"
+        open={Boolean(manualPaymentDue)}
+        onClose={closeManualPayment}
+      >
+        {manualPaymentDue && (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-base-border/70 bg-base-secondary/30 px-4 py-3 text-sm">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                Detalle de la cuota
+              </p>
+              <ul className="mt-2 space-y-1 text-base-muted">
+                <li>
+                  <strong>Socio:</strong>{" "}
+                  {manualPaymentDue.member.name ?? "Sin nombre"}
+                </li>
+                <li>
+                  <strong>Documento:</strong>{" "}
+                  {manualPaymentDue.member.documentNumber}
+                </li>
+                <li>
+                  <strong>Periodo:</strong>{" "}
+                  {new Date(manualPaymentDue.dueDate).toLocaleDateString(
+                    "es-AR",
+                  )}
+                </li>
+                <li>
+                  <strong>Monto original:</strong>{" "}
+                  {formatCurrency(manualPaymentDue.amount)}
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col text-sm font-medium">
+                  Método de pago
+                  <input
+                    type="text"
+                    className="mt-1 rounded-md border border-base-border bg-base-primary px-3 py-2"
+                    value={manualPaymentForm.method}
+                    onChange={(event) =>
+                      setManualPaymentForm((prev) => ({
+                        ...prev,
+                        method: event.target.value,
+                      }))
+                    }
+                    placeholder="Transferencia, efectivo, etc."
+                  />
+                </label>
+                <label className="flex flex-col text-sm font-medium">
+                  Monto acreditado
+                  <input
+                    type="number"
+                    min={0}
+                    className="mt-1 rounded-md border border-base-border bg-base-primary px-3 py-2"
+                    value={manualPaymentForm.amount}
+                    onChange={(event) =>
+                      setManualPaymentForm((prev) => ({
+                        ...prev,
+                        amount: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className="flex flex-col text-sm font-medium">
+                Referencia / comprobante
+                <input
+                  type="text"
+                  className="mt-1 rounded-md border border-base-border bg-base-primary px-3 py-2"
+                  value={manualPaymentForm.reference}
+                  onChange={(event) =>
+                    setManualPaymentForm((prev) => ({
+                      ...prev,
+                      reference: event.target.value,
+                    }))
+                  }
+                  placeholder="ID de transferencia, número de recibo, etc."
+                />
+              </label>
+
+              <label className="flex flex-col text-sm font-medium">
+                Notas internas
+                <textarea
+                  className="mt-1 rounded-md border border-base-border bg-base-primary px-3 py-2"
+                  rows={3}
+                  value={manualPaymentForm.notes}
+                  onChange={(event) =>
+                    setManualPaymentForm((prev) => ({
+                      ...prev,
+                      notes: event.target.value,
+                    }))
+                  }
+                  placeholder="Observaciones para tesorería"
+                />
+              </label>
+
+              <label className="flex flex-col text-sm font-medium">
+                Fecha y hora del pago
+                <input
+                  type="datetime-local"
+                  className="mt-1 rounded-md border border-base-border bg-base-primary px-3 py-2"
+                  value={manualPaymentForm.paidAt}
+                  onChange={(event) =>
+                    setManualPaymentForm((prev) => ({
+                      ...prev,
+                      paidAt: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            {manualPaymentError && (
+              <div className="rounded-lg border border-accent-critical/50 bg-accent-critical/10 px-4 py-3 text-sm text-accent-critical">
+                {manualPaymentError}
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeManualPayment}
+                disabled={recordPaymentMutation.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleManualPaymentSubmit}
+                disabled={recordPaymentMutation.isPending}
+              >
+                {recordPaymentMutation.isPending
+                  ? "Procesando..."
+                  : "Registrar pago manual"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </section>
   );
+}
+
+function toDateTimeLocalInput(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 }

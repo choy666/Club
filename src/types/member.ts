@@ -30,3 +30,20 @@ export interface MembersListResponse {
 export interface MemberResponse {
   data: MemberDTO;
 }
+
+export interface MemberFinancialSnapshot {
+  memberId: string;
+  status: MemberStatus;
+  totals: {
+    pending: number;
+    overdue: number;
+    paid: number;
+    frozen: number;
+  };
+  nextDueDate: string | null;
+  gracePeriodDays: number;
+}
+
+export interface MemberFinancialSnapshotResponse {
+  data: MemberFinancialSnapshot;
+}

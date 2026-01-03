@@ -20,6 +20,8 @@ const envSchema = z.object({
   AUTH_ADMIN_PASSWORD_HASH: z.string().min(60).optional(),
   NEXTAUTH_URL: z.string().url().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  SENTRY_DSN: z.string().url().optional(),
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
@@ -30,4 +32,6 @@ export const env = envSchema.parse({
   AUTH_ADMIN_PASSWORD_HASH: process.env.AUTH_ADMIN_PASSWORD_HASH,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  SENTRY_DSN: process.env.SENTRY_DSN,
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 });

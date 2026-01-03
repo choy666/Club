@@ -21,13 +21,14 @@ export const createEnrollmentSchema = z.object({
   monthlyAmount: z.coerce
     .number()
     .int("El monto debe ser un entero.")
-    .min(0, "El monto debe ser positivo."),
+    .min(0, "El monto debe ser positivo.")
+    .optional(),
   monthsToGenerate: z.coerce
     .number()
     .int()
     .min(1, "Debes generar al menos una cuota.")
     .max(24, "No se pueden generar más de 24 cuotas por lote.")
-    .default(1),
+    .optional(),
   notes: z
     .string()
     .max(400, "Las notas no pueden superar 400 caracteres.")
@@ -59,7 +60,7 @@ export const listEnrollmentsSchema = z.object({
 export const listDuesSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(5).max(50).default(10),
-  status: z.enum(["PENDING", "PAID", "OVERDUE"]).optional(),
+  status: z.enum(["PENDING", "PAID", "OVERDUE", "FROZEN"]).optional(),
   memberId: z.string().uuid().optional(),
   enrollmentId: z.string().uuid().optional(),
   from: isoDateString.optional(),

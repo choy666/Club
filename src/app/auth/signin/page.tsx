@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
+import { clientLogger } from "@/lib/client-logger";
+
 type Status = "loading" | "needs-admin" | "ready";
 
 type Feedback = {
@@ -36,7 +38,7 @@ export default function SignInPage() {
     getAdminStatus()
       .then((hasAdmin) => setStatus(hasAdmin ? "ready" : "needs-admin"))
       .catch((error) => {
-        console.error(error);
+        clientLogger.error("No se pudo verificar estado admin", error);
         setFeedback({
           type: "error",
           message:
@@ -85,7 +87,7 @@ export default function SignInPage() {
           "Administrador creado correctamente. Usá las credenciales definidas para iniciar sesión.",
       });
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Error creando admin inicial", error);
       setFeedback({
         type: "error",
         message:

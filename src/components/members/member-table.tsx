@@ -11,9 +11,10 @@ import type { MemberDTO } from "@/types/member";
 interface MemberTableProps {
   onCreate: () => void;
   onEdit: (member: MemberDTO) => void;
+  onInspect?: (member: MemberDTO) => void;
 }
 
-export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
+export function MemberTable({ onCreate, onEdit, onInspect }: MemberTableProps) {
   const filters = useMemberFiltersStore();
   const { data, isLoading, error } = useMembersList();
   const deleteMutation = useDeleteMember();
@@ -98,7 +99,7 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
               })}
             </td>
             <td className="py-4">
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   className="text-sm text-accent-primary hover:underline"
@@ -114,6 +115,15 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
                 >
                   Eliminar
                 </button>
+                {onInspect && (
+                  <button
+                    type="button"
+                    className="text-sm text-state-active hover:underline"
+                    onClick={() => onInspect(member)}
+                  >
+                    Ver estado
+                  </button>
+                )}
               </div>
             </td>
           </tr>
@@ -127,6 +137,7 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
     isLoading,
     deleteMutation.isPending,
     onEdit,
+    onInspect,
     handleDelete,
   ]);
 

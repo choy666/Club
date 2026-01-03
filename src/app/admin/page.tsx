@@ -1,13 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import { clientLogger } from "@/lib/client-logger";
 import { MemberTable } from "@/components/members/member-table";
 import { Modal } from "@/components/ui/modal";
 import { MemberForm } from "@/components/members/member-form";
+import { MemberFinancialAlert } from "@/components/members/member-financial-alert";
 import type { MemberDTO } from "@/types/member";
-import { useCreateMember, useUpdateMember } from "@/hooks/use-members";
+import {
+  useCreateMember,
+  useMemberFinancialSnapshot,
+  useMembersList,
+  useUpdateMember,
+} from "@/hooks/use-members";
 
 type Feedback = {
   type: "success" | "error";
@@ -18,9 +25,35 @@ export default function AdminMembersPage() {
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberDTO | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [highlightMemberId, setHighlightMemberId] = useState<string | null>(
+    null,
+  );
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
+  const membersListQuery = useMembersList();
+
+  const fallbackMemberId = useMemo(() => {
+    return membersListQuery.data?.data?.[0]?.id ?? null;
+  }, [membersListQuery.data]);
+
+  const activeMemberId = highlightMemberId ?? fallbackMemberId;
+
+  const highlightMember = useMemo(() => {
+    if (!activeMemberId) return null;
+    return (
+      membersListQuery.data?.data.find(
+        (member) => member.id === activeMemberId,
+      ) ?? null
+    );
+  }, [activeMemberId, membersListQuery.data]);
+
+  const snapshotQuery = useMemberFinancialSnapshot(
+    activeMemberId ?? undefined,
+    {
+      enabled: Boolean(activeMemberId),
+    },
+  );
 
   function closeModal() {
     setModalMode(null);
@@ -38,7 +71,7 @@ export default function AdminMembersPage() {
       });
       closeModal();
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Error al crear socio", error);
       setFeedback({
         type: "error",
         message: "No se pudo crear el socio.",
@@ -61,7 +94,7 @@ export default function AdminMembersPage() {
       });
       closeModal();
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Error al actualizar socio", error);
       setFeedback({
         type: "error",
         message: "No se pudo actualizar el socio.",
@@ -89,8 +122,56 @@ export default function AdminMembersPage() {
             <Link href="/admin/inscripciones" className="btn-secondary">
               Ir a Inscripciones y cuotas →
             </Link>
+            <Link href="/admin/reportes" className="btn-primary">
+              Ver reportes ejecutivos →
+            </Link>
           </div>
         </header>
+        <MemberFinancialAlert
+          title="Alertas de morosidad"
+          description={
+            highlightMember
+              ? `Mostrando el estado financiero de ${highlightMember.name ?? "socio sin nombre"}`
+              : "Seleccioná un socio para revisar pagos pendientes o vencidos."
+          }
+          snapshot={snapshotQuery.data}
+          isLoading={snapshotQuery.isLoading || snapshotQuery.isRefetching}
+          errorMessage={
+            snapshotQuery.error instanceof Error
+              ? snapshotQuery.error.message
+              : null
+          }
+          actions={
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <select
+                className="rounded-md border border-base-border bg-base-primary px-3 py-2 text-sm"
+                value={highlightMemberId ?? ""}
+                onChange={(event) => {
+                  setHighlightMemberId(
+                    event.target.value ? event.target.value : null,
+                  );
+                }}
+              >
+                {!highlightMemberId && (
+                  <option value="">Seleccioná un socio</option>
+                )}
+                {membersListQuery.data?.data.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name ?? member.email}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-secondary whitespace-nowrap"
+                onClick={() => snapshotQuery.refetch()}
+                disabled={!activeMemberId || snapshotQuery.isFetching}
+              >
+                Refrescar estado
+              </button>
+            </div>
+          }
+        />
         {feedback && (
           <div
             className={`glass-card border-l-4 px-4 py-3 text-sm ${
@@ -117,7 +198,9 @@ export default function AdminMembersPage() {
           onEdit={(member) => {
             setSelectedMember(member);
             setModalMode("edit");
+            setHighlightMemberId(member.id);
           }}
+          onInspect={(member) => setHighlightMemberId(member.id)}
         />
       </div>
 

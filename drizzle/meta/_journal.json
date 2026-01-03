@@ -15,6 +15,20 @@
       "when": 1767199151243,
       "tag": "0001_fine_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767228827312,
+      "tag": "0002_friendly_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767391018633,
+      "tag": "0003_silly_stark_industries",
+      "breakpoints": true
     }
   ]
 }

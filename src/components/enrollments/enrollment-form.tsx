@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -12,6 +12,7 @@ import {
 } from "@/lib/validations/enrollments";
 import { useMembersOptions } from "@/hooks/use-enrollments";
 import type { EnrollmentDTO } from "@/types/enrollment";
+import { useEconomicConfig } from "@/hooks/use-economic-config";
 
 function getDateValue(value?: string | null) {
   if (!value) return "";
@@ -27,6 +28,9 @@ export function EnrollmentCreateForm({
 }) {
   const { data: membersOptions, isLoading: membersLoading } =
     useMembersOptions();
+  const { data: economicConfig, isLoading: economicConfigLoading } =
+    useEconomicConfig();
+  const hasAppliedDefaults = useRef(false);
 
   const defaultValues = useMemo<CreateEnrollmentInput>(() => {
     const today = new Date().toISOString().split("T")[0] ?? "";
@@ -34,8 +38,8 @@ export function EnrollmentCreateForm({
       memberId: "",
       startDate: today,
       planName: "",
-      monthlyAmount: 0,
-      monthsToGenerate: 1,
+      monthlyAmount: undefined,
+      monthsToGenerate: undefined,
       notes: "",
     };
   }, []);
@@ -44,6 +48,8 @@ export function EnrollmentCreateForm({
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    getValues,
   } = useForm<CreateEnrollmentInput>({
     resolver: zodResolver(
       createEnrollmentSchema,
@@ -51,9 +57,33 @@ export function EnrollmentCreateForm({
     defaultValues,
   });
 
+  useEffect(() => {
+    if (
+      economicConfig &&
+      !hasAppliedDefaults.current &&
+      (() => {
+        const values = getValues();
+        return (
+          (values.monthlyAmount == null || values.monthlyAmount === 0) &&
+          (values.monthsToGenerate == null || values.monthsToGenerate === 0)
+        );
+      })()
+    ) {
+      setValue("monthlyAmount", economicConfig.defaultMonthlyAmount);
+      setValue("monthsToGenerate", economicConfig.defaultMonthsToGenerate);
+      hasAppliedDefaults.current = true;
+    }
+  }, [economicConfig, setValue, getValues]);
+
   const submitHandler = handleSubmit(async (values) => {
     await onSubmit(values);
   });
+
+  function applyEconomicDefaults() {
+    if (!economicConfig) return;
+    setValue("monthlyAmount", economicConfig.defaultMonthlyAmount);
+    setValue("monthsToGenerate", economicConfig.defaultMonthsToGenerate);
+  }
 
   return (
     <form onSubmit={submitHandler} className="space-y-5">
@@ -114,6 +144,13 @@ export function EnrollmentCreateForm({
             {...register("monthlyAmount", { valueAsNumber: true })}
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
           />
+          {economicConfig && (
+            <p className="text-xs text-base-muted">
+              Sugerido: ARS{" "}
+              {economicConfig.defaultMonthlyAmount.toLocaleString()} ·
+              vencimiento día {economicConfig.dueDay}
+            </p>
+          )}
           {errors.monthlyAmount && (
             <p className="text-sm text-accent-critical">
               {errors.monthlyAmount.message as string}
@@ -127,6 +164,11 @@ export function EnrollmentCreateForm({
             {...register("monthsToGenerate", { valueAsNumber: true })}
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
           />
+          {economicConfig && (
+            <p className="text-xs text-base-muted">
+              Sugerido: {economicConfig.defaultMonthsToGenerate} cuotas
+            </p>
+          )}
           {errors.monthsToGenerate && (
             <p className="text-sm text-accent-critical">
               {errors.monthsToGenerate.message as string}
@@ -151,6 +193,14 @@ export function EnrollmentCreateForm({
       </div>
 
       <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={applyEconomicDefaults}
+          disabled={!economicConfig || economicConfigLoading}
+        >
+          Usar valores por defecto
+        </button>
         <button type="submit" className="btn-primary" disabled={isSubmitting}>
           {isSubmitting ? "Creando..." : "Crear inscripción"}
         </button>

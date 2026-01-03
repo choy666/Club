@@ -15,4 +15,5 @@ export const DUE_STATUS_OPTIONS: { value: DueStatus | "ALL"; label: string }[] =
     { value: "PENDING", label: "Pendiente" },
     { value: "PAID", label: "Pagada" },
     { value: "OVERDUE", label: "Vencida" },
+    { value: "FROZEN", label: "Congelada" },
   ];

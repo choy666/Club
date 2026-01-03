@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemberProfile } from "@/hooks/use-members";
+import { useMemberProfile, useMyFinancialSnapshot } from "@/hooks/use-members";
 import { MemberProfileCard } from "@/components/members/member-profile-card";
+import { MemberFinancialAlert } from "@/components/members/member-financial-alert";
 
 export default function SocioPage() {
   const { data, isLoading, error } = useMemberProfile();
+  const snapshotQuery = useMyFinancialSnapshot({
+    enabled: Boolean(data),
+  });
 
   return (
     <div className="min-h-screen bg-base-primary px-6 py-10">
@@ -37,7 +41,32 @@ export default function SocioPage() {
           </div>
         )}
 
-        {data && <MemberProfileCard member={data} />}
+        {data && (
+          <>
+            <MemberFinancialAlert
+              title="Estado de tus pagos"
+              description="Esto define tu acceso al club y las comunicaciones activas."
+              snapshot={snapshotQuery.data}
+              isLoading={snapshotQuery.isLoading || snapshotQuery.isRefetching}
+              errorMessage={
+                snapshotQuery.error instanceof Error
+                  ? snapshotQuery.error.message
+                  : null
+              }
+              actions={
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => snapshotQuery.refetch()}
+                  disabled={snapshotQuery.isFetching}
+                >
+                  Actualizar estado
+                </button>
+              }
+            />
+            <MemberProfileCard member={data} snapshot={snapshotQuery.data} />
+          </>
+        )}
 
         <div className="flex flex-wrap gap-4">
           <Link href="/admin" className="btn-secondary">

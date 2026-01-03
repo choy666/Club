@@ -12,6 +12,7 @@ import { EnrollmentFilters } from "./enrollment-filters";
 import { Modal } from "@/components/ui/modal";
 import { EnrollmentCreateForm, EnrollmentEditForm } from "./enrollment-form";
 import type { EnrollmentDTO } from "@/types/enrollment";
+import { clientLogger } from "@/lib/client-logger";
 
 type Feedback = {
   type: "success" | "error";
@@ -68,7 +69,7 @@ export function EnrollmentTable() {
         });
         closeModal();
       } catch (mutationError) {
-        console.error(mutationError);
+        clientLogger.error("Error al crear inscripción", mutationError);
         setFeedback({
           type: "error",
           message: "Ocurrió un error al crear la inscripción.",

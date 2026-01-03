@@ -1,8 +1,9 @@
 import { StatusBadge } from "./status-badge";
-import type { MemberDTO } from "@/types/member";
+import type { MemberDTO, MemberFinancialSnapshot } from "@/types/member";
 
 interface MemberProfileCardProps {
   member: MemberDTO;
+  snapshot?: MemberFinancialSnapshot | null;
 }
 
 const infoEntries: Array<{
@@ -27,9 +28,78 @@ const infoEntries: Array<{
   },
 ];
 
-export function MemberProfileCard({ member }: MemberProfileCardProps) {
+function getFinancialBanner(snapshot?: MemberFinancialSnapshot | null) {
+  if (!snapshot) return null;
+
+  if (snapshot.totals.frozen > 0) {
+    return {
+      tone: "critical" as const,
+      title: "Cuotas congeladas",
+      message:
+        "El socio está inactivo y sus cuotas fueron congeladas. Reactivá la membresía para retomar los cobros.",
+      detail: `Cuotas congeladas: ${snapshot.totals.frozen}`,
+    };
+  }
+
+  if (snapshot.totals.overdue > 0) {
+    return {
+      tone: "critical" as const,
+      title: "Pagos vencidos",
+      message:
+        "Hay cuotas vencidas. Regularizá tu situación para reactivar el acceso completo.",
+      detail: `Cuotas vencidas: ${snapshot.totals.overdue}`,
+    };
+  }
+
+  if (snapshot.totals.pending > 0) {
+    return {
+      tone: "warning" as const,
+      title: "Pagos pendientes",
+      message:
+        "Tenés cuotas próximas a vencer. Aprovechá el período de gracia para pagarlas a tiempo.",
+      detail: `Cuotas próximas: ${snapshot.totals.pending}`,
+    };
+  }
+
+  return {
+    tone: "success" as const,
+    title: "Cuenta al día",
+    message: "No registramos cuotas pendientes. ¡Gracias por estar al día!",
+    detail: null,
+  };
+}
+
+export function MemberProfileCard({
+  member,
+  snapshot,
+}: MemberProfileCardProps) {
+  const banner = getFinancialBanner(snapshot);
+
   return (
     <div className="glass-card border border-base-border/60 px-6 py-8 space-y-8">
+      {banner && (
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 ${
+            banner.tone === "critical"
+              ? "border-accent-critical/50 bg-accent-critical/10 text-accent-critical"
+              : banner.tone === "warning"
+                ? "border-accent-warning/50 bg-accent-warning/10 text-accent-warning-strong"
+                : "border-state-active/50 bg-state-active/10 text-state-active"
+          }`}
+        >
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-semibold tracking-wide uppercase">
+              {banner.title}
+            </span>
+            <p className="text-sm">{banner.message}</p>
+            {banner.detail && (
+              <span className="text-xs text-base-muted/90">
+                {banner.detail}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-base-muted">

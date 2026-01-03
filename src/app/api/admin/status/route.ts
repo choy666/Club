@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const adminSchema = z.object({
   email: z.string().email(),
@@ -19,12 +20,47 @@ async function fetchExistingAdmin() {
   });
 }
 
-export async function GET() {
+const ADMIN_STATUS_RATE_LIMIT = {
+  limit: 20,
+  windowMs: 60 * 1000,
+};
+
+function rateLimitResponse(retryAfterMs?: number) {
+  return NextResponse.json(
+    {
+      error: "Demasiadas solicitudes. Intenta nuevamente en unos instantes.",
+    },
+    {
+      status: 429,
+      headers: retryAfterMs
+        ? { "Retry-After": Math.ceil(retryAfterMs / 1000).toString() }
+        : undefined,
+    },
+  );
+}
+
+export async function GET(request: NextRequest) {
+  const rate = enforceRateLimit(
+    request,
+    ADMIN_STATUS_RATE_LIMIT,
+    "admin-status",
+  );
+  if (!rate.success) {
+    return rateLimitResponse(rate.retryAfterMs);
+  }
   const admin = await fetchExistingAdmin();
   return NextResponse.json({ hasAdmin: Boolean(admin) });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rate = enforceRateLimit(
+    request,
+    ADMIN_STATUS_RATE_LIMIT,
+    "admin-status",
+  );
+  if (!rate.success) {
+    return rateLimitResponse(rate.retryAfterMs);
+  }
   const existing = await fetchExistingAdmin();
 
   if (existing) {

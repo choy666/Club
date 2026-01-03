@@ -16,6 +16,7 @@ import {
   isDocumentNumberTaken,
   mapMemberRow,
 } from "./queries";
+import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -229,6 +230,10 @@ export async function updateMember(
   const result = await findMemberById(memberId);
   if (!result) {
     throw new AppError("No se pudo actualizar el socio.", 500);
+  }
+
+  if (input.status && input.status !== existing.status) {
+    await enforceFrozenDuesPolicy(memberId, result.status);
   }
 
   return result;

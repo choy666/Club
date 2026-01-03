@@ -16,7 +16,7 @@ import { useDueFiltersStore } from "@/store/due-filters-store";
 import type { MembersListResponse } from "@/types/member";
 
 const ENROLLMENTS_KEY = ["enrollments"];
-const DUES_KEY = ["dues"];
+export const DUES_KEY = ["dues"];
 const MEMBERS_OPTIONS_KEY = ["members", "options"];
 
 export function useEnrollmentsList() {

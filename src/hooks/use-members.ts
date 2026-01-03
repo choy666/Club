@@ -1,7 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import type { MemberResponse, MembersListResponse } from "@/types/member";
+import type {
+  MemberFinancialSnapshot,
+  MemberFinancialSnapshotResponse,
+  MemberResponse,
+  MembersListResponse,
+} from "@/types/member";
 import { useMemberFiltersStore } from "@/store/members-filters-store";
 import type {
   CreateMemberInput,
@@ -11,6 +16,12 @@ import type {
 const MEMBERS_KEY = ["members"];
 const MEMBER_DETAIL_KEY = (id: string) => [...MEMBERS_KEY, id];
 const MEMBER_ME_KEY = ["member", "me"];
+const MEMBER_SNAPSHOT_KEY = (memberId: string | null) => [
+  "member",
+  "snapshot",
+  memberId ?? "unknown",
+];
+const MEMBER_SELF_SNAPSHOT_KEY = ["member", "me", "snapshot"];
 
 export function useMembersList() {
   const filters = useMemberFiltersStore();
@@ -38,6 +49,42 @@ export function useMembersList() {
       return response;
     },
     refetchOnWindowFocus: false,
+  });
+}
+
+export function useMemberFinancialSnapshot(
+  memberId?: string,
+  options?: { enabled?: boolean },
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery<MemberFinancialSnapshot | null>({
+    queryKey: MEMBER_SNAPSHOT_KEY(memberId ?? null),
+    enabled: Boolean(memberId && enabled),
+    queryFn: async () => {
+      if (!memberId) {
+        return null;
+      }
+      const response = await apiFetch<MemberFinancialSnapshotResponse>(
+        `/api/socios/${memberId}/status`,
+      );
+      return response.data;
+    },
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useMyFinancialSnapshot(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery<MemberFinancialSnapshot>({
+    queryKey: MEMBER_SELF_SNAPSHOT_KEY,
+    enabled,
+    queryFn: async () => {
+      const response = await apiFetch<MemberFinancialSnapshotResponse>(
+        "/api/socios/me/status",
+      );
+      return response.data;
+    },
+    staleTime: 1000 * 30,
   });
 }
 

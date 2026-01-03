@@ -1,10 +1,9 @@
+"use client";
+
 import Link from "next/link";
 
-const quickStats = [
-  { label: "Socios activos", value: "284" },
-  { label: "Cuotas pendientes", value: "$ 156.000" },
-  { label: "Inscripciones hoy", value: "12" },
-];
+import { useDashboardSummary } from "@/hooks/use-dashboard-summary";
+import { formatCurrency } from "@/lib/number-format";
 
 const quickActions = [
   { label: "Ver panel admin", href: "/admin" },
@@ -12,20 +11,37 @@ const quickActions = [
 ];
 
 export default function Home() {
+  const { data, isLoading, error } = useDashboardSummary();
+
+  const quickStats = [
+    {
+      label: "Socios activos",
+      value: data?.activeMembers?.toLocaleString("es-AR") ?? "—",
+    },
+    {
+      label: "Cuotas pendientes",
+      value:
+        data && typeof data.pendingDuesAmount === "number"
+          ? formatCurrency(data.pendingDuesAmount)
+          : "—",
+    },
+    {
+      label: "Inscripciones hoy",
+      value: data?.enrollmentsToday?.toLocaleString("es-AR") ?? "—",
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-base/primary text-base/foreground px-6 py-12 sm:px-12">
       <section className="max-w-5xl mx-auto space-y-12">
         <div className="glass-card p-10 flex flex-col gap-6">
-          <span className="text-sm uppercase tracking-[0.3em] text-base-muted">
-            CLUB · GESTIÓN
-          </span>
+          <span className="text-sm uppercase tracking-[0.3em] text-base-muted">CLUB · GESTIÓN</span>
           <h1 className="text-4xl sm:text-5xl font-semibold font-[var(--font-space)] leading-tight">
             Control administrativo y acceso personalizado para cada socio.
           </h1>
           <p className="text-lg text-base-muted max-w-2xl">
-            Plataforma unificada para inscripciones, cuotas, pagos y reportes.
-            Diseñada para equipos administrativos exigentes y socios que
-            necesitan claridad total sobre su estado.
+            Plataforma unificada para inscripciones, cuotas, pagos y reportes. Diseñada para equipos
+            administrativos exigentes y socios que necesitan claridad total sobre su estado.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link href="/admin" className="btn-primary">
@@ -40,18 +56,15 @@ export default function Home() {
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">
           {quickStats.map((stat) => (
             <div key={stat.label} className="glass-card p-6 space-y-2">
-              <p className="text-sm uppercase tracking-widest text-base-muted">
-                {stat.label}
-              </p>
-              <p className="text-2xl font-semibold">{stat.value}</p>
+              <p className="text-sm uppercase tracking-widest text-base-muted">{stat.label}</p>
+              <p className="text-2xl font-semibold">{isLoading ? "…" : stat.value}</p>
+              {error ? <p className="text-xs text-accent-critical">No se pudo cargar.</p> : null}
             </div>
           ))}
         </div>
 
         <div className="glass-card p-8 flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold font-[var(--font-space)]">
-            Acciones rápidas
-          </h2>
+          <h2 className="text-2xl font-semibold font-[var(--font-space)]">Acciones rápidas</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {quickActions.map((action) => (
               <Link

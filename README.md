@@ -1,429 +1,216 @@
 ---
+# 📌 Club App – Sistema de Gestión de Socios
 
-# 📌 Documento Base – Sistema de Gestión de Socios
-
-**Entidad:** *Club*
-Gestión integral de socios, pagos, cuotas e inscripciones con control administrativo y acceso individual del socio.
+Sistema integral para administrar socios, inscripciones, cuotas y pagos del Club. Permite operar desde un panel administrativo y una vista individual para cada socio, manteniendo trazabilidad financiera en tiempo real.
 ---
 
-## 1️⃣ Objetivo General (sin cambios)
+## 1. Panorama general
 
-Desarrollar una aplicación web que permita a la entidad _Club_:
-
-- Administrar socios.
-- Gestionar inscripciones y cuotas mensuales.
-- Controlar estados (activo / inactivo / pendiente).
-- Visualizar deudas y pagos.
-- Obtener reportes financieros y de crecimiento.
-
-El sistema debe ser claro, escalable, mantenible y seguro.
+- Altas/ediciones de socios con formularios reutilizables.
+- Inscripciones y generación automática de cuotas según configuraciones económicas.
+- Registro de pagos (manuales o automáticos) con recalculo inmediato del estado del socio (`ACTIVE`, `PENDING`, `INACTIVE`).
+- Reportes financieros y roadmap hacia métricas avanzadas.
+- Identidad visual consistente + página showcase pública para stakeholders.
 
 ---
 
-## 2️⃣ Stack Tecnológico Oficial (ACTUALIZADO)
+## 2. Stack oficial (ya implementado)
 
-Este stack **queda fijado como base del proyecto**.
-| Capa | Herramienta |
-| ----------------- | ---------------------------------------------------------------- |
-| Base de datos | **Neon (PostgreSQL)** |
-| Hosting / Backend | **Vercel + Next.js 15.5 (App Router)** |
-| Repositorio | **GitHub** |
-| Autenticación | **NextAuth.js 5.0 + credenciales creadas por el administrador** |
-| Frontend | **Next.js 15.5 + Tailwind CSS 4.1** |
-
----
-
-## 🛠️ Tecnologías Utilizadas
-
-### 🎨 Frontend
-
-| Tecnología                    | Uso                                            |
-| ----------------------------- | ---------------------------------------------- |
-| **Next.js 15.5 (App Router)** | Framework principal (SSR, RSC, Server Actions) |
-| **TypeScript**                | Tipado estático y seguridad en desarrollo      |
-| **Tailwind CSS 4.1**          | Sistema de estilos utilitarios                 |
-| **Framer Motion 12.23**       | Animaciones UI/UX                              |
-| **React Hook Form 7.65**      | Manejo de formularios reutilizables            |
-| **Zustand 5.0**               | Estado global (auth, UI, filtros)              |
-| **React Query 5.90**          | Estado del servidor, cache y sincronización    |
-
-✔️ Ideal para formularios compartidos (crear / editar socio)
-✔️ Optimizado para panel administrativo y panel de socio
+| Capa / dominio           | Herramientas principales                                                            | Notas relevantes                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Frontend                 | Next.js **16.1** (App Router), React 19, TypeScript 5, Tailwind 4, Framer Motion 12 | Componentes “glass”, animaciones ligeras, formularios con React Hook Form 7.69. |
+| Estado de cliente        | Zustand 5 (auth/UI), React Query 5.90 (datos del servidor)                          | Nunca se cachea en Zustand información proveniente de APIs.                     |
+| Backend / API            | Next.js API Routes, NextAuth 5 beta, Drizzle ORM 0.45                               | Backend convive en el mismo repo (menos latencia, misma base de código).        |
+| Base de datos / Infra    | Neon (PostgreSQL serverless), Drizzle Kit, migraciones versionadas                  | Seeds QA y scripts `drizzle/000x_*.sql`.                                        |
+| Tooling / Dev Experience | ESLint 9, Prettier 3, Vitest 4, Husky + lint-staged, tsx, scripts npm documentados  | Ver `docs/comandos.md` para la lista completa de scripts y buenas prácticas.    |
 
 ---
 
-### ⚙️ Backend
-
-| Tecnología                 | Uso                                 |
-| -------------------------- | ----------------------------------- |
-| **Next.js API Routes**     | API REST interna                    |
-| **NextAuth.js 5.0 (beta)** | Autenticación y control de sesiones |
-| **Drizzle ORM 0.44**       | ORM tipado para PostgreSQL          |
-| **Neon**                   | PostgreSQL serverless               |
-
-📌 **Decisión clave:**
-El backend vive dentro de Next.js → menos latencia, misma base de código, más control.
-
----
-
-### 🧰 Herramientas de Desarrollo
-
-| Herramienta     | Función                     |
-| --------------- | --------------------------- |
-| **ESLint**      | Linting y calidad de código |
-| **Prettier**    | Formateo consistente        |
-| **Drizzle Kit** | Migraciones y esquema de BD |
-
----
-
-## 3️⃣ Arquitectura General (alineada al stack)
+## 3. Arquitectura lógica
 
 ```
-Next.js App Router
-│
+src/
 ├── app/
-│   ├── (auth)        → login
-│   ├── admin/        → panel admin
-│   ├── socio/        → panel usuario
-│
-├── api/
-│   ├── auth/         → NextAuth
-│   ├── socios/       → CRUD socios
-│   ├── pagos/        → inscripción / cuotas
-│   ├── reportes/     → métricas
-│
-├── db/
-│   ├── schema.ts     → Drizzle schema
-│   ├── migrations/
-│
-├── store/            → Zustand
-├── hooks/            → React Query
-├── components/       → UI reutilizable
+│   ├── (auth)           → flujo NextAuth
+│   ├── admin/           → panel administrativo
+│   ├── socio/           → vista del socio
+│   ├── showcase/        → página pública
+│   └── api/             → rutas REST (socios, inscripciones, cuotas, pagos, status, auth)
+├── db/                  → esquema y cliente Drizzle
+├── lib/                 → servicios de dominio, validaciones, helpers
+├── hooks/               → React Query y lógica compartida
+├── store/               → Zustand (auth, filtros, UI)
+├── components/          → UI reutilizable (glass, tablas, formularios)
+└── providers/           → AppProviders (Session + React Query + Zustand sync)
 ```
 
 ---
 
-## 4️⃣ Autenticación y Roles (alineado a NextAuth v5)
+## 4. Autenticación, roles y formularios
 
-### Roles definidos
-
-- `ADMIN`
-- `USER`
-
-### Reglas
-
-- Solo ADMIN accede a `/admin`
-- USER solo accede a `/socio`
-- Middleware protege rutas
-- Sesión validada en backend (no solo frontend)
-
-📌 Usuarios **NO se registran solos**
-📌 Credenciales creadas por el admin
-
-#### ⚙️ Bootstrap del primer administrador
-
-1. Al acceder por primera vez a `/auth/signin`, el sistema verifica si existe un usuario con rol `ADMIN`.
-2. Si no hay uno creado, se muestra un formulario especial para registrar **el único admin inicial** con correo + contraseña definidos allí mismo. La contraseña se hashea y se guarda directamente en la tabla `users`.
-3. Una vez creado, la vista vuelve al formulario de login y solo se podrá acceder con esas credenciales (o las que luego actualice el propio admin).
-4. El endpoint `POST /api/admin/status` bloquea la creación de un segundo administrador inicial y devuelve `409` si ya existe uno.
-5. Para entornos donde se requiera seed manual, continúa disponible `npm run seed:admin`, pero ya no es obligatorio para el primer arranque.
+- Roles definidos: `ADMIN` (panel `/admin`) y `USER` (panel `/socio`).
+- Middleware y helpers (`requireAdminSession`, `requireUserSession`) protegen rutas y APIs.
+- Bootstrap del primer admin: formulario especial en `/auth/signin` crea al único `ADMIN` inicial (hash bcrypt). Sigue disponible `npm run seed:admin`.
+- Formularios administrados con **React Hook Form + Zod**, maximizando reutilización (e.g. formulario único crear/editar socio, modales de inscripción y pagos manuales).
 
 ---
 
-## 5️⃣ Formularios (decisión técnica importante)
+## 5. Estado del cliente y principios de datos
 
-- **React Hook Form**
-- Validación centralizada
-- **Formulario único reutilizado** para:
-  - Crear socio
-  - Editar socio
+| Herramienta | Responsabilidad                                                                | Reglas clave                                                    |
+| ----------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Zustand     | Estado efímero de UI (modales, filtros, flags), info básica de sesión          | Sin datos persistentes de negocio.                              |
+| React Query | Cache de datos de socios, inscripciones, cuotas, pagos y snapshots financieros | Invalidate centralizada (`DUES_KEY`, snapshots de socio, etc.). |
 
-✔️ Evita duplicación
-✔️ Evita inconsistencias
-✔️ Facilita mantenimiento
+Todos los formularios y vistas consultan a React Query y disparan invalidaciones tras cada mutación (pagos, creación de inscripciones, etc.).
 
 ---
 
-## 6️⃣ Estado Global y Datos
+## 6. Modelo de datos y reglas financieras
 
-### 🧠 Zustand
+Entidades principales (todas versionadas en Drizzle + migraciones):
 
-- Usuario logueado
-- Rol
-- Estado UI (modales, filtros)
+- `users`, `members` (perfiles y estado general).
+- `economic_configs` (valores default, tolerancias, moneda).
+- `enrollments`, `dues` (inscripciones y cuotas generadas automáticamente).
+- `payments` (auditoría de pagos, método, referencia y notas).
+- `monthly_run_log` (auditoría del job que genera cuotas mensuales).
 
-### 🌐 React Query
+Reglas destacadas:
 
-- Socios
-- Pagos
-- Reportes
-- Cache + refetch automático
-
-📌 **Regla:**
-Nunca guardar datos del servidor en Zustand.
-
----
-
-## 7️⃣ Base de Datos (Neon + Drizzle)
-
-- PostgreSQL
-- Tipado fuerte
-- Migraciones versionadas
-- Entidades clave:
-  - Socios
-  - Usuarios
-  - Inscripciones
-  - Cuotas
-  - Pagos
-  - Configuración económica
-
-(El modelo lo armamos como siguiente paso)
+1. Cuotas `PENDING` con `dueDate` < `hoy - gracePeriodDays` pasan a `OVERDUE`.
+2. `refreshMemberFinancialStatus` determina el estado del socio en función de cuotas `OVERDUE` y `PENDING`.
+3. `recordPayment` marca la cuota, inserta fila en `payments` y refresca el snapshot antes de responder.
+4. Endpoints `/api/socios/{memberId}/status` y `/api/socios/me/status` recalculan siempre antes de responder.
+5. Constraint `enrollments_member_id_idx` garantiza una inscripción por socio y está documentado junto con el script de verificación previa de duplicados.
+6. El job `npm run jobs:generate-dues [operador]` genera la próxima cuota de cada socio activo y deja trazabilidad en `monthly_run_log` (cantidad creada, operador y notas).
 
 ---
 
-## 8️⃣ Coherencia con Reglas del Negocio (confirmado)
+## 7. Buenas prácticas (seguridad, escalabilidad, calidad)
 
-Todo lo definido previamente sigue vigente:
-
-✔️ Estados del socio
-✔️ Inscripción + cuotas
-✔️ Deudas por mes
-✔️ Reportes financieros
-✔️ Gráficos de crecimiento
-
-Este stack **soporta todo eso sin parches**.
+- Hash de contraseñas (`bcryptjs`) y roles verificados siempre en backend.
+- Todas las credenciales en `.env` validadas vía `src/lib/env.ts` (Zod). Sin hardcode de secrets (ver `docs/comandos.md` + `.env.example`).
+- ESLint 9 + Prettier 3 obligatorios (`npm run lint && npm run lint:types && npm run test` antes de cualquier commit).
+- React Query + Suspense listos para escalar a Server Actions y métricas agregadas.
+- Tests contractuales con Vitest cubren `/api/inscripciones`, `/api/cuotas`, `/api/pagos`, `/api/socios/[memberId]/status` y helpers (`src/lib/enrollments/schedule.test.ts`).
+- Playwright se ejecuta localmente con `npm run test:e2e` y en CI mediante `.github/workflows/e2e.yml`, que sube trazas y screenshots como artefactos para debugging rápido.
 
 ---
 
-## 9️⃣ Recomendaciones Técnicas Clave
+## 8. Roadmap por sprints
 
-### 🔐 Seguridad
+| Sprint                     | Objetivo                                                             | Entregables claves                                                                     | Estado         |
+| -------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------- |
+| 0. Preparación             | Repositorio, toolchain, variables de entorno                         | Next.js + Tailwind inicial, ESLint/Prettier/Husky, `.env.example`, `drizzle.config.ts` | ✅             |
+| 1. Infraestructura         | Neon + Drizzle + NextAuth                                            | Schema base, seed admin, middleware de roles, stores iniciales                         | ✅             |
+| 2. CRUD de Socios          | API `/api/socios`, panel `/admin`, vista `/socio`                    | Formularios RHF, tablas, hooks React Query, identidad visual aplicada                  | ✅             |
+| 3. Inscripciones y cuotas  | Modelado económico, generación automática, UI `/admin/inscripciones` | Servicios `createEnrollment`, `payDue`, seeds QA, tests contractuales                  | ✅             |
+| 4. Pagos y estados         | Conciliación, snapshots financieros, alertas                         | Entidad `payments`, hooks `useRecordPayment`, modal de pago manual, docs de errores    | ✅ (DoD abajo) |
+| 5. Reportes y métricas     | Endpoint `/api/reportes`, visualizaciones, cache                     | 🔜 (depende de consolidar sprint 4 en producción)                                      |
+| 6. Endurecimiento / Deploy | QA completo, e2e, monitoreo, playbook Vercel                         | 🔜                                                                                     |
 
-- Hash de contraseñas
-- Roles verificados en API
-- Session-based auth (NextAuth)
+### Trabajo pendiente para que AppClub quede completo
 
-### 📈 Escalabilidad
+1. **Sprint 5 – Reportes y métricas**
+   - Implementar `/api/reportes` con queries agregadas (finanzas + crecimiento).
+   - Diseñar vista de gráficos y KPIs en `/admin`, con animaciones y temática glass.
+   - Preparar hooks React Query cacheados e invalidaciones específicas.
+2. **Sprint 6 – Endurecimiento y despliegue**
+   - Ejecutar pruebas e2e (Playwright/Cypress) de punta a punta y asegurar CI verde.
+   - Auditoría de seguridad (hash de contraseñas, roles, variables de entorno) y monitoreo básico.
+   - Playbook de despliegue Vercel + estrategia de migraciones Drizzle/Neon.
+   - Documentación final para soporte/operaciones y checklist de retroalimentación.
 
-- Server Actions a futuro
-- Pagos online integrables
-- Exportación de reportes
-
-### 🧼 Calidad
-
-- ESLint + Prettier obligatorios
-- Tipos compartidos frontend/backend
-- Migraciones versionadas
-
----
-
-## 10️⃣ Estado del Proyecto
-
-🟢 **Fase actual:** Sprint 1 – Infraestructura completado (stack listo, auth y middleware funcionando).
-
-🔜 **Siguientes pasos recomendados**
-
-1. Sprint 2: CRUD de socios (APIs, formularios y paneles iniciales).
-2. Sprint 3: Inscripciones y cuotas (flujo alta + generación automática).
-3. Sprint 4: Pagos y estados (conciliación + deudas).
-4. Sprint 5: Reportes y métricas (consultas agregadas + visualizaciones).
+Completar estos dos sprints deja la aplicación lista para uso productivo con reportes ejecutivos y procesos de QA/despliegue formalizados.
 
 ---
 
-## 1️⃣1️⃣ Plan de implementación (ejecutable)
+## 9. Estado resumido por sprint
 
-### 🗺️ Visión general
+- **Sprint 0 – Preparación:** proyecto Next.js 16 + Tailwind 4, toolchain completa, `.env` documentado y validaciones Zod.
+- **Sprint 1 – Infraestructura:** conexiones Neon/Drizzle, NextAuth v5, seed admin, middleware de roles, stores + AppProviders listos.
+- **Sprint 2 – CRUD de Socios:** APIs protegidas, hooks `use-members`, tablas y formularios RHF, vista `/socio`, identidad visual aplicada.
+- **Sprint 3 – Inscripciones / cuotas:** tablas y servicios económicos, UI `/admin/inscripciones`, seeds QA, tabla de contratos y pruebas contractuales (`src/app/api/*/route.test.ts`).
+- **Sprint 4 – Pagos / estados:** ver backlog y checklist completos más abajo (implementado y documentado).
 
-El objetivo es levantar el proyecto en iteraciones cortas, respetando el stack oficial (Next.js 15.5, Neon, Drizzle, NextAuth v5, React Query, Zustand) y las reglas de negocio ya validadas (CRUD de socios, inscripciones, cuotas, pagos y reportes). @README.md#23-188
-
-### 🧭 Cronograma sugerido (6 sprints)
-
-| Sprint                                      | Objetivo principal                                                                                  | Entregables clave                                                                                                 | Dependencias |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------ |
-| 0. Preparación (½ semana)                   | Repositorio listo y toolchain configurado                                                           | Repo Next.js base, ESLint/Prettier, CI mínimo                                                                     | —            |
-| 1. Infraestructura (1 semana)               | Conexión Neon + Drizzle + NextAuth                                                                  | Drizzle config + migraciones iniciales (usuarios, socios), credenciales admin + middleware de roles               | Sprint 0     |
-| 2. CRUD de Socios (1 semana)                | Panel `/admin` con listado + formulario reutilizable (React Hook Form) y API `/api/socios` completa | Componentes de tabla, formulario compartido crear/editar, hooks React Query y tests básicos                       | Sprint 1     |
-| 3. Inscripciones y cuotas (1 semana)        | Flujo de alta de socio → inscripción → generación automática de cuotas en BD                        | Endpoints `/api/pagos` (inscripción/cuotas), tablas inscripciones/cuotas configuradas, lógica de negocio validada | Sprint 2     |
-| 4. Pagos y estados (1 semana)               | Gestión de pagos, actualización de estados activo/inactivo/pendiente y vistas de deudas             | Entidad pagos, cálculo de deudas, actualización de estado de socio, vistas admin/socio sincronizadas              | Sprint 3     |
-| 5. Reportes y métricas (1 semana)           | Panel de reportes financieros y de crecimiento con cache y gráficos                                 | Endpoint `/api/reportes`, hooks cacheados, visualizaciones, pruebas de performance                                | Sprint 4     |
-| 6. Endurecimiento y despliegue (½-1 semana) | QA completo, documentación y despliegue en Vercel                                                   | Tests e2e críticos, monitoreo, checklist de seguridad, playbook de despliegue                                     | Sprints 0-5  |
-
-#### Cobertura frontend + backend
-
-El plan aborda ambos frentes en cada sprint:
-
-- **Frontend:** construcción de vistas `/admin` y `/socio`, formularios con React Hook Form, estado de UI vía Zustand y consumo optimizado con React Query (ver Sprints 2-5).
-- **Backend:** APIs REST en Next.js, modelos Drizzle, lógica de pagos/estados y reportes agregados (Sprints 2-5) más endurecimiento final (Sprint 6).
-
-Si se detecta un deliverable crítico sin contraparte (por ejemplo, un API sin UI o viceversa) se deberá ajustar en la planificación de cada sprint.
-
-### 📋 Checklist por sprint
-
-**Sprint 0 – Preparación**
-
-1. Crear repositorio GitHub y proyecto Vercel.
-2. Inicializar Next.js 15.5 (App Router) con Tailwind 4.1. @README.md#29-50
-3. Configurar ESLint + Prettier + Husky (pre-commit) y pipelines básicos.
-4. Definir variables de entorno (Neon URL, NEXTAUTH_SECRET, etc.) sin hardcodear valores.
-
-**Sprint 1 – Infraestructura**
-
-1. Provisionar base Neon y conectar Drizzle ORM (schema inicial: usuarios, socios). @README.md#59-173
-2. Configurar NextAuth v5 con credenciales administradas manualmente y roles ADMIN/USER. @README.md#108-122
-3. Implementar middleware de protección de rutas y validaciones de sesión en API routes. @README.md#115-118
-4. Montar store Zustand (auth + UI) y skeleton de hooks React Query (sin data). @README.md#140-158
-
-**Sprint 2 – CRUD de Socios**
-
-1. Implementar APIs `/api/socios` (POST/GET/PUT/DELETE) con validaciones y Drizzle. @README.md#90-93
-2. Construir formulario único con React Hook Form para crear/editar socios, validación centralizada. @README.md#125-136
-3. Crear vistas `/admin` (tabla + filtros) y `/socio` (datos personales) con React Query sincronizando cache. @README.md#84-103
-4. Añadir pruebas unitarias/contract de endpoints.
-
-**Sprint 3 – Inscripciones y cuotas**
-
-1. Modelar entidades inscripciones, cuotas y configuración económica en Drizzle. @README.md#165-174
-2. Desarrollar endpoints `/api/pagos` para inscribir socio y generar cuotas automáticas. @README.md#91-93
-3. Automatizar lógica negocio inscripción→cuotas y registrar estados iniciales.
-4. Exponer UI para iniciar inscripción y monitorear cuotas pendientes.
-
-**Sprint 4 – Pagos y estados**
-
-1. Crear entidad pagos y lógica de conciliación que actualiza estado del socio (activo/inactivo/pendiente). @README.md#15-16 @README.md#182-188
-2. Implementar cálculo de deudas mensuales y visualización en panel admin/socio. @README.md#12-17
-3. Añadir notificaciones/alertas UI (Zustand) según estado de deuda.
-4. Tests de regresión sobre transiciones de estado.
-
-**Sprint 5 – Reportes y métricas**
-
-1. Implementar `/api/reportes` con queries agregadas (finanzas + crecimiento). @README.md#15-17 @README.md#91-93
-2. Construir hooks React Query con cache y refetch automático para reportes. @README.md#148-158
-3. Diseñar vista de gráficos (Framer Motion + componentes visuales) en panel admin.
-4. Documentar endpoints y contratos, preparar dataset mock para demos.
-
-**Sprint 6 – Endurecimiento y despliegue**
-
-1. Auditar seguridad (hash de contraseñas, variables env, roles). @README.md#192-205
-2. Ejecutar pruebas e2e (Playwright o Cypress) sobre los 6 flujos críticos.
-3. Preparar manual de despliegue Vercel + migraciones Drizzle Kit.
-4. Publicar documentación final (README actualizado, diagramas, checklists).
-
-### ✅ Definición de terminado (DoD) global
-
-- Todas las entidades y APIs descritas en la arquitectura están implementadas y cubiertas por migraciones. @README.md#79-188
-- Paneles `/admin` y `/socio` funcionan con control de roles y datos sincronizados vía React Query. @README.md#84-158
-- Lógica de inscripción, cuotas y pagos actualiza estados y genera reportes coherentes. @README.md#165-188
-- Suite de pruebas (unitarias + e2e mínimos) pasa en CI y existe playbook de despliegue.
+Cada sprint se valida con migraciones en Neon y seeds específicos para QA (`drizzle/0003_qas_seed.sql`).
 
 ---
 
-### 🟢 Estado Sprint 0 – Preparación (actualizado)
+## 10. Sprint 4 – Pagos y estados (backlog + DoD)
 
-Entregables completados en `club-app/`:
+### Backlog corto
 
-1. **Proyecto Next.js 16 + TS + Tailwind 4** generado con estructura `src/` y App Router.
-2. **Toolchain**: ESLint 9, Prettier, Husky + lint-staged, scripts de chequeo (`lint:types`, `format`) y hook `pre-commit` ejecutando lint + tipos.
-3. **Dependencias clave** instaladas: NextAuth v5 beta, Drizzle ORM, adaptador Neon, Zod, bcryptjs, Zustand y React Query (alineado a @README.md#23-188).
-4. **Infraestructura base**:
-   - `.env.example` documentando variables críticas (DATABASE_URL, AUTH_SECRET, etc.) sin valores reales.
-   - `drizzle.config.ts` apuntando a `src/db/schema.ts` y validando `DATABASE_URL`.
-   - `src/lib/env.ts` con validación Zod de parámetros de entorno.
-   - Carpetas `src/db`, `src/store`, `src/hooks`, `src/components` y provider de React Query listo para montarse en el layout.
+1. Registrar y conciliar pagos con la tabla `payments`.
+2. Alertas visuales coordinadas en `/admin` y `/socio` (componentes `MemberFinancialAlert`, `MemberProfileCard`).
+3. Servicio que recalcula estados tras cada pago (`refreshMemberFinancialStatus`) y respeta `gracePeriodDays`.
+4. Documentación + pruebas contractuales (`/api/pagos`, `/api/socios/{id}/status`).
 
-✅ Con esto se cumple el checklist del Sprint 0 y se deja el terreno listo para iniciar el Sprint 1 (infraestructura Neon + NextAuth + middleware de roles).
+Dependencias: QA del Sprint 3 completo + migraciones sincronizadas en Neon.
 
----
+### Reglas de transición financiera
 
-### 🟢 Estado Sprint 1 – Infraestructura (actualizado)
+| Contexto                               | Acción                                                                    | Resultado                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cuotas `PENDING` vencidas + tolerancia | Reetiquetar a `OVERDUE` antes de recalcular                               | Morosidad real con margen configurable                                                 |
+| `refreshMemberFinancialStatus`         | Cuenta `OVERDUE`/`PENDING` y define estado final                          | `INACTIVE` si `OVERDUE > 0`; `PENDING` si sólo hay deuda pendiente; `ACTIVE` sin deuda |
+| Registro de pago                       | `recordPayment` actualiza cuota, inserta en `payments`, refresca snapshot | Cambio inmediato luego de `POST /api/pagos`                                            |
+| Endpoints de snapshot                  | `/api/socios/{memberId}/status` (admin) y `/api/socios/me/status` (socio) | Siempre devuelven el estado recalculado                                                |
+| UI                                     | Alertas y cards usan la misma paleta rojo/ámbar/verde                     | Coherencia en `/admin` y `/socio`                                                      |
 
-Entregables completados en `club-app/`:
+### Checklist DoD (cumplido)
 
-1. **Conexión Neon/Drizzle**: schema base (`src/db/schema.ts`) y cliente (`src/db/client.ts`) funcionando contra la base de Neon, más migración inicial generada con Drizzle Kit.
-2. **Gestión de entornos**: `.env.example` documenta todas las variables y `.env.local` aloja credenciales reales; `src/lib/env.ts` valida cada clave (URLs, secretos, credenciales admin) con Zod.
-3. **Autenticación NextAuth v5**: configuración central en `src/auth.ts`, ruta `/api/auth/[...nextauth]`, provider de credenciales, roles persistidos en JWT y helper de contraseñas (`src/lib/password.ts`).
-4. **Seed administrador**: script `npm run seed:admin` (`scripts/seed-admin.ts`) crea/actualiza el usuario ADMIN usando `AUTH_ADMIN_EMAIL` + password/hash definidos en entorno.
-5. **Middleware + stores**: guardias de rol en `src/middleware.ts`, stores `useAuthStore` y `useUiStore`, y `AppProviders` (Session + React Query + sincronización con Zustand) montados en `app/layout.tsx`.
+- [x] Migración `payments` enlazada con `members` + `dues`.
+- [x] Servicios `recordPayment`, `refreshMemberFinancialStatus`, `getMemberFinancialSnapshot`.
+- [x] Endpoints `POST /api/pagos`, `GET /api/socios/{memberId}/status`, `GET /api/socios/me/status`.
+- [x] Hooks `useRecordPayment`, `useMemberFinancialSnapshot`, invalidaciones (`DUES_KEY`, snapshot).
+- [x] Modal de pago manual en `DueTable` (método, referencia, notas, fecha).
+- [x] Alertas visuales en admin/socio.
+- [x] Documentación de errores específicos de `/api/pagos`.
+- [x] Pruebas contractuales de pagos y snapshots.
 
-Con esto queda listo el esqueleto de infraestructura para avanzar al Sprint 2 (CRUD de socios).
+### Errores esperados `/api/pagos`
 
----
+| Escenario                     | Código | Respuesta                                                   |
+| ----------------------------- | ------ | ----------------------------------------------------------- |
+| Payload inválido (UUID/monto) | 422    | `{"error":"ValidationError","details":[...]}`               |
+| Cuota inexistente             | 404    | `{"error":"Cuota no encontrada.","status":404}`             |
+| Cuota ya pagada               | 409    | `{"error":"Cuota ya registrada como pagada.","status":409}` |
+| Sin sesión ADMIN              | 401    | `{"error":"Unauthorized"}`                                  |
 
-### 🟢 Estado Sprint 2 – CRUD de Socios (nuevo)
+### Flujo resumido de pagos y conciliación
 
-Entregables completados en `club-app/`:
-
-1. **APIs `/api/socios`**: endpoints protegidos para listado paginado, creación, edición, eliminación y obtención de perfil (`/api/socios`, `/api/socios/[memberId]`, `/api/socios/me`) con validaciones Zod y servicios Drizzle (`src/lib/members/*`).
-2. **Hooks y stores frontend**: React Query hooks (`src/hooks/use-members.ts`), cliente API (`src/lib/api-client.ts`) y store Zustand para filtros de tabla (`src/store/members-filters-store.ts`).
-3. **Panel `/admin`**: vista con tabla, filtros, paginación, modales y formularios RHF reutilizables para crear/editar socios (`src/app/admin/page.tsx` + componentes en `src/components/members/`).
-4. **Portal `/socio`**: pantalla que consume `useMemberProfile` para mostrar datos personales y estado actualizado (`src/app/socio/page.tsx`).
-5. **Identidad visual aplicada**: layout global y landing `/` utilizan la paleta y tipografías documentadas en `docs/identidadVisual.md`, asegurando coherencia con la marca del club.
-
-Próximos pasos del Sprint 2: añadir pruebas unitarias/contract para servicios y endpoints, y documentar los contratos de API en detalle.
-
----
-
-### ⏭️ Próximo Sprint Prioritario – Sprint 3 (Inscripciones y cuotas)
-
-Con los Sprint 0, 1 y 2 completados, el siguiente hito obligatorio es **Sprint 3**, que habilita la cadena de valor completa al generar inscripciones y cuotas automáticas:
-
-1. **Modelado de datos**: agregar tablas de inscripciones, cuotas y configuración económica en Drizzle, con migraciones versionadas.
-2. **Endpoints `/api/inscripciones` y `/api/cuotas`**: flujo de alta de socio → creación de inscripción → generación automática de cuotas iniciales y estado financiero.
-3. **UI operativa**: formularios y paneles en `/admin` para iniciar inscripciones, revisar cuotas emitidas y monitorear pendientes.
-4. **Validaciones y pruebas**: reglas de negocio (montos, fechas, estado) cubiertas con pruebas unitarias/contract y seeds mínimos de datos.
-
-Completar este sprint primero permite desbloquear los sprints siguientes (pagos, reportes) porque establece la base financiera que todos los módulos consumen.
-
-#### 🆕 Subpágina `/admin/inscripciones` – ¿Cómo usarla?
-
-> Disponible desde Sprint 3. Accedé desde el panel principal (`/admin`) con el botón **“Ir a Inscripciones y cuotas”**.
-
-**Sección 1 · Gestión de inscripciones**
-
-- Botón “+ Nueva inscripción” abre un modal con el formulario `EnrollmentCreateForm`.
-- Campos: socio (combo con todos los activos), fecha de inicio, plan (opcional), monto mensual y cantidad de cuotas a generar.
-- Al confirmar, el backend crea la inscripción y genera las cuotas en una transacción (servicio `createEnrollment`).
-- Cada fila muestra socio, plan/monto, estado, fecha de inicio y número de cuotas generadas.
-- Botón “Editar” abre `EnrollmentEditForm` para cambiar estado (Activa/Cancelada) y notas asociadas.
-- Filtros disponibles: búsqueda libre (nombre/correo/documento) + estado, con paginación sincronizada a través de `useEnrollmentFiltersStore`.
-
-**Sección 2 · Seguimiento de cuotas**
-
-- Tabla `DueTable` lista todas las cuotas emitidas con filtros combinables: estado (pendiente/pagada/vencida), socio, inscripción y rango de fechas.
-- Cada cuota muestra vencimiento, monto, estado y los datos del socio + inscripción origen.
-- Botón “Marcar como pagada” llama al endpoint `/api/cuotas` (mutación `usePayDue`) y registra el pago con fecha actual, tras una confirmación del usuario.
-- La UI destaca cuotas vencidas en rojo, pendientes en ámbar y pagadas en verde, reutilizando los estilos “glass”.
-
-**Consideraciones operativas**
-
-- Ambos listados usan React Query (`useEnrollmentsList`, `useDuesList`) y se invalidan automáticamente cuando hay altas, ediciones o pagos.
-- Los formularios validan con Zod (lógica compartida en `src/lib/validations/enrollments.ts`), evitando datos inconsistentes con la API.
-- Toda la sección exige sesión ADMIN; los endpoints están protegidos con `requireAdminSession`.
+1. Admin abre modal “Pago manual” desde `DueTable`.
+2. Completa importe/método/referencia/notas/`paidAt`.
+3. `useRecordPayment` ejecuta `POST /api/pagos`.
+4. `recordPayment` marca cuota, inserta `payment`, recalcula estado.
+5. React Query invalida `DUES_KEY` y snapshots del socio.
+6. UI refresca alertas y el modal informa éxito (o error contextual).
 
 ---
 
-## 🌌 Página Showcase Pública
+## 11. Contratos Sprint 3 (referencia rápida)
 
-- Ruta: `/showcase`
-- Ubicación del archivo: `src/app/showcase/page.tsx`
-- Propósito: pitch visual para directorio, inversores y equipo técnico.
+| Endpoint             | Método | Auth  | Entrada                                                                    | Respuesta               | Errores                      |
+| -------------------- | ------ | ----- | -------------------------------------------------------------------------- | ----------------------- | ---------------------------- |
+| `/api/inscripciones` | GET    | ADMIN | `page`, `perPage`, `memberId?`, `status?`, `search?`                       | `200 { data, meta }`    | `401`, `422`                 |
+| `/api/inscripciones` | POST   | ADMIN | `CreateEnrollmentInput`                                                    | `201 { data }`          | `404` socio, `422` payload   |
+| `/api/cuotas`        | GET    | ADMIN | `page`, `perPage`, `status?`, `memberId?`, `enrollmentId?`, `from?`, `to?` | `200 { data, meta }`    | `401`, `422`                 |
+| `/api/cuotas`        | POST   | ADMIN | `{ dueId, paidAt? }`                                                       | `200 { data }` (`PAID`) | `404` cuota, `409` duplicado |
 
-### Contenido
-
-1. **Hero futurista** con CTA hacia `/admin` y contacto para deck ejecutivo.
-2. **Project overview** con métricas destacadas del flujo operativo.
-3. **Core features** en grid glass-card reutilizando identidad visual.
-4. **Integraciones y coverage** listando Mercado Pago, NextAuth, Neon, etc., con estados (Live / En progreso / Planeado).
-5. **System logic flow** que describe cada etapa (Alta → Inscripción → Cuotas → Pagos → Reportes).
-6. **Tech stack** dividido en Frontend / Backend / Infra.
-7. **Roadmap** con hitos próximos y estado.
-8. **CTA final** con enlaces al repositorio y contacto.
-
-La página sigue los lineamientos definidos en `docs/implementShowcase.md` y utiliza los mismos componentes, estilos glass y tipografías configuradas en `layout.tsx`. Sirve como referencia pública del estado actual del sistema y guía de arquitectura para stakeholders externos.
+Ejemplos JSON de errores comunes están en este README y en `docs/comandos.md`. DTOs: `src/types/enrollment.ts`. Validaciones: `src/lib/validations/enrollments.ts`.
 
 ---
 
-### 🎨 Identidad Visual
+## 12. Documentación y assets complementarios
 
-La guía completa de colores, tipografías y lineamientos UI se encuentra en [`docs/identidadVisual.md`](docs/identidadVisual.md). Todas las vistas (landing, `/admin`, `/socio`) siguen esta referencia: paleta dark institucional (negro, gris carbón, acentos rojo), tipografías **Inter** + **Space Grotesk** y componentes “glass” descritos en el documento.
+- [`docs/comandos.md`](docs/comandos.md): scripts npm claves (desarrollo, migraciones, seeds, tests).
+- [`docs/identidadVisual.md`](docs/identidadVisual.md): paleta institucional, tipografías (Inter + Space Grotesk), componentes “glass”.
+- [`docs/implementShowcase.md`](docs/implementShowcase.md): lineamientos para la página pública `/showcase`.
+- Seeds QA: `drizzle/0003_qas_seed.sql` (config económica `default`, usuario QA, inscripción con cuotas en distintos estados).
+- Pruebas: `npm run test -- --run` (modo CI), `--watch`, `--coverage`.
+
+Con estas referencias el equipo puede continuar con Sprint 5 (reportes) y el endurecimiento final manteniendo coherencia visual, técnica y operativa.
 
 ---

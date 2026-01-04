@@ -10,12 +10,7 @@ import type {
 } from "@/lib/validations/members";
 import { AppError } from "@/lib/errors";
 import type { MemberDTO, MembersListResponse } from "@/types/member";
-import {
-  findMemberById,
-  findMemberByUserId,
-  isDocumentNumberTaken,
-  mapMemberRow,
-} from "./queries";
+import { findMemberById, findMemberByUserId, isDocumentNumberTaken, mapMemberRow } from "./queries";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 
 function normalizeEmail(email: string) {
@@ -24,24 +19,19 @@ function normalizeEmail(email: string) {
 
 type MemberInsertValues = typeof members.$inferInsert;
 
-function buildMemberInsert(
-  userId: string,
-  values: CreateMemberInput,
-): MemberInsertValues {
+function buildMemberInsert(userId: string, values: CreateMemberInput): MemberInsertValues {
   return {
     userId,
     documentNumber: values.documentNumber,
     phone: values.phone ?? null,
     address: values.address ?? null,
     birthDate: values.birthDate ?? null,
-    status: values.status ?? "PENDING",
-    notes: values.notes ?? null,
+    status: "PENDING",
+    notes: null,
   };
 }
 
-function buildMemberUpdate(
-  values: UpdateMemberInput,
-): Partial<MemberInsertValues> {
+function buildMemberUpdate(values: UpdateMemberInput): Partial<MemberInsertValues> {
   const normalized: Partial<MemberInsertValues> = {};
 
   if (values.documentNumber !== undefined) {
@@ -81,9 +71,7 @@ async function ensureEmailUnique(email: string, excludeUserId?: string) {
   }
 }
 
-export async function listMembers(
-  params: ListMembersInput,
-): Promise<MembersListResponse> {
+export async function listMembers(params: ListMembersInput): Promise<MembersListResponse> {
   const { page, perPage, status, search } = params;
   const offset = (page - 1) * perPage;
 
@@ -99,8 +87,8 @@ export async function listMembers(
       or(
         ilike(users.name, pattern),
         ilike(users.email, pattern),
-        ilike(members.documentNumber, pattern),
-      ),
+        ilike(members.documentNumber, pattern)
+      )
     );
   }
 
@@ -136,9 +124,7 @@ export async function listMembers(
   };
 }
 
-export async function createMember(
-  input: CreateMemberInput,
-): Promise<MemberDTO> {
+export async function createMember(input: CreateMemberInput): Promise<MemberDTO> {
   const email = normalizeEmail(input.email);
 
   await ensureEmailUnique(email);
@@ -173,10 +159,7 @@ export async function createMember(
   return result;
 }
 
-export async function updateMember(
-  memberId: string,
-  input: UpdateMemberInput,
-): Promise<MemberDTO> {
+export async function updateMember(memberId: string, input: UpdateMemberInput): Promise<MemberDTO> {
   const existing = await db.query.members.findFirst({
     where: eq(members.id, memberId),
     with: { user: true },
@@ -186,17 +169,11 @@ export async function updateMember(
     throw new AppError("Socio no encontrado.", 404);
   }
 
-  const email =
-    input.email !== undefined
-      ? normalizeEmail(input.email)
-      : existing.user.email;
+  const email = input.email !== undefined ? normalizeEmail(input.email) : existing.user.email;
 
   await ensureEmailUnique(email, existing.userId);
 
-  if (
-    input.documentNumber &&
-    input.documentNumber !== existing.documentNumber
-  ) {
+  if (input.documentNumber && input.documentNumber !== existing.documentNumber) {
     const taken = await isDocumentNumberTaken(input.documentNumber, memberId);
     if (taken) {
       throw new AppError("El número de documento ya está registrado.", 409);

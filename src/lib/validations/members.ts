@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const memberInfoSchema = z.object({
+const baseMemberInfoSchema = z.object({
   name: z
     .string()
     .min(3, "El nombre debe tener al menos 3 caracteres.")
@@ -33,19 +33,18 @@ export const memberInfoSchema = z.object({
         const date = new Date(value);
         return !Number.isNaN(date.getTime());
       },
-      { message: "La fecha de nacimiento no es válida." },
+      { message: "La fecha de nacimiento no es válida." }
     )
-    .optional()
-    .nullable(),
-  status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]).optional(),
-  notes: z
-    .string()
-    .max(400, "Las notas no pueden superar 400 caracteres.")
     .optional()
     .nullable(),
 });
 
-export const createMemberSchema = memberInfoSchema.extend({
+export const memberInfoSchema = baseMemberInfoSchema.extend({
+  status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]).optional(),
+  notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
+});
+
+export const createMemberSchema = baseMemberInfoSchema.extend({
   password: z
     .string()
     .min(8, "La contraseña debe tener al menos 8 caracteres.")

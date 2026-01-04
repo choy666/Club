@@ -11,11 +11,7 @@ vi.mock("@/db/client", () => ({
 }));
 
 import { dues } from "@/db/schema";
-import {
-  enforceFrozenDuesPolicy,
-  freezeMemberDues,
-  unfreezeMemberDues,
-} from "./frozen-policy";
+import { enforceFrozenDuesPolicy, freezeMemberDues, unfreezeMemberDues } from "./frozen-policy";
 
 describe("frozen dues policy", () => {
   beforeEach(() => {
@@ -28,9 +24,7 @@ describe("frozen dues policy", () => {
     await freezeMemberDues("member-1");
 
     expect(mockUpdate).toHaveBeenCalledWith(dues);
-    expect(mockSet).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "FROZEN" }),
-    );
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ status: "FROZEN" }));
     expect(mockWhere).toHaveBeenCalledTimes(1);
   });
 
@@ -38,9 +32,7 @@ describe("frozen dues policy", () => {
     await unfreezeMemberDues("member-1");
 
     expect(mockUpdate).toHaveBeenCalledWith(dues);
-    expect(mockSet).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "PENDING" }),
-    );
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ status: "PENDING" }));
   });
 
   it("enforceFrozenDuesPolicy congela cuando el socio está INACTIVE", async () => {

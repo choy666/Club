@@ -28,7 +28,7 @@ export function MemberFilters() {
           id="member-status"
           value={status}
           onChange={(event) => setStatus(event.target.value as typeof status)}
-          className="rounded-lg border border-base-border bg-base-secondary px-4 py-2 text-base-foreground focus:border-accent-primary focus:outline-none"
+          className="select-base"
         >
           <option value="ALL">Todos</option>
           {MEMBER_STATUS_OPTIONS.map((option) => (

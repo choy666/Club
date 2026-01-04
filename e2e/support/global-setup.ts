@@ -8,7 +8,7 @@ export default async function globalSetup(config: FullConfig) {
 
   if (!adminEmail || !adminPassword) {
     throw new Error(
-      "Debes definir E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD para generar el storage state de Playwright.",
+      "Debes definir E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD para generar el storage state de Playwright."
     );
   }
 
@@ -27,7 +27,7 @@ export default async function globalSetup(config: FullConfig) {
   const headingText = (await heading.textContent())?.trim();
   if (headingText?.includes("Configurar administrador")) {
     throw new Error(
-      "El entorno E2E no tiene un administrador configurado. Ejecutá `npm run seed:admin` antes de correr Playwright.",
+      "El entorno E2E no tiene un administrador configurado. Ejecutá `npm run seed:admin` antes de correr Playwright."
     );
   }
 

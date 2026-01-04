@@ -32,9 +32,7 @@ export function Modal({ title, open, onClose, children }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
       <div className="glass-card max-h-[90vh] w-full max-w-xl overflow-hidden border border-base-border shadow-2xl">
         <header className="flex items-center justify-between border-b border-base-border px-6 py-4">
-          <h3 className="text-lg font-semibold font-[var(--font-space)]">
-            {title}
-          </h3>
+          <h3 className="text-lg font-semibold font-[var(--font-space)]">{title}</h3>
           <button
             onClick={onClose}
             aria-label="Cerrar modal"
@@ -46,6 +44,6 @@ export function Modal({ title, open, onClose, children }: ModalProps) {
         <div className="overflow-y-auto px-6 py-6">{children}</div>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

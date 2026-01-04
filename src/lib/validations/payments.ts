@@ -8,11 +8,7 @@ const isoDateSchema = z
   .optional();
 
 export const createPaymentSchema = dueIdSchema.extend({
-  amount: z.coerce
-    .number()
-    .int()
-    .positive("El monto debe ser mayor a cero.")
-    .optional(),
+  amount: z.coerce.number().int().positive("El monto debe ser mayor a cero.").optional(),
   method: z
     .string()
     .trim()

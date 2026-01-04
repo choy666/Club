@@ -6,7 +6,7 @@ const isoDateString = z.string().refine(
     const date = new Date(value);
     return !Number.isNaN(date.getTime());
   },
-  { message: "La fecha no es válida." },
+  { message: "La fecha no es válida." }
 );
 
 export const createEnrollmentSchema = z.object({
@@ -29,11 +29,7 @@ export const createEnrollmentSchema = z.object({
     .min(1, "Debes generar al menos una cuota.")
     .max(24, "No se pueden generar más de 24 cuotas por lote.")
     .optional(),
-  notes: z
-    .string()
-    .max(400, "Las notas no pueden superar 400 caracteres.")
-    .optional()
-    .nullable(),
+  notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
 });
 
 export const enrollmentIdSchema = z.object({
@@ -42,11 +38,7 @@ export const enrollmentIdSchema = z.object({
 
 export const updateEnrollmentSchema = z.object({
   status: z.enum(["ACTIVE", "CANCELLED"]),
-  notes: z
-    .string()
-    .max(400, "Las notas no pueden superar 400 caracteres.")
-    .optional()
-    .nullable(),
+  notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
 });
 
 export const listEnrollmentsSchema = z.object({

@@ -3,19 +3,13 @@ import { NextRequest } from "next/server";
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { handleApiError, jsonList, jsonSuccess } from "@/lib/http";
 import { listDues, payDue } from "@/lib/enrollments/service";
-import {
-  dueIdSchema,
-  listDuesSchema,
-  payDueSchema,
-} from "@/lib/validations/enrollments";
+import { dueIdSchema, listDuesSchema, payDueSchema } from "@/lib/validations/enrollments";
 
 export async function GET(request: NextRequest) {
   try {
     await requireAdminSession();
 
-    const searchParams = Object.fromEntries(
-      request.nextUrl.searchParams.entries(),
-    );
+    const searchParams = Object.fromEntries(request.nextUrl.searchParams.entries());
 
     const filters = listDuesSchema.parse({
       page: searchParams.page,

@@ -53,7 +53,7 @@ describe("enrollments schedule helpers", () => {
         startDate: "not-a-date",
         monthsToGenerate: 2,
         monthlyAmount: 1000,
-      }),
+      })
     ).toThrow("Fecha de inicio inválida");
   });
 });

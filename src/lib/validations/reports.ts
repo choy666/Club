@@ -9,8 +9,7 @@ const isoDateString = z
   .string()
   .min(1, "La fecha es obligatoria.")
   .refine((value) => isoDateRegex.test(value), {
-    message:
-      "Fecha inválida. Usa formato ISO (YYYY-MM-DD o YYYY-MM-DDTHH:mm:ssZ).",
+    message: "Fecha inválida. Usa formato ISO (YYYY-MM-DD o YYYY-MM-DDTHH:mm:ssZ).",
   })
   .refine((value) => !Number.isNaN(Date.parse(value)), {
     message: "Fecha inválida.",
@@ -44,7 +43,7 @@ export const reportFiltersSchema = z
     {
       path: ["dateTo"],
       message: "La fecha final debe ser mayor o igual a la inicial.",
-    },
+    }
   );
 
 export type ReportFiltersSchema = z.infer<typeof reportFiltersSchema>;

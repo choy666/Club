@@ -13,9 +13,7 @@ for (const file of envFiles) {
 }
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL debe estar definido antes de ejecutar Drizzle.",
-  );
+  throw new Error("DATABASE_URL debe estar definido antes de ejecutar Drizzle.");
 }
 
 export default defineConfig({

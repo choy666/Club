@@ -22,11 +22,7 @@ export type GenerateMonthlyDuesDeps = {
   findLastDueDate: (enrollmentId: string) => Promise<string | null>;
   dueExists: (enrollmentId: string, dueDate: string) => Promise<boolean>;
   insertDue: (due: typeof dues.$inferInsert) => Promise<void>;
-  logRun: (params: {
-    createdDues: number;
-    operator: string;
-    notes: string;
-  }) => Promise<void>;
+  logRun: (params: { createdDues: number; operator: string; notes: string }) => Promise<void>;
 };
 
 const defaultDeps: GenerateMonthlyDuesDeps = {
@@ -40,14 +36,11 @@ const defaultDeps: GenerateMonthlyDuesDeps = {
       })
       .from(enrollments)
       .innerJoin(members, eq(enrollments.memberId, members.id))
-      .where(
-        and(eq(enrollments.status, "ACTIVE"), eq(members.status, "ACTIVE")),
-      );
+      .where(and(eq(enrollments.status, "ACTIVE"), eq(members.status, "ACTIVE")));
 
     return rows.map((row) => ({
       ...row,
-      startDate:
-        normalizeDate(row.startDate) ?? new Date().toISOString().split("T")[0]!,
+      startDate: normalizeDate(row.startDate) ?? new Date().toISOString().split("T")[0]!,
     }));
   },
   async findLastDueDate(enrollmentId) {
@@ -64,9 +57,7 @@ const defaultDeps: GenerateMonthlyDuesDeps = {
     const existing = await db
       .select({ id: dues.id })
       .from(dues)
-      .where(
-        and(eq(dues.enrollmentId, enrollmentId), eq(dues.dueDate, dueDate)),
-      )
+      .where(and(eq(dues.enrollmentId, enrollmentId), eq(dues.dueDate, dueDate)))
       .limit(1);
     return existing.length > 0;
   },
@@ -91,7 +82,7 @@ export type GenerateMonthlyDuesResult = {
 
 export async function generateMonthlyDues(
   operator = "manual",
-  deps: GenerateMonthlyDuesDeps = defaultDeps,
+  deps: GenerateMonthlyDuesDeps = defaultDeps
 ): Promise<GenerateMonthlyDuesResult> {
   const activeEnrollments = await deps.fetchActiveEnrollments();
   let createdDues = 0;

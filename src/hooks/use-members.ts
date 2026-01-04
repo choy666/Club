@@ -8,10 +8,7 @@ import type {
   MembersListResponse,
 } from "@/types/member";
 import { useMemberFiltersStore } from "@/store/members-filters-store";
-import type {
-  CreateMemberInput,
-  UpdateMemberInput,
-} from "@/lib/validations/members";
+import type { CreateMemberInput, UpdateMemberInput } from "@/lib/validations/members";
 
 const MEMBERS_KEY = ["members"];
 const MEMBER_DETAIL_KEY = (id: string) => [...MEMBERS_KEY, id];
@@ -27,7 +24,7 @@ export function useMembersList() {
   const filters = useMemberFiltersStore();
 
   return useQuery({
-    queryKey: [MEMBERS_KEY, filters],
+    queryKey: [...MEMBERS_KEY, filters],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(filters.page),
@@ -42,9 +39,7 @@ export function useMembersList() {
         params.set("search", filters.search.trim());
       }
 
-      const response = await apiFetch<MembersListResponse>(
-        `/api/socios?${params.toString()}`,
-      );
+      const response = await apiFetch<MembersListResponse>(`/api/socios?${params.toString()}`);
 
       return response;
     },
@@ -52,10 +47,7 @@ export function useMembersList() {
   });
 }
 
-export function useMemberFinancialSnapshot(
-  memberId?: string,
-  options?: { enabled?: boolean },
-) {
+export function useMemberFinancialSnapshot(memberId?: string, options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
   return useQuery<MemberFinancialSnapshot | null>({
     queryKey: MEMBER_SNAPSHOT_KEY(memberId ?? null),
@@ -65,7 +57,7 @@ export function useMemberFinancialSnapshot(
         return null;
       }
       const response = await apiFetch<MemberFinancialSnapshotResponse>(
-        `/api/socios/${memberId}/status`,
+        `/api/socios/${memberId}/status`
       );
       return response.data;
     },
@@ -79,9 +71,7 @@ export function useMyFinancialSnapshot(options?: { enabled?: boolean }) {
     queryKey: MEMBER_SELF_SNAPSHOT_KEY,
     enabled,
     queryFn: async () => {
-      const response = await apiFetch<MemberFinancialSnapshotResponse>(
-        "/api/socios/me/status",
-      );
+      const response = await apiFetch<MemberFinancialSnapshotResponse>("/api/socios/me/status");
       return response.data;
     },
     staleTime: 1000 * 30,
@@ -93,9 +83,7 @@ export function useMemberDetail(memberId?: string) {
     queryKey: memberId ? MEMBER_DETAIL_KEY(memberId) : [],
     queryFn: async () => {
       if (!memberId) return null;
-      const response = await apiFetch<MemberResponse>(
-        `/api/socios/${memberId}`,
-      );
+      const response = await apiFetch<MemberResponse>(`/api/socios/${memberId}`);
       return response.data;
     },
     enabled: Boolean(memberId),
@@ -134,20 +122,11 @@ export function useUpdateMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      memberId,
-      input,
-    }: {
-      memberId: string;
-      input: UpdateMemberInput;
-    }) => {
-      const response = await apiFetch<MemberResponse>(
-        `/api/socios/${memberId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(input),
-        },
-      );
+    mutationFn: async ({ memberId, input }: { memberId: string; input: UpdateMemberInput }) => {
+      const response = await apiFetch<MemberResponse>(`/api/socios/${memberId}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      });
 
       return response.data;
     },

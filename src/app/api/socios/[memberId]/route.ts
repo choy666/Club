@@ -1,17 +1,10 @@
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { handleApiError, jsonSuccess } from "@/lib/http";
-import {
-  deleteMember,
-  getMemberById,
-  updateMember,
-} from "@/lib/members/service";
+import { deleteMember, getMemberById, updateMember } from "@/lib/members/service";
 import { memberIdSchema, updateMemberSchema } from "@/lib/validations/members";
 import type { NextRequest } from "next/server";
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ memberId: string }> },
-) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ memberId: string }> }) {
   try {
     await requireAdminSession();
     const { memberId } = memberIdSchema.parse(await context.params);
@@ -24,7 +17,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ memberId: string }> },
+  context: { params: Promise<{ memberId: string }> }
 ) {
   try {
     await requireAdminSession();
@@ -41,7 +34,7 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  context: { params: Promise<{ memberId: string }> },
+  context: { params: Promise<{ memberId: string }> }
 ) {
   try {
     await requireAdminSession();

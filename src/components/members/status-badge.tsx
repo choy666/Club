@@ -1,17 +1,13 @@
 import type { MemberStatus } from "@/types/member";
 
-const STATUS_STYLES: Record<
-  MemberStatus,
-  { label: string; className: string }
-> = {
+const STATUS_STYLES: Record<MemberStatus, { label: string; className: string }> = {
   ACTIVE: {
     label: "Activo",
     className: "text-state-active bg-state-active/10 border-state-active/40",
   },
   INACTIVE: {
     label: "Inactivo",
-    className:
-      "text-state-inactive bg-state-inactive/10 border-state-inactive/30",
+    className: "text-state-inactive bg-state-inactive/10 border-state-inactive/30",
   },
   PENDING: {
     label: "Pendiente",

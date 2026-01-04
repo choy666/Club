@@ -6,13 +6,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import type { AdapterUser } from "@auth/core/adapters";
 import { db } from "@/db/client";
-import {
-  accounts,
-  sessions,
-  users,
-  verificationTokens,
-  type UserRole,
-} from "@/db/schema";
+import { accounts, sessions, users, verificationTokens, type UserRole } from "@/db/schema";
 import { verifyPassword } from "@/lib/password";
 import { env } from "@/lib/env";
 
@@ -51,10 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const emailInput = credentials?.email;
         const passwordInput = credentials?.password;
 
-        if (
-          typeof emailInput !== "string" ||
-          typeof passwordInput !== "string"
-        ) {
+        if (typeof emailInput !== "string" || typeof passwordInput !== "string") {
           throw new Error("Debes ingresar correo y contraseña.");
         }
 

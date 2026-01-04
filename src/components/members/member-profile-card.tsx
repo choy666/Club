@@ -45,8 +45,7 @@ function getFinancialBanner(snapshot?: MemberFinancialSnapshot | null) {
     return {
       tone: "critical" as const,
       title: "Pagos vencidos",
-      message:
-        "Hay cuotas vencidas. Regularizá tu situación para reactivar el acceso completo.",
+      message: "Hay cuotas vencidas. Regularizá tu situación para reactivar el acceso completo.",
       detail: `Cuotas vencidas: ${snapshot.totals.overdue}`,
     };
   }
@@ -69,10 +68,7 @@ function getFinancialBanner(snapshot?: MemberFinancialSnapshot | null) {
   };
 }
 
-export function MemberProfileCard({
-  member,
-  snapshot,
-}: MemberProfileCardProps) {
+export function MemberProfileCard({ member, snapshot }: MemberProfileCardProps) {
   const banner = getFinancialBanner(snapshot);
 
   return (
@@ -88,23 +84,15 @@ export function MemberProfileCard({
           }`}
         >
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-semibold tracking-wide uppercase">
-              {banner.title}
-            </span>
+            <span className="text-sm font-semibold tracking-wide uppercase">{banner.title}</span>
             <p className="text-sm">{banner.message}</p>
-            {banner.detail && (
-              <span className="text-xs text-base-muted/90">
-                {banner.detail}
-              </span>
-            )}
+            {banner.detail && <span className="text-xs text-base-muted/90">{banner.detail}</span>}
           </div>
         </div>
       )}
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-base-muted">
-            Perfil del socio
-          </p>
+          <p className="text-sm uppercase tracking-[0.3em] text-base-muted">Perfil del socio</p>
           <h2 className="text-3xl font-semibold font-[var(--font-space)]">
             {member.name ?? "Socio registrado"}
           </h2>
@@ -118,18 +106,14 @@ export function MemberProfileCard({
             key={entry.label}
             className="rounded-xl border border-base-border/70 px-4 py-3 bg-base-secondary/30"
           >
-            <p className="text-xs uppercase tracking-widest text-base-muted">
-              {entry.label}
-            </p>
+            <p className="text-xs uppercase tracking-widest text-base-muted">{entry.label}</p>
             <p className="text-lg font-medium mt-1">{entry.value(member)}</p>
           </div>
         ))}
       </div>
 
       <div className="rounded-xl border border-base-border/70 bg-base-secondary/30 px-4 py-3">
-        <p className="text-xs uppercase tracking-widest text-base-muted">
-          Notas
-        </p>
+        <p className="text-xs uppercase tracking-widest text-base-muted">Notas</p>
         <p className="mt-2 text-base-muted">
           {member.notes?.trim() ? member.notes : "Sin anotaciones adicionales."}
         </p>
@@ -137,9 +121,7 @@ export function MemberProfileCard({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-base-border/70 bg-base-secondary/30 px-4 py-3">
-          <p className="text-xs uppercase tracking-widest text-base-muted">
-            Creado
-          </p>
+          <p className="text-xs uppercase tracking-widest text-base-muted">Creado</p>
           <p className="mt-1 text-lg font-medium">
             {new Date(member.createdAt).toLocaleDateString("es-AR", {
               day: "2-digit",
@@ -149,9 +131,7 @@ export function MemberProfileCard({
           </p>
         </div>
         <div className="rounded-xl border border-base-border/70 bg-base-secondary/30 px-4 py-3">
-          <p className="text-xs uppercase tracking-widest text-base-muted">
-            Última actualización
-          </p>
+          <p className="text-xs uppercase tracking-widest text-base-muted">Última actualización</p>
           <p className="mt-1 text-lg font-medium">
             {new Date(member.updatedAt).toLocaleString("es-AR", {
               day: "2-digit",

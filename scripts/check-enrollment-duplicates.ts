@@ -10,7 +10,7 @@ async function main() {
       from enrollments
       group by member_id
       having count(*) > 1
-    `,
+    `
   );
 
   if (rows.length === 0) {

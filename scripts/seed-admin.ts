@@ -23,7 +23,7 @@ async function main() {
 
   if (!email) {
     throw new Error(
-      "Debes definir AUTH_ADMIN_EMAIL en tu archivo .env.local o variables de entorno.",
+      "Debes definir AUTH_ADMIN_EMAIL en tu archivo .env.local o variables de entorno."
     );
   }
 
@@ -39,7 +39,7 @@ async function main() {
 
   if (!passwordHash) {
     throw new Error(
-      "Debes definir AUTH_ADMIN_PASSWORD (texto plano) o AUTH_ADMIN_PASSWORD_HASH (hash bcrypt).",
+      "Debes definir AUTH_ADMIN_PASSWORD (texto plano) o AUTH_ADMIN_PASSWORD_HASH (hash bcrypt)."
     );
   }
 
@@ -52,8 +52,7 @@ async function main() {
       .update(users)
       .set({
         role: "ADMIN",
-        passwordHash:
-          passwordSource === null ? existing.passwordHash : passwordHash,
+        passwordHash: passwordSource === null ? existing.passwordHash : passwordHash,
         updatedAt: new Date(),
       })
       .where(eq(users.id, existing.id));
@@ -61,7 +60,7 @@ async function main() {
     console.info(
       `Usuario existente ${email} actualizado como ADMIN${
         passwordSource ? " y contraseña sincronizada." : "."
-      }`,
+      }`
     );
     return;
   }

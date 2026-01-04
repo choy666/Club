@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
+
 import { useMemberProfile, useMyFinancialSnapshot } from "@/hooks/use-members";
 import { MemberProfileCard } from "@/components/members/member-profile-card";
 import { MemberFinancialAlert } from "@/components/members/member-financial-alert";
@@ -12,32 +14,35 @@ export default function SocioPage() {
   });
 
   return (
-    <div className="min-h-screen bg-base-primary px-6 py-10">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <header className="flex flex-col gap-3">
-          <p className="text-sm uppercase tracking-[0.3em] text-base-muted">
-            Portal del socio
-          </p>
+    <div className="relative min-h-screen overflow-hidden px-6 py-10 sm:px-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(248,113,113,0.18),transparent_50%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.15),transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.05)_0%,transparent_55%)] opacity-80" />
+
+      <div className="relative mx-auto flex max-w-4xl flex-col gap-6">
+        <motion.header
+          className="neo-panel flex flex-col gap-3 p-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="neo-chip">Portal del socio</p>
           <h1 className="text-4xl font-semibold font-[var(--font-space)]">
             Tus datos y estado actual
           </h1>
           <p className="text-base-muted max-w-2xl">
-            Revisa tu información personal, estado de afiliación y notas
-            asociadas a tu perfil. Si encontrás algún dato incorrecto,
-            comunicate con administración.
+            Revisá tu información personal, estado de afiliación y notas asociadas a tu perfil. Si
+            encontrás algún dato incorrecto, comunicate con administración.
           </p>
-        </header>
+        </motion.header>
 
         {isLoading && (
-          <div className="glass-card border border-base-border/60 px-6 py-8 text-base-muted animate-pulse">
+          <div className="neo-panel border border-white/10 px-6 py-8 text-base-muted animate-pulse">
             Cargando tu perfil...
           </div>
         )}
 
         {error && (
-          <div className="glass-card border border-accent-critical px-6 py-8 text-accent-critical">
-            No pudimos obtener tus datos. Intenta refrescar la página o vuelve a
-            iniciar sesión.
+          <div className="neo-panel border border-accent-critical/60 bg-accent-critical/10 px-6 py-8 text-accent-critical">
+            No pudimos obtener tus datos. Intentá refrescar la página o volver a iniciar sesión.
           </div>
         )}
 
@@ -49,19 +54,19 @@ export default function SocioPage() {
               snapshot={snapshotQuery.data}
               isLoading={snapshotQuery.isLoading || snapshotQuery.isRefetching}
               errorMessage={
-                snapshotQuery.error instanceof Error
-                  ? snapshotQuery.error.message
-                  : null
+                snapshotQuery.error instanceof Error ? snapshotQuery.error.message : null
               }
               actions={
-                <button
+                <motion.button
                   type="button"
                   className="btn-secondary"
                   onClick={() => snapshotQuery.refetch()}
                   disabled={snapshotQuery.isFetching}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
                 >
                   Actualizar estado
-                </button>
+                </motion.button>
               }
             />
             <MemberProfileCard member={data} snapshot={snapshotQuery.data} />
@@ -69,16 +74,20 @@ export default function SocioPage() {
         )}
 
         <div className="flex flex-wrap gap-4">
-          <Link href="/admin" className="btn-secondary">
-            Volver al panel admin
-          </Link>
-          <button
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}>
+            <Link href="/admin" className="btn-secondary">
+              Volver al panel admin
+            </Link>
+          </motion.div>
+          <motion.button
             className="btn-primary"
             type="button"
             onClick={() => window.location.reload()}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.96 }}
           >
             Actualizar datos
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>

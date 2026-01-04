@@ -35,10 +35,7 @@ export default auth((req) => {
 
   const role = session.user.role;
 
-  if (
-    ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix)) &&
-    role !== "ADMIN"
-  ) {
+  if (ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix)) && role !== "ADMIN") {
     return buildRedirect(nextUrl, "/socio");
   }
 

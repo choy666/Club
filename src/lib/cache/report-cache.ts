@@ -7,10 +7,7 @@ function buildKey(filters: ReportFiltersSchema) {
   return JSON.stringify(filters);
 }
 
-const reportCache = new Map<
-  string,
-  { expiresAt: number; value: ReportResponse }
->();
+const reportCache = new Map<string, { expiresAt: number; value: ReportResponse }>();
 
 export function getCachedReport(filters: ReportFiltersSchema) {
   const key = buildKey(filters);
@@ -25,10 +22,7 @@ export function getCachedReport(filters: ReportFiltersSchema) {
   return entry.value;
 }
 
-export function setCachedReport(
-  filters: ReportFiltersSchema,
-  value: ReportResponse,
-) {
+export function setCachedReport(filters: ReportFiltersSchema, value: ReportResponse) {
   const key = buildKey(filters);
   reportCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
 }

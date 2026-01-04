@@ -32,12 +32,9 @@ describe("generateMonthlyDues", () => {
     expect(result.processedEnrollments).toBe(1);
     expect(result.operator).toBe("cron");
     expect(deps.insertDue).toHaveBeenCalledTimes(1);
-    expect(deps.dueExists).toHaveBeenCalledWith(
-      baseEnrollment.id,
-      expect.any(String),
-    );
+    expect(deps.dueExists).toHaveBeenCalledWith(baseEnrollment.id, expect.any(String));
     expect(deps.logRun).toHaveBeenCalledWith(
-      expect.objectContaining({ createdDues: 1, operator: "cron" }),
+      expect.objectContaining({ createdDues: 1, operator: "cron" })
     );
   });
 
@@ -48,9 +45,7 @@ describe("generateMonthlyDues", () => {
 
     expect(result.createdDues).toBe(0);
     expect(deps.insertDue).not.toHaveBeenCalled();
-    expect(deps.logRun).toHaveBeenCalledWith(
-      expect.objectContaining({ createdDues: 0 }),
-    );
+    expect(deps.logRun).toHaveBeenCalledWith(expect.objectContaining({ createdDues: 0 }));
   });
 
   it("cuando no hay inscripciones activas sólo registra la ejecución", async () => {
@@ -63,8 +58,6 @@ describe("generateMonthlyDues", () => {
     expect(result.processedEnrollments).toBe(0);
     expect(result.createdDues).toBe(0);
     expect(deps.insertDue).not.toHaveBeenCalled();
-    expect(deps.logRun).toHaveBeenCalledWith(
-      expect.objectContaining({ createdDues: 0 }),
-    );
+    expect(deps.logRun).toHaveBeenCalledWith(expect.objectContaining({ createdDues: 0 }));
   });
 });

@@ -1,23 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --base-primary: #0b0b0c;
-  --base-secondary: #121316;
-  --base-card: #16181c;
-  --base-border: #1f2226;
-  --base-division: #2a2d32;
-  --base-foreground: #f4f4f5;
-  --base-muted: #b5b7ba;
-  --accent-primary: #c62828;
-  --accent-hover: #e53935;
-  --accent-critical: #8e1b1b;
-  --state-active: #2e7d32;
-  --state-pending: #f9a825;
-  --state-inactive: #616161;
+  --base-primary: #050507;
+  --base-secondary: #0f1015;
+  --base-card: #15171d;
+  --base-border: rgba(255, 255, 255, 0.07);
+  --base-division: rgba(255, 255, 255, 0.08);
+  --base-foreground: #f5f5f6;
+  --base-muted: #a5a7ac;
+  --accent-primary: #f87171;
+  --accent-hover: #fca5a5;
+  --accent-critical: #ef4444;
+  --state-active: #4ade80;
+  --state-pending: #fbbf24;
+  --state-inactive: #6b7280;
+  --panel-surface: rgba(14, 16, 22, 0.78);
+  --panel-highlight: rgba(248, 113, 113, 0.15);
 }
 
 body {
-  background: var(--base-primary);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 45%),
+    linear-gradient(160deg, #050507 0%, #08090f 52%, #050507 100%);
   color: var(--base-foreground);
   font-family:
     var(--font-inter),
@@ -27,6 +31,32 @@ body {
     "Segoe UI",
     sans-serif;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(248, 113, 113, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.15), transparent 35%);
+  opacity: 0.8;
+}
+
+body::after {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 120px 120px;
+  opacity: 0.35;
 }
 
 h1,
@@ -61,10 +91,147 @@ h4 {
 }
 
 .glass-card {
-  background: rgba(22, 24, 28, 0.8);
+  position: relative;
+  background: linear-gradient(145deg, rgba(15, 17, 23, 0.82), rgba(7, 8, 12, 0.9));
   border: 1px solid var(--base-border);
-  border-radius: 1rem;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 20px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  position: relative;
+  z-index: 1;
+}
+
+.neo-panel {
+  border-radius: 1.75rem;
+  background: var(--panel-surface);
+  border: 1px solid var(--base-border);
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(28px);
+}
+
+.neo-table {
+  position: relative;
+  border-radius: 2rem;
+  border: 1px solid var(--base-border);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.06), transparent 45%),
+    linear-gradient(140deg, rgba(7, 8, 12, 0.92), rgba(2, 3, 4, 0.98));
+  box-shadow:
+    0 40px 140px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(32px);
+  padding: 1.75rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.neo-table::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.neo-table::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 80% 0%, rgba(198, 40, 40, 0.12), transparent 45%);
+  opacity: 0.65;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.neo-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--base-foreground);
+}
+
+.neo-table thead {
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 0.7rem;
+  color: var(--base-muted);
+}
+
+.neo-table thead th {
+  padding: 0.85rem 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.neo-table tbody tr {
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.neo-table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.neo-table tbody td {
+  padding: 1rem 1.25rem;
+  vertical-align: middle;
+}
+
+.neo-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.neo-table tbody tr:hover td:first-child {
+  color: #fff;
+}
+
+.neo-table tbody tr:hover {
+  transform: translateY(-1px);
+}
+
+.neo-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--base-division);
+}
+
+.neo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--base-muted);
+}
+
+.neo-tag {
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
 }
 
 .btn-primary {
@@ -94,4 +261,68 @@ h4 {
 .btn-secondary:hover {
   border-color: var(--accent-primary);
   background: rgba(198, 40, 40, 0.08);
+}
+
+.select-base {
+  width: 100%;
+  appearance: none;
+  border-radius: 0.85rem;
+  border: 1px solid var(--base-border);
+  background-color: var(--base-secondary);
+  color: var(--base-foreground);
+  padding: 0.65rem 2.5rem 0.65rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--base-muted) 50%),
+    linear-gradient(135deg, var(--base-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.25rem) calc(50% - 2px),
+    calc(100% - 0.85rem) calc(50% + 2px);
+  background-size:
+    8px 8px,
+    8px 8px;
+  background-repeat: no-repeat;
+}
+
+.select-base:focus-visible {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2);
+  outline: none;
+}
+
+.select-base:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.select-base option {
+  background-color: var(--base-primary);
+  color: var(--base-foreground);
+}
+
+.input-minimal {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 18, 0.8);
+  padding: 0.75rem 1rem;
+  color: var(--base-foreground);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input-minimal:focus-visible {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25);
+  outline: none;
+}
+
+.input-minimal::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }

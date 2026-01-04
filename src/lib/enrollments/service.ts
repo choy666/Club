@@ -37,7 +37,7 @@ function assertMemberExists(memberId: string) {
 }
 
 export async function listEnrollments(
-  input: ListEnrollmentsInput,
+  input: ListEnrollmentsInput
 ): Promise<EnrollmentListResponse> {
   const { page, perPage, memberId, status, search } = input;
   const offset = (page - 1) * perPage;
@@ -58,8 +58,8 @@ export async function listEnrollments(
       or(
         ilike(users.name, normalized),
         ilike(users.email, normalized),
-        ilike(members.documentNumber, normalized),
-      ),
+        ilike(members.documentNumber, normalized)
+      )
     );
   }
 
@@ -97,9 +97,7 @@ export async function listEnrollments(
   };
 }
 
-export async function createEnrollment(
-  input: CreateEnrollmentInput,
-): Promise<EnrollmentDTO> {
+export async function createEnrollment(input: CreateEnrollmentInput): Promise<EnrollmentDTO> {
   const [member, economicConfig, existingEnrollment] = await Promise.all([
     assertMemberExists(input.memberId),
     getEconomicConfigBySlug("default"),
@@ -112,33 +110,25 @@ export async function createEnrollment(
     throw new AppError("Socio no encontrado.", 404);
   }
 
-  if (member.status !== "ACTIVE") {
-    throw new AppError(
-      "El socio debe estar Activo antes de generar cuotas mensuales.",
-      409,
-    );
+  if (member.status !== "PENDING") {
+    throw new AppError("Solo se pueden inscribir socios pendientes.", 409);
   }
 
   if (existingEnrollment) {
     throw new AppError("El socio ya tiene una inscripción registrada.", 409);
   }
 
-  const monthlyAmount =
-    input.monthlyAmount ?? economicConfig.defaultMonthlyAmount;
-  const monthsToGenerate =
-    input.monthsToGenerate ?? economicConfig.defaultMonthsToGenerate;
+  const monthlyAmount = input.monthlyAmount ?? economicConfig.defaultMonthlyAmount;
+  const monthsToGenerate = input.monthsToGenerate ?? economicConfig.defaultMonthsToGenerate;
 
   if (!monthlyAmount || monthlyAmount <= 0) {
-    throw new AppError(
-      "No hay un monto mensual válido configurado para esta inscripción.",
-      400,
-    );
+    throw new AppError("No hay un monto mensual válido configurado para esta inscripción.", 400);
   }
 
   if (!monthsToGenerate || monthsToGenerate <= 0) {
     throw new AppError(
       "No hay una cantidad de cuotas válida configurada para esta inscripción.",
-      400,
+      400
     );
   }
 
@@ -170,6 +160,14 @@ export async function createEnrollment(
       await tx.insert(dues).values(duesToInsert);
     }
 
+    await tx
+      .update(members)
+      .set({
+        status: "ACTIVE",
+        updatedAt: sql`now()`,
+      })
+      .where(eq(members.id, input.memberId));
+
     const enrollment = await findEnrollmentById(created.id);
     if (!enrollment) {
       throw new AppError("No se pudo crear la inscripción.", 500);
@@ -181,7 +179,7 @@ export async function createEnrollment(
 
 export async function updateEnrollment(
   enrollmentId: string,
-  input: UpdateEnrollmentInput,
+  input: UpdateEnrollmentInput
 ): Promise<EnrollmentDTO> {
   const existing = await findEnrollmentById(enrollmentId);
   if (!existing) {
@@ -292,7 +290,7 @@ function mapPaymentRow(row: typeof payments.$inferSelect): PaymentDTO {
 export async function recordPayment(
   dueId: string,
   paidAt?: string,
-  paymentMetadata?: PaymentMetadata,
+  paymentMetadata?: PaymentMetadata
 ): Promise<{ due: DueDTO; payment: PaymentDTO }> {
   const existing = await findDueById(dueId);
   if (!existing) {
@@ -302,7 +300,7 @@ export async function recordPayment(
   if (existing.status === "FROZEN") {
     throw new AppError(
       "No se pueden registrar pagos sobre cuotas congeladas. Reactivá al socio primero.",
-      409,
+      409
     );
   }
 
@@ -426,8 +424,8 @@ export async function refreshMemberFinancialStatus(memberId: string) {
       and(
         eq(dues.memberId, memberId),
         eq(dues.status, "PENDING"),
-        lte(dues.dueDate, thresholdValue),
-      ),
+        lte(dues.dueDate, thresholdValue)
+      )
     );
 
   const [overdueResult, pendingResult, frozenResult] = await Promise.all([
@@ -470,7 +468,7 @@ export async function refreshMemberFinancialStatus(memberId: string) {
 }
 
 export async function getMemberFinancialSnapshot(
-  memberId: string,
+  memberId: string
 ): Promise<MemberFinancialSnapshot> {
   const member = await db.query.members.findFirst({
     where: eq(members.id, memberId),
@@ -491,42 +489,38 @@ export async function getMemberFinancialSnapshot(
   graceLimit.setDate(graceLimit.getDate() - graceDays);
   const graceLimitValue = formatDateOnly(graceLimit);
 
-  const [
-    pendingResult,
-    overdueResult,
-    paidResult,
-    frozenResult,
-    nextDueResult,
-  ] = await Promise.all([
-    db
-      .select({ value: count() })
-      .from(dues)
-      .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING"))),
-    db
-      .select({ value: count() })
-      .from(dues)
-      .where(
-        and(
-          eq(dues.memberId, memberId),
-          eq(dues.status, "PENDING"),
-          lte(dues.dueDate, graceLimitValue),
+  const [pendingResult, overdueResult, paidResult, frozenResult, nextDueResult] = await Promise.all(
+    [
+      db
+        .select({ value: count() })
+        .from(dues)
+        .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING"))),
+      db
+        .select({ value: count() })
+        .from(dues)
+        .where(
+          and(
+            eq(dues.memberId, memberId),
+            eq(dues.status, "PENDING"),
+            lte(dues.dueDate, graceLimitValue)
+          )
         ),
-      ),
-    db
-      .select({ value: count() })
-      .from(dues)
-      .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID"))),
-    db
-      .select({ value: count() })
-      .from(dues)
-      .where(and(eq(dues.memberId, memberId), eq(dues.status, "FROZEN"))),
-    db
-      .select({ dueDate: dues.dueDate })
-      .from(dues)
-      .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")))
-      .orderBy(dues.dueDate)
-      .limit(1),
-  ]);
+      db
+        .select({ value: count() })
+        .from(dues)
+        .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID"))),
+      db
+        .select({ value: count() })
+        .from(dues)
+        .where(and(eq(dues.memberId, memberId), eq(dues.status, "FROZEN"))),
+      db
+        .select({ dueDate: dues.dueDate })
+        .from(dues)
+        .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")))
+        .orderBy(dues.dueDate)
+        .limit(1),
+    ]
+  );
 
   const snapshotStatus = await refreshMemberFinancialStatus(memberId);
 

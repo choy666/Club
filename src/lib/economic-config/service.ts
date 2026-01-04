@@ -16,6 +16,4 @@ export async function getEconomicConfigBySlug(slug = "default") {
   return config;
 }
 
-export type EconomicConfigDTO = Awaited<
-  ReturnType<typeof getEconomicConfigBySlug>
->;
+export type EconomicConfigDTO = Awaited<ReturnType<typeof getEconomicConfigBySlug>>;

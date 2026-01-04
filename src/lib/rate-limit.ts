@@ -51,7 +51,7 @@ function getClientIdentifier(request: NextRequest) {
 export function enforceRateLimit(
   request: NextRequest,
   options: RateLimitOptions,
-  bucketName = "default",
+  bucketName = "default"
 ): RateLimitResult {
   const identifier = getClientIdentifier(request);
   const key = `${bucketName}:${identifier}`;

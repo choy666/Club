@@ -8,11 +8,7 @@ export function jsonSuccess<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ data }, init);
 }
 
-export function jsonList<T>(
-  data: T[],
-  meta: Record<string, unknown>,
-  init?: ResponseInit,
-) {
+export function jsonList<T>(data: T[], meta: Record<string, unknown>, init?: ResponseInit) {
   return NextResponse.json({ data, meta }, init);
 }
 
@@ -27,7 +23,7 @@ export function handleApiError(error: unknown) {
         type: "validation_error",
         issues: details,
       },
-      "Error de validación en endpoint",
+      "Error de validación en endpoint"
     );
     return NextResponse.json(
       {
@@ -36,7 +32,7 @@ export function handleApiError(error: unknown) {
       },
       {
         status: 422,
-      },
+      }
     );
   }
 
@@ -48,7 +44,7 @@ export function handleApiError(error: unknown) {
       },
       {
         status: error.status,
-      },
+      }
     );
   }
 
@@ -56,11 +52,9 @@ export function handleApiError(error: unknown) {
     {
       type: "unexpected_error",
       error:
-        error instanceof Error
-          ? { message: error.message, stack: error.stack }
-          : String(error),
+        error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
     },
-    "Error inesperado en endpoint",
+    "Error inesperado en endpoint"
   );
   return NextResponse.json(
     {
@@ -68,6 +62,6 @@ export function handleApiError(error: unknown) {
     },
     {
       status: 500,
-    },
+    }
   );
 }

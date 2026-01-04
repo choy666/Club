@@ -17,23 +17,11 @@ export const userRoleEnum = pgEnum("user_role", ["ADMIN", "USER"]);
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
-export const memberStatusEnum = pgEnum("member_status", [
-  "ACTIVE",
-  "INACTIVE",
-  "PENDING",
-]);
+export const memberStatusEnum = pgEnum("member_status", ["ACTIVE", "INACTIVE", "PENDING"]);
 
-export const enrollmentStatusEnum = pgEnum("enrollment_status", [
-  "ACTIVE",
-  "CANCELLED",
-]);
+export const enrollmentStatusEnum = pgEnum("enrollment_status", ["ACTIVE", "CANCELLED"]);
 
-export const dueStatusEnum = pgEnum("due_status", [
-  "PENDING",
-  "PAID",
-  "OVERDUE",
-  "FROZEN",
-]);
+export const dueStatusEnum = pgEnum("due_status", ["PENDING", "PAID", "OVERDUE", "FROZEN"]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -43,12 +31,8 @@ export const users = pgTable("users", {
   image: text("image"),
   role: userRoleEnum("role").notNull().default("USER"),
   passwordHash: text("password_hash"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const economicConfigs = pgTable(
@@ -58,29 +42,21 @@ export const economicConfigs = pgTable(
     slug: text("slug").notNull(),
     currencyCode: text("currency_code").notNull().default("ARS"),
     defaultMonthlyAmount: integer("default_monthly_amount").notNull(),
-    defaultMonthsToGenerate: integer("default_months_to_generate")
-      .notNull()
-      .default(12),
+    defaultMonthsToGenerate: integer("default_months_to_generate").notNull().default(12),
     dueDay: integer("due_day").notNull().default(10),
     lateFeePercentage: integer("late_fee_percentage").notNull().default(0),
     gracePeriodDays: integer("grace_period_days").notNull().default(5),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (config) => ({
     slugIndex: uniqueIndex("economic_configs_slug_idx").on(config.slug),
-  }),
+  })
 );
 
 export const monthlyRunLog = pgTable("monthly_run_log", {
   id: uuid("id").defaultRandom().primaryKey(),
-  executedAt: timestamp("executed_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  executedAt: timestamp("executed_at", { withTimezone: true }).notNull().defaultNow(),
   createdDues: integer("created_dues").notNull().default(0),
   operator: text("operator").notNull().default("manual"),
   notes: text("notes"),
@@ -99,18 +75,12 @@ export const members = pgTable(
     birthDate: date("birth_date"),
     status: memberStatusEnum("status").notNull().default("PENDING"),
     notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (member) => ({
-    documentIndex: uniqueIndex("members_document_number_idx").on(
-      member.documentNumber,
-    ),
-  }),
+    documentIndex: uniqueIndex("members_document_number_idx").on(member.documentNumber),
+  })
 );
 
 export const enrollments = pgTable(
@@ -126,18 +96,12 @@ export const enrollments = pgTable(
     monthsToGenerate: integer("months_to_generate").notNull().default(1),
     status: enrollmentStatusEnum("status").notNull().default("ACTIVE"),
     notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (enrollment) => ({
-    memberUniqueIndex: uniqueIndex("enrollments_member_id_idx").on(
-      enrollment.memberId,
-    ),
-  }),
+    memberUniqueIndex: uniqueIndex("enrollments_member_id_idx").on(enrollment.memberId),
+  })
 );
 
 export const dues = pgTable("dues", {
@@ -152,12 +116,8 @@ export const dues = pgTable("dues", {
   amount: integer("amount").notNull(),
   status: dueStatusEnum("status").notNull().default("PENDING"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const payments = pgTable(
@@ -175,17 +135,13 @@ export const payments = pgTable(
     reference: text("reference"),
     notes: text("notes"),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (payment) => ({
     dueUniqueIndex: uniqueIndex("payments_due_id_idx").on(payment.dueId),
     memberIndex: index("payments_member_id_idx").on(payment.memberId),
-  }),
+  })
 );
 
 export const accounts = pgTable(
@@ -210,7 +166,7 @@ export const accounts = pgTable(
       columns: [account.provider, account.providerAccountId],
     }),
     providerIndex: index("accounts_provider_idx").on(account.provider),
-  }),
+  })
 );
 
 export const sessions = pgTable(
@@ -224,7 +180,7 @@ export const sessions = pgTable(
   },
   (session) => ({
     userIndex: index("sessions_user_id_idx").on(session.userId),
-  }),
+  })
 );
 
 export const verificationTokens = pgTable(
@@ -238,7 +194,7 @@ export const verificationTokens = pgTable(
     compoundKey: primaryKey({
       columns: [verificationToken.identifier, verificationToken.token],
     }),
-  }),
+  })
 );
 
 export const userRelations = relations(users, ({ one }) => ({

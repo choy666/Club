@@ -13,12 +13,7 @@ export async function freezeMemberDues(memberId: string) {
       status: "FROZEN",
       updatedAt: sql`now()`,
     })
-    .where(
-      and(
-        eq(dues.memberId, memberId),
-        inArray(dues.status, FREEZEABLE_STATUSES),
-      ),
-    );
+    .where(and(eq(dues.memberId, memberId), inArray(dues.status, FREEZEABLE_STATUSES)));
 }
 
 export async function unfreezeMemberDues(memberId: string) {
@@ -31,10 +26,7 @@ export async function unfreezeMemberDues(memberId: string) {
     .where(and(eq(dues.memberId, memberId), eq(dues.status, "FROZEN")));
 }
 
-export async function enforceFrozenDuesPolicy(
-  memberId: string,
-  status: MemberStatus,
-) {
+export async function enforceFrozenDuesPolicy(memberId: string, status: MemberStatus) {
   if (status === "INACTIVE") {
     await freezeMemberDues(memberId);
     return;

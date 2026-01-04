@@ -4,10 +4,7 @@ interface ApiOptions extends RequestInit {
   parseAs?: "json" | "text";
 }
 
-async function parseResponse(
-  response: Response,
-  parseAs: ApiOptions["parseAs"],
-) {
+async function parseResponse(response: Response, parseAs: ApiOptions["parseAs"]) {
   if (parseAs === "text") {
     return response.text();
   }
@@ -21,7 +18,7 @@ async function parseResponse(
 
 export async function apiFetch<T>(
   input: RequestInfo | URL,
-  { parseAs = "json", headers, ...init }: ApiOptions = {},
+  { parseAs = "json", headers, ...init }: ApiOptions = {}
 ): Promise<T> {
   const response = await fetch(input, {
     ...init,
@@ -42,7 +39,7 @@ export async function apiFetch<T>(
     throw new AppError(
       (errorBody as { error?: string })?.error ?? "Error inesperado en la API.",
       response.status,
-      errorBody,
+      errorBody
     );
   }
 

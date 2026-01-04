@@ -9,10 +9,7 @@ function buildReportsKey(filters: ReportFiltersInput) {
   return [...REPORTS_KEY, filters];
 }
 
-export function useReports(
-  filters: ReportFiltersInput,
-  options?: { enabled?: boolean },
-) {
+export function useReports(filters: ReportFiltersInput, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: buildReportsKey(filters),
     queryFn: async () => {

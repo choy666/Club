@@ -31,8 +31,7 @@ const benefitBlocks = [
   },
   {
     title: "Seguridad y permisos",
-    description:
-      "Gobernanza basada en roles, bitácoras y controles por ambiente.",
+    description: "Gobernanza basada en roles, bitácoras y controles por ambiente.",
     points: [
       "NextAuth + middleware protegen `/admin`, `/staff` y APIs internas.",
       "Observabilidad: trazas de actividad y feature flags auditables.",
@@ -66,32 +65,27 @@ const benefitMetrics = [
 const workflowSteps = [
   {
     stage: "Alta de socio",
-    value:
-      "Capturamos datos, documentos y consentimientos en un solo flujo guiado.",
+    value: "Capturamos datos, documentos y consentimientos en un solo flujo guiado.",
     tech: "Formularios controlados + API `/api/members` con Drizzle y validaciones Zod.",
   },
   {
     stage: "Inscripción a actividades",
-    value:
-      "Asignación de planes, cupos y beneficios según disciplina o categoría.",
+    value: "Asignación de planes, cupos y beneficios según disciplina o categoría.",
     tech: "Servicios `/api/enrollments` y catálogos cacheados con React Query.",
   },
   {
     stage: "Emisión de cuotas",
-    value:
-      "Cuotas mensuales, trimestrales u ocasionales ligadas a economic_configs.",
+    value: "Cuotas mensuales, trimestrales u ocasionales ligadas a economic_configs.",
     tech: "Jobs parametrizados, estados en Neon y mutaciones optimistas.",
   },
   {
     stage: "Pagos y conciliación",
-    value:
-      "Pagos Mercado Pago, estados sincronizados y alertas de morosidad inmediata.",
+    value: "Pagos Mercado Pago, estados sincronizados y alertas de morosidad inmediata.",
     tech: "Webhooks + conciliador interno con React Query y hooks server-side.",
   },
   {
     stage: "Reportes ejecutivos",
-    value:
-      "Reportes de deuda, recaudo, retención y proyección listos para comité.",
+    value: "Reportes de deuda, recaudo, retención y proyección listos para comité.",
     tech: "Dashboards SSR + streaming y endpoints agregados protegidos.",
   },
 ];
@@ -99,13 +93,11 @@ const workflowSteps = [
 const scalabilityHighlights = [
   {
     title: "Neon serverless + Drizzle",
-    detail:
-      "Migraciones versionadas, branching y seeds QA reproducibles para cada sprint.",
+    detail: "Migraciones versionadas, branching y seeds QA reproducibles para cada sprint.",
   },
   {
     title: "Next.js App Router",
-    detail:
-      "Layouts privados, streaming y caching selectivo para paneles críticos.",
+    detail: "Layouts privados, streaming y caching selectivo para paneles críticos.",
   },
   {
     title: "React Query + feature flags",
@@ -114,39 +106,33 @@ const scalabilityHighlights = [
   },
   {
     title: "Tooling operativo",
-    detail:
-      "Scripts `seed-admin` y `reset-admin`, pipelines QA y monitoreo continuo.",
+    detail: "Scripts `seed-admin` y `reset-admin`, pipelines QA y monitoreo continuo.",
   },
 ];
 
 const strengths = [
   {
     title: "Seguridad aplicada",
-    description:
-      "NextAuth v5, roles jerárquicos, middlewares y logs en endpoints sensibles.",
+    description: "NextAuth v5, roles jerárquicos, middlewares y logs en endpoints sensibles.",
   },
   {
     title: "Time-to-market acelerado",
-    description:
-      "Migraciones y seeds versionados permiten levantar ambientes en minutos.",
+    description: "Migraciones y seeds versionados permiten levantar ambientes en minutos.",
   },
   {
     title: "Personalización financiera",
-    description:
-      "economic_configs habilita planes diferenciales, becas y convenios locales.",
+    description: "economic_configs habilita planes diferenciales, becas y convenios locales.",
   },
   {
     title: "Soporte QA continuo",
-    description:
-      "Checklists, ambiente QA y suites de smoke test documentadas en el repo.",
+    description: "Checklists, ambiente QA y suites de smoke test documentadas en el repo.",
   },
 ];
 
 const onboardingSteps = [
   {
     title: "Configura `.env`",
-    detail:
-      "Completa claves de Neon, NextAuth, providers OAuth y secrets de correo.",
+    detail: "Completa claves de Neon, NextAuth, providers OAuth y secrets de correo.",
   },
   {
     title: "Corre las migraciones",
@@ -185,22 +171,19 @@ const roadmap = [
     title: "Sprint 4 · Pagos y conciliación",
     status: "En curso",
     date: "Feb 2026",
-    description:
-      "Webhooks Mercado Pago, conciliador interno y alertas automáticas por morosidad.",
+    description: "Webhooks Mercado Pago, conciliador interno y alertas automáticas por morosidad.",
   },
   {
     title: "Sprint 5 · Reportes y monitoreo",
     status: "Planeado",
     date: "Mar 2026",
-    description:
-      "Dashboards comparativos, cohortes, proyecciones y alertas ejecutivas.",
+    description: "Dashboards comparativos, cohortes, proyecciones y alertas ejecutivas.",
   },
   {
     title: "Sprint 6 · Portal socio mobile",
     status: "Planeado",
     date: "Abr 2026",
-    description:
-      "Experiencia móvil con credenciales digitales y notificaciones segmentadas.",
+    description: "Experiencia móvil con credenciales digitales y notificaciones segmentadas.",
   },
 ];
 
@@ -228,13 +211,11 @@ export default function ShowcasePage() {
               AppClub · Portada comercial
             </span>
             <h1 className="text-4xl font-semibold sm:text-5xl">
-              AppClub: la plataforma integral para clubes y organizaciones
-              deportivas
+              AppClub: la plataforma integral para clubes y organizaciones deportivas
             </h1>
             <p className="mx-auto max-w-3xl text-lg text-base-muted">
-              Unificamos socios, inscripciones, cuotas, pagos y reportes en un
-              solo panel. Listo para demos comerciales, preventa técnica y
-              despliegues rápidos.
+              Unificamos socios, inscripciones, cuotas, pagos y reportes en un solo panel. Listo
+              para demos comerciales, preventa técnica y despliegues rápidos.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
@@ -263,8 +244,8 @@ export default function ShowcasePage() {
             </p>
             <h2 className="text-3xl font-semibold">¿Qué obtiene tu club?</h2>
             <p className="text-base text-base-muted sm:max-w-3xl">
-              Mantenemos la operación completa en un solo stack: datos vivos,
-              automatizaciones financieras y seguridad granular para cada rol.
+              Mantenemos la operación completa en un solo stack: datos vivos, automatizaciones
+              financieras y seguridad granular para cada rol.
             </p>
           </header>
           <div className="grid gap-8 lg:grid-cols-[1.2fr,0.8fr]">
@@ -277,9 +258,7 @@ export default function ShowcasePage() {
                     className="space-y-3 rounded-2xl border border-base-border/60 p-4"
                   >
                     <h4 className="text-lg font-semibold">{block.title}</h4>
-                    <p className="text-sm text-base-muted">
-                      {block.description}
-                    </p>
+                    <p className="text-sm text-base-muted">{block.description}</p>
                     <ul className="space-y-1 text-xs text-base-muted">
                       {block.points.map((point) => (
                         <li key={point}>• {point}</li>
@@ -309,12 +288,8 @@ export default function ShowcasePage() {
 
         <section className="space-y-8">
           <header className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
-              Funciones clave
-            </p>
-            <h2 className="text-3xl font-semibold">
-              Workflow completo de negocio
-            </h2>
+            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">Funciones clave</p>
+            <h2 className="text-3xl font-semibold">Workflow completo de negocio</h2>
           </header>
           <div className="relative pl-6">
             <span className="absolute left-3 top-0 h-full w-px bg-base-border/60" />
@@ -328,9 +303,7 @@ export default function ShowcasePage() {
                     </p>
                     <h3 className="text-xl font-semibold">{step.stage}</h3>
                     <p className="text-sm text-base-muted">{step.value}</p>
-                    <p className="text-xs font-mono text-accent-primary">
-                      Stack · {step.tech}
-                    </p>
+                    <p className="text-xs font-mono text-accent-primary">Stack · {step.tech}</p>
                   </div>
                 </div>
               ))}
@@ -343,16 +316,12 @@ export default function ShowcasePage() {
             <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
               Escalabilidad y tecnología
             </p>
-            <h2 className="text-3xl font-semibold">
-              Arquitectura preparada para crecer
-            </h2>
+            <h2 className="text-3xl font-semibold">Arquitectura preparada para crecer</h2>
           </header>
           <div className="grid gap-6 md:grid-cols-2">
             {scalabilityHighlights.map((item) => (
               <article key={item.title} className="glass-card space-y-2 p-6">
-                <p className="text-sm uppercase tracking-[0.3em] text-base-muted">
-                  {item.title}
-                </p>
+                <p className="text-sm uppercase tracking-[0.3em] text-base-muted">{item.title}</p>
                 <p className="text-base text-base-muted">{item.detail}</p>
               </article>
             ))}
@@ -368,14 +337,9 @@ export default function ShowcasePage() {
           </header>
           <div className="grid gap-6 md:grid-cols-2">
             {strengths.map((strength) => (
-              <article
-                key={strength.title}
-                className="glass-card space-y-2 p-6"
-              >
+              <article key={strength.title} className="glass-card space-y-2 p-6">
                 <h3 className="text-xl font-semibold">{strength.title}</h3>
-                <p className="text-sm text-base-muted">
-                  {strength.description}
-                </p>
+                <p className="text-sm text-base-muted">{strength.description}</p>
               </article>
             ))}
           </div>
@@ -383,9 +347,7 @@ export default function ShowcasePage() {
 
         <section className="space-y-8">
           <header className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
-              Consejos de uso
-            </p>
+            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">Consejos de uso</p>
             <h2 className="text-3xl font-semibold">Onboarding guiado</h2>
           </header>
           <div className="glass-card flex flex-col gap-6 p-8">
@@ -425,12 +387,8 @@ export default function ShowcasePage() {
 
         <section className="space-y-8">
           <header className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
-              Plan futuro
-            </p>
-            <h2 className="text-3xl font-semibold">
-              Roadmap vivo y entregables por sprint
-            </h2>
+            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">Plan futuro</p>
+            <h2 className="text-3xl font-semibold">Roadmap vivo y entregables por sprint</h2>
           </header>
           <div className="space-y-4">
             {roadmap.map((item) => (
@@ -439,9 +397,7 @@ export default function ShowcasePage() {
                 className="glass-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between"
               >
                 <div>
-                  <p className="text-sm uppercase tracking-[0.3em] text-base-muted">
-                    {item.date}
-                  </p>
+                  <p className="text-sm uppercase tracking-[0.3em] text-base-muted">{item.date}</p>
                   <h3 className="text-xl font-semibold">{item.title}</h3>
                   <p className="text-sm text-base-muted">{item.description}</p>
                 </div>
@@ -456,16 +412,13 @@ export default function ShowcasePage() {
         </section>
 
         <section className="glass-card space-y-6 p-8 text-center">
-          <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
-            CTA final
-          </p>
+          <p className="text-xs uppercase tracking-[0.4em] text-base-muted">CTA final</p>
           <h2 className="text-3xl font-semibold">
             Resumen de valor: operación integral lista para producción
           </h2>
           <p className="text-base text-base-muted">
-            AppClub combina infraestructura moderna, procesos ya automatizados y
-            un roadmap claro. Coordinemos una demo para adaptar el panel a tu
-            institución.
+            AppClub combina infraestructura moderna, procesos ya automatizados y un roadmap claro.
+            Coordinemos una demo para adaptar el panel a tu institución.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link

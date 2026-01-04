@@ -43,7 +43,7 @@ describe("GET /api/inscripciones", () => {
     });
 
     const request = new NextRequest(
-      "http://localhost/api/inscripciones?page=2&perPage=20&status=ACTIVE&search=juan",
+      "http://localhost/api/inscripciones?page=2&perPage=20&status=ACTIVE&search=juan"
     );
 
     const response = await listEnrollmentsHandler(request);
@@ -62,9 +62,7 @@ describe("GET /api/inscripciones", () => {
   });
 
   it("devuelve 422 con filtros inválidos", async () => {
-    const request = new NextRequest(
-      "http://localhost/api/inscripciones?page=0&perPage=200",
-    );
+    const request = new NextRequest("http://localhost/api/inscripciones?page=0&perPage=200");
 
     const response = await listEnrollmentsHandler(request);
 
@@ -109,7 +107,7 @@ describe("POST /api/inscripciones", () => {
       buildPostRequest({
         memberId: "not-a-uuid",
         startDate: "fecha inválida",
-      }),
+      })
     );
 
     expect(response.status).toBe(422);
@@ -119,15 +117,13 @@ describe("POST /api/inscripciones", () => {
   });
 
   it("propaga AppError cuando el servicio falla", async () => {
-    mockCreateEnrollment.mockRejectedValueOnce(
-      new AppError("Socio no encontrado.", 404),
-    );
+    mockCreateEnrollment.mockRejectedValueOnce(new AppError("Socio no encontrado.", 404));
 
     const response = await createEnrollmentHandler(
       buildPostRequest({
         memberId: "123e4567-e89b-12d3-a456-426614174111",
         startDate: "2025-02-01",
-      }),
+      })
     );
 
     expect(response.status).toBe(404);

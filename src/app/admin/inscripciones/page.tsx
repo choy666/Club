@@ -1,41 +1,46 @@
 "use client";
 
-import Link from "next/link";
-
 import { EnrollmentTable } from "@/components/enrollments/enrollment-table";
 import { DueTable } from "@/components/enrollments/due-table";
 
 export default function AdminEnrollmentsPage() {
   return (
-    <div className="min-h-screen bg-base-primary px-6 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-12">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-base-muted">
-              Panel administrativo
-            </p>
-            <h1 className="text-3xl font-semibold font-[var(--font-space)]">
+    <div className="space-y-10">
+      <section className="neo-panel overflow-hidden">
+        <div className="relative z-10 flex flex-col gap-5 p-8">
+          <div className="space-y-3">
+            <span className="neo-chip">Panel administrativo</span>
+            <h1 className="text-4xl font-semibold font-[var(--font-space)] tracking-tight">
               Inscripciones y cuotas
             </h1>
-            <p className="mt-2 max-w-2xl text-base text-base-muted">
-              Gestioná altas de inscripciones, generá cuotas y controlá al día
-              los pagos de cada socio. Todos los datos se sincronizan
-              automáticamente con la base de socios existentes.
+            <p className="max-w-3xl text-base-muted">
+              Centralizá las altas y seguimiento de pagos con una vista limpia y futurista. Todo
+              queda sincronizado con la base de socios.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/admin" className="btn-secondary">
-              ← Volver al panel principal
-            </Link>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Flujo activo", helper: "Inscripciones con cuotas vigentes" },
+              { label: "Pagos monitoreados", helper: "Seguimiento en tiempo real" },
+              { label: "Alertas inteligentes", helper: "Morosidad y congelamientos" },
+              { label: "Automatización", helper: "Generación de cuotas mensual" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-base-muted transition hover:border-accent-primary/50 hover:text-base-foreground"
+              >
+                <p className="text-xs uppercase tracking-[0.3em]">{item.label}</p>
+                <p className="mt-1 text-base text-base-foreground/90">{item.helper}</p>
+              </div>
+            ))}
           </div>
-        </header>
+        </div>
+        <div className="pointer-events-none absolute inset-0 rounded-[1.75rem] bg-gradient-to-r from-accent-primary/10 via-transparent to-transparent" />
+      </section>
 
-        <EnrollmentTable />
-
-        <div className="h-px w-full bg-base-border/60" />
-
-        <DueTable />
-      </div>
+      <EnrollmentTable />
+      <div className="neo-divider" />
+      <DueTable />
     </div>
   );
 }

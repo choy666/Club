@@ -53,21 +53,17 @@ describe("POST /api/pagos", () => {
     expect(response.status).toBe(201);
     const json = (await response.json()) as Record<string, unknown>;
     expect(json.data).toMatchObject(paymentResult);
-    expect(mockRecordPayment).toHaveBeenCalledWith(
-      payload.dueId,
-      payload.paidAt,
-      {
-        amount: payload.amount,
-        method: payload.method,
-        reference: payload.reference,
-        notes: payload.notes,
-      },
-    );
+    expect(mockRecordPayment).toHaveBeenCalledWith(payload.dueId, payload.paidAt, {
+      amount: payload.amount,
+      method: payload.method,
+      reference: payload.reference,
+      notes: payload.notes,
+    });
   });
 
   it("devuelve 422 cuando el payload es inválido", async () => {
     const response = await createPaymentHandler(
-      buildRequest({ amount: 35000, method: "Efectivo" }),
+      buildRequest({ amount: 35000, method: "Efectivo" })
     );
 
     expect(response.status).toBe(422);
@@ -77,14 +73,12 @@ describe("POST /api/pagos", () => {
   });
 
   it("propaga AppError del servicio", async () => {
-    mockRecordPayment.mockRejectedValueOnce(
-      new AppError("Cuota no encontrada.", 404),
-    );
+    mockRecordPayment.mockRejectedValueOnce(new AppError("Cuota no encontrada.", 404));
 
     const response = await createPaymentHandler(
       buildRequest({
         dueId: "123e4567-e89b-12d3-a456-426614174999",
-      }),
+      })
     );
 
     expect(response.status).toBe(404);

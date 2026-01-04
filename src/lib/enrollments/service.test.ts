@@ -91,8 +91,7 @@ describe("recordPayment", () => {
 
     await expect(promise).rejects.toBeInstanceOf(AppError);
     await expect(promise).rejects.toMatchObject({
-      message:
-        "No se pueden registrar pagos sobre cuotas congeladas. Reactivá al socio primero.",
+      message: "No se pueden registrar pagos sobre cuotas congeladas. Reactivá al socio primero.",
       status: 409,
     });
     expect(mockFindDueById).toHaveBeenCalledWith("due-1");

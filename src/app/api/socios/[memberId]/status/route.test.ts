@@ -15,8 +15,7 @@ vi.mock("@/lib/auth-helpers", () => ({
 }));
 
 vi.mock("@/lib/enrollments/service", () => ({
-  getMemberFinancialSnapshot: (...args: unknown[]) =>
-    mockGetMemberFinancialSnapshot(...args),
+  getMemberFinancialSnapshot: (...args: unknown[]) => mockGetMemberFinancialSnapshot(...args),
 }));
 
 vi.mock("@/lib/validations/members", () => ({
@@ -52,7 +51,7 @@ describe("GET /api/socios/{memberId}/status", () => {
 
     const response = await memberStatusHandler(
       new NextRequest("http://localhost/api/socios/member/status"),
-      buildContext(memberId),
+      buildContext(memberId)
     );
 
     expect(response.status).toBe(200);
@@ -68,7 +67,7 @@ describe("GET /api/socios/{memberId}/status", () => {
 
     const response = await memberStatusHandler(
       new NextRequest("http://localhost/api/socios/invalid/status"),
-      buildContext("not-a-uuid"),
+      buildContext("not-a-uuid")
     );
 
     expect(response.status).toBe(422);
@@ -79,13 +78,11 @@ describe("GET /api/socios/{memberId}/status", () => {
 
   it("propaga AppError del servicio", async () => {
     const memberId = "123e4567-e89b-12d3-a456-426614174111";
-    mockGetMemberFinancialSnapshot.mockRejectedValueOnce(
-      new AppError("Socio no encontrado.", 404),
-    );
+    mockGetMemberFinancialSnapshot.mockRejectedValueOnce(new AppError("Socio no encontrado.", 404));
 
     const response = await memberStatusHandler(
       new NextRequest("http://localhost/api/socios/missing/status"),
-      buildContext(memberId),
+      buildContext(memberId)
     );
 
     expect(response.status).toBe(404);

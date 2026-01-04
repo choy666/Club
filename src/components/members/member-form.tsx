@@ -30,12 +30,14 @@ type MemberFormProps =
       initialData?: undefined;
       onSubmit: (values: CreateMemberInput) => Promise<void> | void;
       isSubmitting?: boolean;
+      serverError?: string | null;
     }
   | {
       mode: "edit";
       initialData: MemberDTO;
       onSubmit: (values: EditMemberFormValues) => Promise<void> | void;
       isSubmitting?: boolean;
+      serverError?: string | null;
     };
 
 function getDateInputValue(value?: string | null) {
@@ -44,7 +46,7 @@ function getDateInputValue(value?: string | null) {
 }
 
 export function MemberForm(props: MemberFormProps) {
-  const { mode, isSubmitting } = props;
+  const { mode, isSubmitting, serverError } = props;
   const isEditMode = mode === "edit";
   const schema = isEditMode ? editFormSchema : createMemberSchema;
 
@@ -157,10 +159,7 @@ export function MemberForm(props: MemberFormProps) {
         {isEditMode ? (
           <div className="space-y-1">
             <label className="text-sm text-base-muted">Estado</label>
-            <select
-              {...register("status")}
-              className="w-full rounded-lg border border-base-border bg-base-secondary px-4 py-2 focus:border-accent-primary focus:outline-none"
-            >
+            <select {...register("status")} className="select-base">
               {MEMBER_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -193,6 +192,7 @@ export function MemberForm(props: MemberFormProps) {
             type="password"
             {...register("password")}
             placeholder={mode === "edit" ? "Dejar vacío para no cambiar" : "********"}
+            autoComplete="new-password"
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
           />
           {errors.password && (
@@ -227,6 +227,7 @@ export function MemberForm(props: MemberFormProps) {
               : "Guardar cambios"}
         </button>
       </div>
+      {serverError && <p className="text-sm text-accent-critical text-right">{serverError}</p>}
     </form>
   );
 }

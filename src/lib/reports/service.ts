@@ -8,12 +8,8 @@ import { getCachedReport, setCachedReport } from "@/lib/cache/report-cache";
 import type { ReportBlock, ReportResponse } from "@/types/report";
 import type { ReportFiltersSchema } from "@/lib/validations/reports";
 
-function combineFilters(
-  filters: (SQL<unknown> | undefined)[],
-): SQL<unknown> | undefined {
-  const valid = filters.filter((expression): expression is SQL<unknown> =>
-    Boolean(expression),
-  );
+function combineFilters(filters: (SQL<unknown> | undefined)[]): SQL<unknown> | undefined {
+  const valid = filters.filter((expression): expression is SQL<unknown> => Boolean(expression));
   if (!valid.length) {
     return undefined;
   }
@@ -37,11 +33,7 @@ function toUtcDate(value: Date | string) {
   return new Date(value.includes("T") ? value : `${value}T00:00:00Z`);
 }
 
-function buildTrend(
-  currentValue: number,
-  previousValue: number,
-  comparisonLabel: string,
-) {
+function buildTrend(currentValue: number, previousValue: number, comparisonLabel: string) {
   if (!Number.isFinite(previousValue)) {
     return undefined;
   }
@@ -64,9 +56,7 @@ function buildTrend(
   } as ReportBlock["trend"];
 }
 
-export async function getReports(
-  filters: ReportFiltersSchema,
-): Promise<ReportResponse> {
+export async function getReports(filters: ReportFiltersSchema): Promise<ReportResponse> {
   const cached = getCachedReport(filters);
   if (cached) {
     return cached;
@@ -82,9 +72,7 @@ export async function getReports(
   const previousDueDateFrom = formatDateOnly(previousDateFrom);
   const previousDueDateTo = formatDateOnly(previousDateTo);
 
-  const planFilter = filters.planId
-    ? eq(enrollments.planName, filters.planId)
-    : undefined;
+  const planFilter = filters.planId ? eq(enrollments.planName, filters.planId) : undefined;
 
   const revenueWhere = combineFilters([
     gte(payments.paidAt, dateFrom),
@@ -122,7 +110,7 @@ export async function getReports(
           duesRangeWhere,
           // Sólo cuotas abiertas cuentan para el MRR estimado.
           eq(dues.status, "PENDING"),
-        ]),
+        ])
       ),
     db
       .select({
@@ -136,12 +124,7 @@ export async function getReports(
     db
       .select({ value: count() })
       .from(members)
-      .where(
-        combineFilters([
-          gte(members.createdAt, dateFrom),
-          lte(members.createdAt, dateTo),
-        ]),
-      ),
+      .where(combineFilters([gte(members.createdAt, dateFrom), lte(members.createdAt, dateTo)])),
     db
       .select({ value: count() })
       .from(members)
@@ -150,7 +133,7 @@ export async function getReports(
           eq(members.status, "INACTIVE"),
           gte(members.updatedAt, dateFrom),
           lte(members.updatedAt, dateTo),
-        ]),
+        ])
       ),
     db.select({ value: count() }).from(members),
     db
@@ -181,7 +164,7 @@ export async function getReports(
           gte(payments.paidAt, previousDateFrom),
           lte(payments.paidAt, previousDateTo),
           planFilter,
-        ]),
+        ])
       ),
     db
       .select({
@@ -195,7 +178,7 @@ export async function getReports(
           gte(dues.dueDate, previousDueDateFrom),
           lte(dues.dueDate, previousDueDateTo),
           planFilter,
-        ]),
+        ])
       )
       .groupBy(dues.status),
     db
@@ -205,7 +188,7 @@ export async function getReports(
         combineFilters([
           gte(members.createdAt, previousDateFrom),
           lte(members.createdAt, previousDateTo),
-        ]),
+        ])
       ),
     db
       .select({ value: count() })
@@ -215,7 +198,7 @@ export async function getReports(
           eq(members.status, "INACTIVE"),
           gte(members.updatedAt, previousDateFrom),
           lte(members.updatedAt, previousDateTo),
-        ]),
+        ])
       ),
     db
       .select({
@@ -230,7 +213,7 @@ export async function getReports(
           gte(payments.paidAt, previousDateFrom),
           lte(payments.paidAt, previousDateTo),
           planFilter,
-        ]),
+        ])
       ),
   ]);
 
@@ -250,18 +233,14 @@ export async function getReports(
     return diffMs / (1000 * 60 * 60 * 24);
   });
   const averageCollectionDays = collectionDurations.length
-    ? collectionDurations.reduce((acc, value) => acc + value, 0) /
-      collectionDurations.length
+    ? collectionDurations.reduce((acc, value) => acc + value, 0) / collectionDurations.length
     : 0;
 
   const portfolioTotals = portfolioRows.map((row) => ({
     status: row.status,
     total: toNumber(row.total as number | string | null),
   }));
-  const totalPortfolioItems = portfolioTotals.reduce(
-    (acc, row) => acc + row.total,
-    0,
-  );
+  const totalPortfolioItems = portfolioTotals.reduce((acc, row) => acc + row.total, 0);
 
   const statusLabels: Record<string, string> = {
     PAID: "Pagadas",
@@ -299,22 +278,20 @@ export async function getReports(
   }));
   const previousTotalPortfolioItems = previousPortfolioTotals.reduce(
     (acc, row) => acc + row.total,
-    0,
+    0
   );
 
   const comparisonLabel = `vs periodo anterior (${Math.round(
-    periodMs / (1000 * 60 * 60 * 24),
+    periodMs / (1000 * 60 * 60 * 24)
   )} días)`;
 
   const currency = filters.currency ?? "ARS";
   const paidItems = portfolioBreakdown.find((item) => item.label === "Pagadas");
   const collectionRate =
-    totalPortfolioItems > 0 && paidItems
-      ? (paidItems.value / totalPortfolioItems) * 100
-      : 0;
+    totalPortfolioItems > 0 && paidItems ? (paidItems.value / totalPortfolioItems) * 100 : 0;
 
   const previousPaid = previousPortfolioTotals.find(
-    (item) => statusLabels[item.status] === "Pagadas",
+    (item) => statusLabels[item.status] === "Pagadas"
   );
   const previousCollectionRate =
     previousTotalPortfolioItems > 0 && previousPaid
@@ -344,13 +321,8 @@ export async function getReports(
       label: "Churn estimado",
       value: Number(churnRate.toFixed(2)),
       unit: "%",
-      description:
-        "Socios dados de baja respecto al total vigente en el periodo.",
-      trend: buildTrend(
-        churnRate,
-        (previousChurnedMembers / totalMembers) * 100,
-        comparisonLabel,
-      ),
+      description: "Socios dados de baja respecto al total vigente en el periodo.",
+      trend: buildTrend(churnRate, (previousChurnedMembers / totalMembers) * 100, comparisonLabel),
     },
     {
       kpiId: "net-growth",
@@ -366,11 +338,7 @@ export async function getReports(
       value: Number(averageCollectionDays.toFixed(2)),
       unit: "días",
       description: "Tiempo promedio entre la fecha de cuota y el pago.",
-      trend: buildTrend(
-        averageCollectionDays,
-        previousAverageCollectionDays,
-        comparisonLabel,
-      ),
+      trend: buildTrend(averageCollectionDays, previousAverageCollectionDays, comparisonLabel),
     },
     {
       kpiId: "portfolio-health",
@@ -386,11 +354,7 @@ export async function getReports(
       value: Number(collectionRate.toFixed(2)),
       unit: "%",
       description: "Porcentaje de cuotas cobradas vs. totales en el periodo.",
-      trend: buildTrend(
-        collectionRate,
-        previousCollectionRate,
-        comparisonLabel,
-      ),
+      trend: buildTrend(collectionRate, previousCollectionRate, comparisonLabel),
     },
     {
       kpiId: "avg-revenue-member",
@@ -401,7 +365,7 @@ export async function getReports(
       trend: buildTrend(
         averageRevenuePerMember,
         previousTotalRevenue / Math.max(1, totalMembers),
-        comparisonLabel,
+        comparisonLabel
       ),
     },
   ];

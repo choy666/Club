@@ -65,22 +65,12 @@ export async function findMemberByUserId(userId: string) {
   return mapMemberRow(result[0]);
 }
 
-export async function isDocumentNumberTaken(
-  documentNumber: string,
-  excludeMemberId?: string,
-) {
+export async function isDocumentNumberTaken(documentNumber: string, excludeMemberId?: string) {
   const where = excludeMemberId
-    ? and(
-        eq(members.documentNumber, documentNumber),
-        ne(members.id, excludeMemberId),
-      )
+    ? and(eq(members.documentNumber, documentNumber), ne(members.id, excludeMemberId))
     : eq(members.documentNumber, documentNumber);
 
-  const existing = await db
-    .select({ id: members.id })
-    .from(members)
-    .where(where)
-    .limit(1);
+  const existing = await db.select({ id: members.id }).from(members).where(where).limit(1);
 
   return existing.length > 0;
 }

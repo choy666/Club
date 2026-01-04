@@ -12,6 +12,24 @@ type Feedback = {
   message: string;
 };
 
+function getLoginErrorMessage(code?: string) {
+  if (!code) {
+    return "No se pudo iniciar sesión. Intentá nuevamente.";
+  }
+
+  const normalizedCode = code.toLowerCase();
+
+  if (normalizedCode.includes("configuration")) {
+    return "Hubo un problema con la configuración de autenticación. Revisá las variables NEXTAUTH_URL y NEXTAUTH_SECRET en el servidor.";
+  }
+
+  if (normalizedCode.includes("credentialssignin") || normalizedCode.includes("credentials")) {
+    return "Credenciales inválidas. Verificá el correo y la contraseña ingresados.";
+  }
+
+  return code;
+}
+
 async function getAdminStatus() {
   const response = await fetch("/api/admin/status");
   if (!response.ok) {
@@ -41,8 +59,7 @@ export default function SignInPage() {
         clientLogger.error("No se pudo verificar estado admin", error);
         setFeedback({
           type: "error",
-          message:
-            "No se pudo verificar el estado del administrador. Intenta recargar.",
+          message: "No se pudo verificar el estado del administrador. Intenta recargar.",
         });
       });
   }, []);
@@ -73,8 +90,7 @@ export default function SignInPage() {
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
         throw new Error(
-          (errorBody as { message?: string })?.message ??
-            "No se pudo crear el administrador.",
+          (errorBody as { message?: string })?.message ?? "No se pudo crear el administrador."
         );
       }
 
@@ -90,10 +106,7 @@ export default function SignInPage() {
       clientLogger.error("Error creando admin inicial", error);
       setFeedback({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "No se pudo crear el administrador.",
+        message: error instanceof Error ? error.message : "No se pudo crear el administrador.",
       });
     } finally {
       setIsSubmitting(false);
@@ -113,17 +126,25 @@ export default function SignInPage() {
         callbackUrl: "/admin",
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
+      if (!result || result.error) {
+        const fallbackMessage = getLoginErrorMessage(result?.error);
+        setFeedback({
+          type: "error",
+          message: fallbackMessage,
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      window.location.href = result?.url ?? "/admin";
+      window.location.href = result.url ?? "/admin";
     } catch (error) {
       console.error(error);
       setFeedback({
         type: "error",
         message:
-          error instanceof Error ? error.message : "No se pudo iniciar sesión.",
+          error instanceof Error
+            ? getLoginErrorMessage(error.message)
+            : "No se pudo iniciar sesión.",
       });
       setIsSubmitting(false);
     }
@@ -135,13 +156,9 @@ export default function SignInPage() {
     <main className="min-h-screen bg-base-primary text-base-foreground flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg glass-card p-8 space-y-6">
         <header className="space-y-2 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-base-muted">
-            Club · Gestión
-          </p>
+          <p className="text-xs uppercase tracking-[0.35em] text-base-muted">Club · Gestión</p>
           <h1 className="text-3xl font-semibold font-[var(--font-space)]">
-            {showCreateForm
-              ? "Configurar administrador inicial"
-              : "Iniciar sesión"}
+            {showCreateForm ? "Configurar administrador inicial" : "Iniciar sesión"}
           </h1>
           <p className="text-base text-muted">
             {showCreateForm
@@ -215,10 +232,7 @@ export default function SignInPage() {
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm text-muted"
-                  htmlFor="create-password-confirm"
-                >
+                <label className="text-sm text-muted" htmlFor="create-password-confirm">
                   Confirmar contraseña
                 </label>
                 <input
@@ -226,9 +240,7 @@ export default function SignInPage() {
                   type="password"
                   required
                   value={createPasswordConfirm}
-                  onChange={(event) =>
-                    setCreatePasswordConfirm(event.target.value)
-                  }
+                  onChange={(event) => setCreatePasswordConfirm(event.target.value)}
                   className="w-full rounded-xl border border-base-border bg-base-secondary px-4 py-3 focus:border-accent-primary focus:outline-none"
                   placeholder="Repetí la contraseña"
                 />

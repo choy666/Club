@@ -2,18 +2,12 @@ import type { NextRequest } from "next/server";
 
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { handleApiError, jsonSuccess } from "@/lib/http";
-import {
-  getEnrollmentDetail,
-  updateEnrollment,
-} from "@/lib/enrollments/service";
-import {
-  enrollmentIdSchema,
-  updateEnrollmentSchema,
-} from "@/lib/validations/enrollments";
+import { getEnrollmentDetail, updateEnrollment } from "@/lib/enrollments/service";
+import { enrollmentIdSchema, updateEnrollmentSchema } from "@/lib/validations/enrollments";
 
 export async function GET(
   _req: NextRequest,
-  context: { params: Promise<{ enrollmentId: string }> },
+  context: { params: Promise<{ enrollmentId: string }> }
 ) {
   try {
     await requireAdminSession();
@@ -27,7 +21,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ enrollmentId: string }> },
+  context: { params: Promise<{ enrollmentId: string }> }
 ) {
   try {
     await requireAdminSession();

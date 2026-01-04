@@ -35,16 +35,12 @@ function rateLimitResponse(retryAfterMs?: number) {
       headers: retryAfterMs
         ? { "Retry-After": Math.ceil(retryAfterMs / 1000).toString() }
         : undefined,
-    },
+    }
   );
 }
 
 export async function GET(request: NextRequest) {
-  const rate = enforceRateLimit(
-    request,
-    ADMIN_STATUS_RATE_LIMIT,
-    "admin-status",
-  );
+  const rate = enforceRateLimit(request, ADMIN_STATUS_RATE_LIMIT, "admin-status");
   if (!rate.success) {
     return rateLimitResponse(rate.retryAfterMs);
   }
@@ -53,11 +49,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rate = enforceRateLimit(
-    request,
-    ADMIN_STATUS_RATE_LIMIT,
-    "admin-status",
-  );
+  const rate = enforceRateLimit(request, ADMIN_STATUS_RATE_LIMIT, "admin-status");
   if (!rate.success) {
     return rateLimitResponse(rate.retryAfterMs);
   }
@@ -66,7 +58,7 @@ export async function POST(request: NextRequest) {
   if (existing) {
     return NextResponse.json(
       { message: "Ya existe un administrador configurado." },
-      { status: 409 },
+      { status: 409 }
     );
   }
 
@@ -75,7 +67,7 @@ export async function POST(request: NextRequest) {
   if (!payload.success) {
     return NextResponse.json(
       { message: "Datos inválidos", issues: payload.error.flatten() },
-      { status: 400 },
+      { status: 400 }
     );
   }
 

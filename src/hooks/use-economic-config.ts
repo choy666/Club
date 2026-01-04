@@ -10,7 +10,7 @@ export function useEconomicConfig(slug = "default") {
     queryKey: ECONOMIC_CONFIG_KEY(slug),
     queryFn: async () => {
       const response = await apiFetch<{ data: EconomicConfigDTO }>(
-        `/api/config/economic?slug=${slug}`,
+        `/api/config/economic?slug=${slug}`
       );
       return response.data;
     },

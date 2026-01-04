@@ -18,7 +18,7 @@ async function main() {
   const result = await generateMonthlyDues(operator);
 
   console.info(
-    `Job mensual completado. Procesadas: ${result.processedEnrollments}. ${result.notes} Operador: ${result.operator}.`,
+    `Job mensual completado. Procesadas: ${result.processedEnrollments}. ${result.notes} Operador: ${result.operator}.`
   );
 }
 

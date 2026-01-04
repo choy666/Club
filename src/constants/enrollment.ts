@@ -9,11 +9,10 @@ export const ENROLLMENT_STATUS_OPTIONS: {
   { value: "CANCELLED", label: "Cancelada" },
 ];
 
-export const DUE_STATUS_OPTIONS: { value: DueStatus | "ALL"; label: string }[] =
-  [
-    { value: "ALL", label: "Todas" },
-    { value: "PENDING", label: "Pendiente" },
-    { value: "PAID", label: "Pagada" },
-    { value: "OVERDUE", label: "Vencida" },
-    { value: "FROZEN", label: "Congelada" },
-  ];
+export const DUE_STATUS_OPTIONS: { value: DueStatus | "ALL"; label: string }[] = [
+  { value: "ALL", label: "Todas" },
+  { value: "PENDING", label: "Pendiente" },
+  { value: "PAID", label: "Pagada" },
+  { value: "OVERDUE", label: "Vencida" },
+  { value: "FROZEN", label: "Congelada" },
+];

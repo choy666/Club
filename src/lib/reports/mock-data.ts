@@ -1,8 +1,4 @@
-import type {
-  ReportBlock,
-  ReportFiltersInput,
-  ReportResponse,
-} from "@/types/report";
+import type { ReportBlock, ReportFiltersInput, ReportResponse } from "@/types/report";
 
 const mockBlocks: ReportBlock[] = [
   {
@@ -50,9 +46,7 @@ const mockBlocks: ReportBlock[] = [
   },
 ];
 
-export function buildMockReportResponse(
-  filters: ReportFiltersInput,
-): ReportResponse {
+export function buildMockReportResponse(filters: ReportFiltersInput): ReportResponse {
   return {
     filters,
     generatedAt: new Date().toISOString(),

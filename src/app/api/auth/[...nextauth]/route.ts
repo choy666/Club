@@ -19,7 +19,7 @@ function rateLimitResponse(retryAfterMs?: number) {
       headers: retryAfterMs
         ? { "Retry-After": Math.ceil(retryAfterMs / 1000).toString() }
         : undefined,
-    },
+    }
   );
 }
 

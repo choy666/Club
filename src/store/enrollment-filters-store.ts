@@ -23,25 +23,23 @@ const DEFAULT_STATE: Omit<
   perPage: 10,
 };
 
-export const useEnrollmentFiltersStore = create<EnrollmentFiltersState>(
-  (set) => ({
-    ...DEFAULT_STATE,
-    setSearch: (value) =>
-      set({
-        search: value,
-        page: 1,
-      }),
-    setStatus: (value) =>
-      set({
-        status: value,
-        page: 1,
-      }),
-    setPage: (page) => set({ page }),
-    setPerPage: (perPage) =>
-      set({
-        perPage,
-        page: 1,
-      }),
-    resetFilters: () => set({ ...DEFAULT_STATE }),
-  }),
-);
+export const useEnrollmentFiltersStore = create<EnrollmentFiltersState>((set) => ({
+  ...DEFAULT_STATE,
+  setSearch: (value) =>
+    set({
+      search: value,
+      page: 1,
+    }),
+  setStatus: (value) =>
+    set({
+      status: value,
+      page: 1,
+    }),
+  setPage: (page) => set({ page }),
+  setPerPage: (perPage) =>
+    set({
+      perPage,
+      page: 1,
+    }),
+  resetFilters: () => set({ ...DEFAULT_STATE }),
+}));

@@ -1,10 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-import {
-  GET as listDuesHandler,
-  POST as payDueHandler,
-} from "@/app/api/cuotas/route";
+import { GET as listDuesHandler, POST as payDueHandler } from "@/app/api/cuotas/route";
 import { AppError } from "@/lib/errors";
 
 const mockListDues = vi.fn();
@@ -32,9 +29,7 @@ describe("GET /api/cuotas", () => {
       meta: { page: 1, perPage: 10, total: 1, totalPages: 1 },
     });
 
-    const request = new NextRequest(
-      "http://localhost/api/cuotas?page=1&perPage=10",
-    );
+    const request = new NextRequest("http://localhost/api/cuotas?page=1&perPage=10");
     const response = await listDuesHandler(request);
 
     expect(response.status).toBe(200);
@@ -53,9 +48,7 @@ describe("GET /api/cuotas", () => {
   });
 
   it("devuelve 422 con filtros inválidos", async () => {
-    const request = new NextRequest(
-      "http://localhost/api/cuotas?page=0&perPage=200",
-    );
+    const request = new NextRequest("http://localhost/api/cuotas?page=0&perPage=200");
     const response = await listDuesHandler(request);
 
     expect(response.status).toBe(422);

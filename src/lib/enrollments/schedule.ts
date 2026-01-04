@@ -16,11 +16,7 @@ function toUTCDate(year: number, monthIndex: number, day: number) {
 
 function toDate(value: Date | string) {
   if (value instanceof Date) {
-    return toUTCDate(
-      value.getUTCFullYear(),
-      value.getUTCMonth(),
-      value.getUTCDate(),
-    );
+    return toUTCDate(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
   }
 
   if (DATE_ONLY_REGEX.test(value)) {
@@ -29,28 +25,18 @@ function toDate(value: Date | string) {
   }
 
   const parsed = new Date(value);
-  return toUTCDate(
-    parsed.getUTCFullYear(),
-    parsed.getUTCMonth(),
-    parsed.getUTCDate(),
-  );
+  return toUTCDate(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
 }
 
 export function addMonths(date: Date, months: number) {
-  return toUTCDate(
-    date.getUTCFullYear(),
-    date.getUTCMonth() + months,
-    date.getUTCDate(),
-  );
+  return toUTCDate(date.getUTCFullYear(), date.getUTCMonth() + months, date.getUTCDate());
 }
 
 export function formatDateOnly(date: Date) {
   return date.toISOString().split("T")[0]!;
 }
 
-export function buildDueSchedule(
-  input: BuildDueScheduleInput,
-): (typeof dues.$inferInsert)[] {
+export function buildDueSchedule(input: BuildDueScheduleInput): (typeof dues.$inferInsert)[] {
   const baseDate = toDate(input.startDate);
 
   if (Number.isNaN(baseDate.getTime())) {

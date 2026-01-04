@@ -16,27 +16,20 @@ export async function GET() {
   } catch (error) {
     checks.database = {
       status: "degraded",
-      detail:
-        error instanceof Error
-          ? error.message
-          : "Error desconocido verificando DB",
+      detail: error instanceof Error ? error.message : "Error desconocido verificando DB",
     };
     logger.error(
       {
         scope: "healthcheck",
         component: "database",
         error:
-          error instanceof Error
-            ? { message: error.message, stack: error.stack }
-            : String(error),
+          error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
       },
-      "Healthcheck: fallo conexión base de datos",
+      "Healthcheck: fallo conexión base de datos"
     );
   }
 
-  const overall: HealthStatus = Object.values(checks).every(
-    (check) => check.status === "ok",
-  )
+  const overall: HealthStatus = Object.values(checks).every((check) => check.status === "ok")
     ? "ok"
     : "degraded";
 
@@ -52,6 +45,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       checks,
     },
-    { status: statusCode },
+    { status: statusCode }
   );
 }

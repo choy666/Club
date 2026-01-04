@@ -1,10 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import {
-  CreateEnrollmentInput,
-  UpdateEnrollmentInput,
-} from "@/lib/validations/enrollments";
+import { CreateEnrollmentInput, UpdateEnrollmentInput } from "@/lib/validations/enrollments";
 import type {
   DueListResponse,
   DueResponse,
@@ -39,7 +36,7 @@ export function useEnrollmentsList() {
       }
 
       const response = await apiFetch<EnrollmentListResponse>(
-        `/api/inscripciones?${params.toString()}`,
+        `/api/inscripciones?${params.toString()}`
       );
 
       return response;
@@ -53,13 +50,10 @@ export function useCreateEnrollment() {
 
   return useMutation({
     mutationFn: async (input: CreateEnrollmentInput) => {
-      const response = await apiFetch<EnrollmentResponse>(
-        "/api/inscripciones",
-        {
-          method: "POST",
-          body: JSON.stringify(input),
-        },
-      );
+      const response = await apiFetch<EnrollmentResponse>("/api/inscripciones", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
 
       return response.data;
     },
@@ -74,16 +68,13 @@ export function useUpdateEnrollment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      enrollmentId: string;
-      input: UpdateEnrollmentInput;
-    }) => {
+    mutationFn: async (params: { enrollmentId: string; input: UpdateEnrollmentInput }) => {
       const response = await apiFetch<EnrollmentResponse>(
         `/api/inscripciones/${params.enrollmentId}`,
         {
           method: "PUT",
           body: JSON.stringify(params.input),
-        },
+        }
       );
 
       return response.data;
@@ -128,9 +119,7 @@ export function useDuesList() {
         params.set("to", filters.to);
       }
 
-      const response = await apiFetch<DueListResponse>(
-        `/api/cuotas?${params.toString()}`,
-      );
+      const response = await apiFetch<DueListResponse>(`/api/cuotas?${params.toString()}`);
 
       return response;
     },
@@ -142,13 +131,7 @@ export function usePayDue() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      dueId,
-      paidAt,
-    }: {
-      dueId: string;
-      paidAt?: string;
-    }) => {
+    mutationFn: async ({ dueId, paidAt }: { dueId: string; paidAt?: string }) => {
       const response = await apiFetch<DueResponse>("/api/cuotas", {
         method: "POST",
         body: JSON.stringify({ dueId, paidAt }),
@@ -168,13 +151,11 @@ export function useMembersOptions() {
     queryFn: async () => {
       const params = new URLSearchParams({
         page: "1",
-        perPage: "100",
-        status: "ACTIVE",
+        perPage: "50",
+        status: "PENDING",
       });
 
-      const response = await apiFetch<MembersListResponse>(
-        `/api/socios?${params.toString()}`,
-      );
+      const response = await apiFetch<MembersListResponse>(`/api/socios?${params.toString()}`);
 
       return response.data;
     },

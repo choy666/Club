@@ -35,7 +35,7 @@ import type { MemberFinancialSnapshot, MemberStatus } from "@/types/member";
 const MEMBER_STATUS_BY_ENROLLMENT: Record<EnrollmentStatus, MemberStatus> = {
   PENDING: "PENDING",
   ACTIVE: "ACTIVE",
-  CANCELLED: "INACTIVE",
+  CANCELLED: "PENDING",
 };
 
 function buildCredentialCode(memberId: string, enrollmentId: string, updatedAt: string) {
@@ -219,6 +219,7 @@ export async function updateEnrollment(
     throw new AppError("Inscripción no encontrada.", 404);
   }
 
+  // Actualizar la inscripción
   await db
     .update(enrollments)
     .set({
@@ -227,6 +228,19 @@ export async function updateEnrollment(
       updatedAt: sql`now()`,
     })
     .where(eq(enrollments.id, enrollmentId));
+
+  // Si el estado cambió, actualizar el estado del miembro correspondiente
+  if (input.status && input.status !== existing.status) {
+    const newMemberStatus = MEMBER_STATUS_BY_ENROLLMENT[input.status];
+    
+    await db
+      .update(members)
+      .set({
+        status: newMemberStatus,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(members.id, existing.member.id));
+  }
 
   const updated = await findEnrollmentById(enrollmentId);
   if (!updated) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -12,7 +12,7 @@ import {
 } from "@/lib/validations/enrollments";
 import { useMembersOptions } from "@/hooks/use-enrollments";
 import type { EnrollmentDTO } from "@/types/enrollment";
-import { useEconomicConfig } from "@/hooks/use-economic-config";
+import { clientEnv } from "@/lib/client-env";
 
 function getDateValue(value?: string | null) {
   if (!value) return "";
@@ -29,17 +29,15 @@ export function EnrollmentCreateForm({
   serverError?: string | null;
 }) {
   const { data: membersOptions, isLoading: membersLoading } = useMembersOptions();
-  const { data: economicConfig } = useEconomicConfig();
-  const hasAppliedDefaults = useRef(false);
 
   const defaultValues = useMemo<CreateEnrollmentInput>(() => {
     const today = new Date().toISOString().split("T")[0] ?? "";
     return {
       memberId: "",
       startDate: today,
-      planName: "",
-      monthlyAmount: undefined,
-      monthsToGenerate: undefined,
+      planName: "Inscripción",
+      enrollmentAmount: undefined,
+      clubName: clientEnv.NAME_CLUB,
       notes: "",
     };
   }, []);
@@ -48,30 +46,10 @@ export function EnrollmentCreateForm({
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
-    getValues,
   } = useForm<CreateEnrollmentInput>({
     resolver: zodResolver(createEnrollmentSchema) as Resolver<CreateEnrollmentInput>,
     defaultValues,
   });
-
-  useEffect(() => {
-    if (
-      economicConfig &&
-      !hasAppliedDefaults.current &&
-      (() => {
-        const values = getValues();
-        return (
-          (values.monthlyAmount == null || values.monthlyAmount === 0) &&
-          (values.monthsToGenerate == null || values.monthsToGenerate === 0)
-        );
-      })()
-    ) {
-      setValue("monthlyAmount", economicConfig.defaultMonthlyAmount);
-      setValue("monthsToGenerate", economicConfig.defaultMonthsToGenerate);
-      hasAppliedDefaults.current = true;
-    }
-  }, [economicConfig, setValue, getValues]);
 
   const submitHandler = handleSubmit(async (values) => {
     await onSubmit(values);
@@ -81,7 +59,7 @@ export function EnrollmentCreateForm({
     <form onSubmit={submitHandler} className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1">
-          <label className="text-sm text-base-muted">Socio</label>
+          <label className="text-sm text-base-muted">Usuario</label>
           <select {...register("memberId")} className="select-base" disabled={membersLoading}>
             <option value="">Seleccionar socio...</option>
             {membersOptions?.map((member) => (
@@ -95,7 +73,7 @@ export function EnrollmentCreateForm({
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-sm text-base-muted">Fecha de inicio</label>
+          <label className="text-sm text-base-muted">Fecha de inscripción</label>
           <input
             type="date"
             {...register("startDate")}
@@ -107,26 +85,53 @@ export function EnrollmentCreateForm({
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-sm text-base-muted">Monto mensual</label>
+          <label className="text-sm text-base-muted">Importe de inscripción</label>
           <input
             type="number"
-            {...register("monthlyAmount", { valueAsNumber: true })}
+            {...register("enrollmentAmount", { valueAsNumber: true })}
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
+            placeholder="0"
           />
-          {economicConfig && (
-            <p className="text-xs text-base-muted">
-              Sugerido: ARS {economicConfig.defaultMonthlyAmount.toLocaleString()} · vencimiento día{" "}
-              {economicConfig.dueDay}
+          {errors.enrollmentAmount && (
+            <p className="text-sm text-accent-critical">
+              {errors.enrollmentAmount.message as string}
             </p>
           )}
-          {errors.monthlyAmount && (
-            <p className="text-sm text-accent-critical">{errors.monthlyAmount.message as string}</p>
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm text-base-muted">Nombre del club</label>
+          <input
+            type="text"
+            {...register("clubName")}
+            className="w-full rounded-lg border border-base-border bg-base-secondary/20 px-4 py-2 text-base-muted focus:border-accent-primary focus:outline-none"
+            value={clientEnv.NAME_CLUB}
+            readOnly
+          />
+          {errors.clubName && (
+            <p className="text-sm text-accent-critical">{errors.clubName.message as string}</p>
           )}
         </div>
       </div>
 
+      <input type="hidden" {...register("planName")} value="Inscripción" readOnly />
+
+      <div className="space-y-1">
+        <label className="text-sm text-base-muted">Notas</label>
+        <textarea
+          {...register("notes")}
+          rows={4}
+          className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
+          placeholder="Notas adicionales (opcional)"
+          maxLength={400}
+        />
+        {errors.notes && (
+          <p className="text-sm text-accent-critical">{errors.notes.message as string}</p>
+        )}
+      </div>
+
       <div className="rounded-md border border-base-border/60 bg-base-secondary/30 px-4 py-3 text-sm text-base-muted">
-        El socio debe abonar previamente la inscripción para ser dado de alta.
+        La inscripción creará automáticamente la credencial del socio. La credencial estará
+        disponible inmediatamente después de crear la inscripción.
       </div>
 
       <div className="flex justify-end">

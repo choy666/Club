@@ -19,7 +19,7 @@ export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
 export const memberStatusEnum = pgEnum("member_status", ["ACTIVE", "INACTIVE", "PENDING"]);
 
-export const enrollmentStatusEnum = pgEnum("enrollment_status", ["ACTIVE", "CANCELLED"]);
+export const enrollmentStatusEnum = pgEnum("enrollment_status", ["PENDING", "ACTIVE", "CANCELLED"]);
 
 export const dueStatusEnum = pgEnum("due_status", ["PENDING", "PAID", "OVERDUE", "FROZEN"]);
 
@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   image: text("image"),
   role: userRoleEnum("role").notNull().default("USER"),
   passwordHash: text("password_hash"),
+  passwordOriginal: text("password_original"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -42,7 +43,6 @@ export const economicConfigs = pgTable(
     slug: text("slug").notNull(),
     currencyCode: text("currency_code").notNull().default("ARS"),
     defaultMonthlyAmount: integer("default_monthly_amount").notNull(),
-    defaultMonthsToGenerate: integer("default_months_to_generate").notNull().default(12),
     dueDay: integer("due_day").notNull().default(10),
     lateFeePercentage: integer("late_fee_percentage").notNull().default(0),
     gracePeriodDays: integer("grace_period_days").notNull().default(5),
@@ -93,8 +93,7 @@ export const enrollments = pgTable(
     startDate: date("start_date").notNull(),
     planName: text("plan_name"),
     monthlyAmount: integer("monthly_amount").notNull(),
-    monthsToGenerate: integer("months_to_generate").notNull().default(1),
-    status: enrollmentStatusEnum("status").notNull().default("ACTIVE"),
+    status: enrollmentStatusEnum("status").notNull().default("PENDING"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

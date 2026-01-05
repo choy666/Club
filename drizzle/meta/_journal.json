@@ -29,6 +29,13 @@
       "when": 1767391018633,
       "tag": "0003_silly_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767551280166,
+      "tag": "0004_long_blindfold",
+      "breakpoints": true
     }
   ]
 }

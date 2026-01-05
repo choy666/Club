@@ -7,8 +7,10 @@ import type {
   MemberResponse,
   MembersListResponse,
 } from "@/types/member";
+import type { MemberCredentialDTO, MemberCredentialResponse } from "@/types/enrollment";
 import { useMemberFiltersStore } from "@/store/members-filters-store";
 import type { CreateMemberInput, UpdateMemberInput } from "@/lib/validations/members";
+import { DASHBOARD_SUMMARY_KEY } from "@/hooks/use-dashboard-summary";
 
 const MEMBERS_KEY = ["members"];
 const MEMBER_DETAIL_KEY = (id: string) => [...MEMBERS_KEY, id];
@@ -19,6 +21,12 @@ const MEMBER_SNAPSHOT_KEY = (memberId: string | null) => [
   memberId ?? "unknown",
 ];
 const MEMBER_SELF_SNAPSHOT_KEY = ["member", "me", "snapshot"];
+const MEMBER_CREDENTIAL_KEY = (memberId: string | null) => [
+  "member",
+  "credential",
+  memberId ?? "unknown",
+];
+const MEMBER_SELF_CREDENTIAL_KEY = ["member", "me", "credential"];
 
 export function useMembersList() {
   const filters = useMemberFiltersStore();
@@ -100,6 +108,37 @@ export function useMemberProfile() {
   });
 }
 
+export function useMemberCredential(memberId?: string, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery<MemberCredentialDTO | null>({
+    queryKey: MEMBER_CREDENTIAL_KEY(memberId ?? null),
+    enabled: Boolean(memberId && enabled),
+    queryFn: async () => {
+      if (!memberId) {
+        return null;
+      }
+      const response = await apiFetch<MemberCredentialResponse>(
+        `/api/socios/${memberId}/credential`
+      );
+      return response.data;
+    },
+    staleTime: 1000 * 60,
+  });
+}
+
+export function useMyCredential(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery<MemberCredentialDTO>({
+    queryKey: MEMBER_SELF_CREDENTIAL_KEY,
+    enabled,
+    queryFn: async () => {
+      const response = await apiFetch<MemberCredentialResponse>("/api/socios/me/credential");
+      return response.data;
+    },
+    staleTime: 1000 * 60,
+  });
+}
+
 export function useCreateMember() {
   const queryClient = useQueryClient();
 
@@ -114,6 +153,7 @@ export function useCreateMember() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
     },
   });
 }
@@ -138,6 +178,7 @@ export function useUpdateMember() {
         queryKey: MEMBERS_KEY,
       });
       void queryClient.invalidateQueries({ queryKey: MEMBER_ME_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
     },
   });
 }
@@ -154,6 +195,7 @@ export function useDeleteMember() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
     },
   });
 }

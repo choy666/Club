@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { useMemberProfile, useMyFinancialSnapshot } from "@/hooks/use-members";
+import { useMemberProfile, useMyFinancialSnapshot, useMyCredential } from "@/hooks/use-members";
 import { MemberProfileCard } from "@/components/members/member-profile-card";
 import { MemberFinancialAlert } from "@/components/members/member-financial-alert";
+import { MemberCredentialCard } from "@/components/credentials/member-credential-card";
 
 export default function SocioPage() {
   const { data, isLoading, error } = useMemberProfile();
   const snapshotQuery = useMyFinancialSnapshot({
+    enabled: Boolean(data),
+  });
+  const credentialQuery = useMyCredential({
     enabled: Boolean(data),
   });
 
@@ -70,6 +74,15 @@ export default function SocioPage() {
               }
             />
             <MemberProfileCard member={data} snapshot={snapshotQuery.data} />
+            <MemberCredentialCard
+              credential={credentialQuery.data}
+              isLoading={credentialQuery.isLoading || credentialQuery.isRefetching}
+              error={credentialQuery.error instanceof Error ? credentialQuery.error.message : null}
+              onRefresh={() => credentialQuery.refetch()}
+              title="Tu credencial de socio"
+              subtitle="Necesitás una inscripción activa y el primer pago registrado. El código se actualiza de forma automática."
+              compact
+            />
           </>
         )}
 

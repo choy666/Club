@@ -1,8 +1,10 @@
+import { createHash } from "crypto";
 import { and, count, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dues, enrollments, members, payments, users } from "@/db/schema";
 import { AppError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { getEconomicConfigBySlug } from "@/lib/economic-config/service";
 import type {
   CreateEnrollmentInput,
@@ -11,8 +13,10 @@ import type {
   UpdateEnrollmentInput,
 } from "@/lib/validations/enrollments";
 import {
+  enrollmentHasPaidDuesExpression,
   findDueById,
   findEnrollmentById,
+  findEnrollmentByMemberId,
   mapDueRow,
   mapEnrollmentRow,
 } from "@/lib/enrollments/queries";
@@ -23,9 +27,42 @@ import type {
   DueListResponse,
   EnrollmentDTO,
   EnrollmentListResponse,
+  EnrollmentStatus,
+  MemberCredentialDTO,
 } from "@/types/enrollment";
 import type { PaymentDTO } from "@/types/payment";
 import type { MemberFinancialSnapshot, MemberStatus } from "@/types/member";
+
+const MEMBER_STATUS_BY_ENROLLMENT: Record<EnrollmentStatus, MemberStatus> = {
+  PENDING: "PENDING",
+  ACTIVE: "ACTIVE",
+  CANCELLED: "INACTIVE",
+};
+
+function buildCredentialCode(memberId: string, enrollmentId: string, updatedAt: string) {
+  return createHash("sha256")
+    .update(`${memberId}:${enrollmentId}:${updatedAt}`)
+    .digest("hex")
+    .slice(0, 16)
+    .toUpperCase();
+}
+
+function buildCredentialPayload(params: {
+  code: string;
+  memberId: string;
+  enrollmentId: string;
+  issuedAt: string;
+}) {
+  const payload = JSON.stringify({
+    type: "appclub.credential",
+    version: 1,
+    code: params.code,
+    memberId: params.memberId,
+    enrollmentId: params.enrollmentId,
+    issuedAt: params.issuedAt,
+  });
+  return Buffer.from(payload).toString("base64url");
+}
 
 function assertMemberExists(memberId: string) {
   return db.query.members.findFirst({
@@ -67,7 +104,12 @@ export async function listEnrollments(
 
   const [rows, totalResult] = await Promise.all([
     db
-      .select()
+      .select({
+        enrollments,
+        members,
+        users,
+        hasPaidDues: enrollmentHasPaidDuesExpression,
+      })
       .from(enrollments)
       .innerJoin(members, eq(enrollments.memberId, members.id))
       .innerJoin(users, eq(members.userId, users.id))
@@ -118,63 +160,55 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
     throw new AppError("El socio ya tiene una inscripción registrada.", 409);
   }
 
-  const monthlyAmount = input.monthlyAmount ?? economicConfig.defaultMonthlyAmount;
-  const monthsToGenerate = input.monthsToGenerate ?? economicConfig.defaultMonthsToGenerate;
+  const monthlyAmount = economicConfig.defaultMonthlyAmount;
 
   if (!monthlyAmount || monthlyAmount <= 0) {
     throw new AppError("No hay un monto mensual válido configurado para esta inscripción.", 400);
   }
 
-  if (!monthsToGenerate || monthsToGenerate <= 0) {
-    throw new AppError(
-      "No hay una cantidad de cuotas válida configurada para esta inscripción.",
-      400
-    );
-  }
-
   const startDate = new Date(input.startDate);
   const startDateValue = formatDateOnly(startDate);
 
-  return db.transaction(async (tx) => {
-    const [created] = await tx
-      .insert(enrollments)
-      .values({
-        memberId: input.memberId,
-        startDate: startDateValue,
-        planName: input.planName ?? null,
-        monthlyAmount,
-        monthsToGenerate,
-        notes: input.notes ?? null,
-      })
-      .returning();
+  try {
+    let createdEnrollmentId: string | null = null;
 
-    const duesToInsert = buildDueSchedule({
-      enrollmentId: created.id,
-      memberId: input.memberId,
-      startDate: startDateValue,
-      monthsToGenerate,
-      monthlyAmount,
+    await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(enrollments)
+        .values({
+          memberId: input.memberId,
+          startDate: startDateValue,
+          planName: input.planName ?? null,
+          monthlyAmount,
+          notes: input.notes ?? null,
+          status: "ACTIVE",
+        })
+        .returning();
+
+      createdEnrollmentId = created.id;
+
+      await tx
+        .update(members)
+        .set({
+          status: MEMBER_STATUS_BY_ENROLLMENT["ACTIVE"],
+          updatedAt: sql`now()`,
+        })
+        .where(eq(members.id, input.memberId));
     });
 
-    if (duesToInsert.length) {
-      await tx.insert(dues).values(duesToInsert);
+    if (!createdEnrollmentId) {
+      throw new AppError("No se pudo crear la inscripción.", 500);
     }
 
-    await tx
-      .update(members)
-      .set({
-        status: "ACTIVE",
-        updatedAt: sql`now()`,
-      })
-      .where(eq(members.id, input.memberId));
-
-    const enrollment = await findEnrollmentById(created.id);
+    const enrollment = await findEnrollmentById(createdEnrollmentId);
     if (!enrollment) {
       throw new AppError("No se pudo crear la inscripción.", 500);
     }
 
     return enrollment;
-  });
+  } catch (error) {
+    throw error;
+  }
 }
 
 export async function updateEnrollment(
@@ -201,6 +235,31 @@ export async function updateEnrollment(
   }
 
   return updated;
+}
+
+export async function deleteEnrollment(enrollmentId: string): Promise<EnrollmentDTO> {
+  const existing = await findEnrollmentById(enrollmentId);
+  if (!existing) {
+    throw new AppError("Inscripción no encontrada.", 404);
+  }
+
+  if (existing.hasPaidDues) {
+    throw new AppError("No se puede eliminar una inscripción que tiene cuotas pagadas.", 409);
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
+    await tx.delete(enrollments).where(eq(enrollments.id, enrollmentId));
+    await tx
+      .update(members)
+      .set({
+        status: "PENDING",
+        updatedAt: sql`now()`,
+      })
+      .where(eq(members.id, existing.member.id));
+  });
+
+  return existing;
 }
 
 export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
@@ -290,7 +349,8 @@ function mapPaymentRow(row: typeof payments.$inferSelect): PaymentDTO {
 export async function recordPayment(
   dueId: string,
   paidAt?: string,
-  paymentMetadata?: PaymentMetadata
+  metadata?: PaymentMetadata,
+  options?: { syncStatus?: boolean }
 ): Promise<{ due: DueDTO; payment: PaymentDTO }> {
   const existing = await findDueById(dueId);
   if (!existing) {
@@ -312,10 +372,10 @@ export async function recordPayment(
   const paymentValues = {
     memberId: existing.member.id,
     dueId,
-    amount: paymentMetadata?.amount ?? existing.amount,
-    method: paymentMetadata?.method ?? "INTERNAL",
-    reference: paymentMetadata?.reference ?? null,
-    notes: paymentMetadata?.notes ?? null,
+    amount: metadata?.amount ?? existing.amount,
+    method: metadata?.method ?? "INTERNAL",
+    reference: metadata?.reference ?? null,
+    notes: metadata?.notes ?? null,
     paidAt: paidAtDate,
   };
 
@@ -366,7 +426,9 @@ export async function recordPayment(
     };
   });
 
-  await refreshMemberFinancialStatus(existing.member.id);
+  if (options?.syncStatus !== false) {
+    await refreshMemberFinancialStatus(existing.member.id);
+  }
 
   return result;
 }
@@ -394,7 +456,68 @@ export async function getEnrollmentDetail(enrollmentId: string) {
   return enrollment;
 }
 
-export async function refreshMemberFinancialStatus(memberId: string) {
+export async function getMemberCredential(memberId: string): Promise<MemberCredentialDTO> {
+  const member = await assertMemberExists(memberId);
+  if (!member || !member.user) {
+    throw new AppError("Socio no encontrado.", 404);
+  }
+
+  const enrollment = await findEnrollmentByMemberId(memberId);
+  const { nextStatus } = await determineMemberFinancialStatus(memberId);
+
+  const paidResult = await db
+    .select({ value: count() })
+    .from(dues)
+    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID")));
+
+  const hasPaidDues = (paidResult[0]?.value ?? 0) > 0;
+
+  const isReady =
+    Boolean(enrollment) &&
+    enrollment?.status === "ACTIVE" &&
+    nextStatus === "ACTIVE" &&
+    hasPaidDues;
+
+  let credential: MemberCredentialDTO["credential"] = null;
+  if (isReady && enrollment) {
+    const issuedAt = new Date().toISOString();
+    const code = buildCredentialCode(memberId, enrollment.id, enrollment.updatedAt);
+    credential = {
+      code,
+      issuedAt,
+      qrPayload: buildCredentialPayload({
+        code,
+        memberId,
+        enrollmentId: enrollment.id,
+        issuedAt,
+      }),
+    };
+  }
+
+  return {
+    member: {
+      id: member.id,
+      name: member.user.name ?? null,
+      email: member.user.email,
+      documentNumber: member.documentNumber,
+      status: member.status,
+    },
+    enrollment: enrollment
+      ? {
+          id: enrollment.id,
+          planName: enrollment.planName,
+          monthlyAmount: enrollment.monthlyAmount,
+          status: enrollment.status,
+          startDate: enrollment.startDate,
+          updatedAt: enrollment.updatedAt,
+        }
+      : null,
+    credential,
+    isReady,
+  };
+}
+
+async function determineMemberFinancialStatus(memberId: string) {
   const member = await db.query.members.findFirst({
     where: eq(members.id, memberId),
     columns: {
@@ -451,6 +574,12 @@ export async function refreshMemberFinancialStatus(memberId: string) {
   } else if ((pendingResult[0]?.value ?? 0) > 0) {
     nextStatus = "PENDING";
   }
+
+  return { member, nextStatus };
+}
+
+export async function refreshMemberFinancialStatus(memberId: string) {
+  const { member, nextStatus } = await determineMemberFinancialStatus(memberId);
 
   if (member.status !== nextStatus) {
     await db
@@ -522,7 +651,7 @@ export async function getMemberFinancialSnapshot(
     ]
   );
 
-  const snapshotStatus = await refreshMemberFinancialStatus(memberId);
+  const { nextStatus: snapshotStatus } = await determineMemberFinancialStatus(memberId);
 
   return {
     memberId,

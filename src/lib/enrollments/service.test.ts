@@ -9,7 +9,6 @@ const mockFindEnrollmentById = vi.fn();
 
 const mockEconomicConfig = vi.hoisted(() => ({
   defaultMonthlyAmount: 1000,
-  defaultMonthsToGenerate: 1,
 }));
 
 vi.mock("@/db/client", () => {
@@ -28,6 +27,22 @@ vi.mock("@/db/client", () => {
   };
 });
 
+describe("deleteEnrollment", () => {
+  it("lanza AppError cuando la inscripción tiene cuotas pagadas", async () => {
+    mockFindEnrollmentById.mockResolvedValue({
+      id: "enroll-1",
+      member: { id: "member-1" },
+      hasPaidDues: true,
+    });
+
+    await expect(deleteEnrollment("enroll-1")).rejects.toBeInstanceOf(AppError);
+    await expect(deleteEnrollment("enroll-1")).rejects.toMatchObject({
+      message: "No se puede eliminar una inscripción que tiene cuotas pagadas.",
+      status: 409,
+    });
+  });
+});
+
 vi.mock("@/lib/enrollments/queries", () => ({
   findDueById: (...args: unknown[]) => mockFindDueById(...args),
   findEnrollmentById: (...args: unknown[]) => mockFindEnrollmentById(...args),
@@ -39,7 +54,7 @@ vi.mock("@/lib/economic-config/service", () => ({
   getEconomicConfigBySlug: vi.fn().mockResolvedValue(mockEconomicConfig),
 }));
 
-import { createEnrollment, recordPayment } from "./service";
+import { createEnrollment, deleteEnrollment, recordPayment } from "./service";
 
 describe("createEnrollment", () => {
   beforeEach(() => {
@@ -50,7 +65,7 @@ describe("createEnrollment", () => {
   it("lanza AppError 409 cuando el socio ya tiene una inscripción", async () => {
     mockMemberFindFirst.mockResolvedValue({
       id: "member-1",
-      status: "ACTIVE",
+      status: "PENDING",
       user: { id: "user-1", email: "member@test.com" },
     });
     mockEnrollmentFindFirst.mockResolvedValue({
@@ -62,7 +77,8 @@ describe("createEnrollment", () => {
       memberId: "member-1",
       startDate: "2025-01-01",
       monthlyAmount: 15000,
-      monthsToGenerate: 3,
+      monthsToGenerate: 1,
+      monthsPaid: 0,
     });
 
     await expect(promise).rejects.toBeInstanceOf(AppError);

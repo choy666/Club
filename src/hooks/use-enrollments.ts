@@ -12,9 +12,9 @@ import { useEnrollmentFiltersStore } from "@/store/enrollment-filters-store";
 import { useDueFiltersStore } from "@/store/due-filters-store";
 import type { MembersListResponse } from "@/types/member";
 
-const ENROLLMENTS_KEY = ["enrollments"];
-export const DUES_KEY = ["dues"];
-const MEMBERS_OPTIONS_KEY = ["members", "options"];
+export const ENROLLMENTS_KEY = ["enrollments"] as const;
+export const DUES_KEY = ["dues"] as const;
+const MEMBERS_OPTIONS_KEY = ["members", "pending-options"];
 
 export function useEnrollmentsList() {
   const filters = useEnrollmentFiltersStore();
@@ -58,8 +58,8 @@ export function useCreateEnrollment() {
       return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ENROLLMENTS_KEY });
-      void queryClient.invalidateQueries({ queryKey: DUES_KEY });
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
     },
   });
 }
@@ -81,9 +81,26 @@ export function useUpdateEnrollment() {
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: [...ENROLLMENTS_KEY, variables.enrollmentId],
+        queryKey: [ENROLLMENTS_KEY, variables.enrollmentId],
       });
-      void queryClient.invalidateQueries({ queryKey: ENROLLMENTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+    },
+  });
+}
+
+export function useDeleteEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (enrollmentId: string) => {
+      const response = await apiFetch<EnrollmentResponse>(`/api/inscripciones/${enrollmentId}`, {
+        method: "DELETE",
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
     },
   });
 }
@@ -140,7 +157,7 @@ export function usePayDue() {
       return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: DUES_KEY });
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
     },
   });
 }

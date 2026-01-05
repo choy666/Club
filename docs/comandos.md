@@ -36,6 +36,7 @@ Listado rápido de scripts y utilidades más usados. Ejecutar siempre desde la r
 | Comando                                 | Descripción                                                                                                                                                     |
 | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run jobs:generate-dues [operador]` | Ejecuta el job mensual que genera la próxima cuota de cada socio activo. El parámetro `operador` es opcional y se registra en `monthly_run_log` para auditoría. |
+| `npm run reset:enrollments`             | Limpia todas las inscripciones/cuotas/pagos y devuelve a los socios a estado `PENDING`. Úsalo sólo en QA/DEV antes de recrear el padrón.                        |
 
 ## 🗄️ Base de datos y migraciones
 
@@ -50,9 +51,10 @@ Listado rápido de scripts y utilidades más usados. Ejecutar siempre desde la r
 
 ## 🔐 Seeds y utilidades
 
-| Comando              | Descripción                                                                                              |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| `npm run seed:admin` | Ejecuta `scripts/seed-admin.ts` para crear/actualizar el usuario ADMIN definido en variables de entorno. |
+| Comando                     | Descripción                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `npm run seed:admin`        | Ejecuta `scripts/seed-admin.ts` para crear/actualizar el usuario ADMIN definido en variables de entorno.               |
+| `npm run reset:enrollments` | Ejecuta `scripts/delete-all-enrollments.ts` (sin transacciones). Útil para reiniciar el entorno antes de correr seeds. |
 
 ## ✅ Buenas prácticas
 

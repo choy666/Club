@@ -20,7 +20,7 @@ const DEFAULT_STATE: Omit<
   search: "",
   status: "ALL",
   page: 1,
-  perPage: 10,
+  perPage: 50,
 };
 
 export const useEnrollmentFiltersStore = create<EnrollmentFiltersState>((set) => ({

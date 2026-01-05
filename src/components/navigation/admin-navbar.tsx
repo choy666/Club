@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
+import { AuthButton } from "@/components/auth/auth-button";
+
 const adminLinks = [
   { href: "/admin", label: "Panel" },
   { href: "/admin/inscripciones", label: "Inscripciones" },
@@ -61,6 +63,8 @@ export function AdminNavbar() {
           {linkItems}
         </nav>
 
+        <AuthButton variant="admin" />
+
         <button
           type="button"
           className="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-[0.6rem] tracking-[0.4em] text-base-muted transition hover:border-accent-primary hover:text-accent-primary lg:hidden"
@@ -96,6 +100,10 @@ export function AdminNavbar() {
         <nav className="flex flex-col gap-2 text-sm" aria-label="Navegación administrativa móvil">
           {linkItems}
         </nav>
+
+        <div className="mt-4 flex justify-center">
+          <AuthButton variant="admin" />
+        </div>
       </div>
     </header>
   );

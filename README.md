@@ -9,6 +9,8 @@ Sistema integral para administrar socios, inscripciones, cuotas y pagos del Club
 - Altas/ediciones de socios con formularios reutilizables.
 - Inscripciones y generación automática de cuotas según configuraciones económicas.
 - Registro de pagos (manuales o automáticos) con recalculo inmediato del estado del socio (`ACTIVE`, `PENDING`, `INACTIVE`).
+- Credencial digital minimalista con QR verificable para socios activos al día.
+- Cuotas futuras generadas automáticamente (y cobrables por adelantado) más job mensual para mantenerlas actualizadas.
 - Reportes financieros y roadmap hacia métricas avanzadas.
 - Identidad visual consistente + página showcase pública para stakeholders.
 
@@ -84,6 +86,7 @@ Reglas destacadas:
 4. Endpoints `/api/socios/{memberId}/status` y `/api/socios/me/status` recalculan siempre antes de responder.
 5. Constraint `enrollments_member_id_idx` garantiza una inscripción por socio y está documentado junto con el script de verificación previa de duplicados.
 6. El job `npm run jobs:generate-dues [operador]` genera la próxima cuota de cada socio activo y deja trazabilidad en `monthly_run_log` (cantidad creada, operador y notas).
+7. **Eliminación de inscripciones:** sólo se pueden borrar inscripciones que no tengan ninguna cuota pagada. El endpoint `DELETE /api/inscripciones/{id}` y el botón “Eliminar” del administrador bloquean la acción si `hasPaidDues = true`. Para limpiezas completas de QA/DEV se documentó el script `npm run reset:enrollments`, que borra pagos/cuotas/inscripciones y devuelve a los socios a estado `PENDING` (ver `docs/comandos.md`).
 
 ---
 
@@ -162,8 +165,9 @@ Dependencias: QA del Sprint 3 completo + migraciones sincronizadas en Neon.
 ### Checklist DoD (cumplido)
 
 - [x] Migración `payments` enlazada con `members` + `dues`.
-- [x] Servicios `recordPayment`, `refreshMemberFinancialStatus`, `getMemberFinancialSnapshot`.
-- [x] Endpoints `POST /api/pagos`, `GET /api/socios/{memberId}/status`, `GET /api/socios/me/status`.
+- [x] Servicios### Sync de estados financieros
+- `refreshMemberFinancialStatus` se ejecuta al registrar pagos o acciones operativas; las consultas financieras usan una versión sin efectos (`determineMemberFinancialStatus`).
+- [x] `POST /api/pagos`, `GET /api/socios/{memberId}/status`, `GET /api/socios/me/status`.
 - [x] Hooks `useRecordPayment`, `useMemberFinancialSnapshot`, invalidaciones (`DUES_KEY`, snapshot).
 - [x] Modal de pago manual en `DueTable` (método, referencia, notas, fecha).
 - [x] Alertas visuales en admin/socio.
@@ -206,11 +210,33 @@ Ejemplos JSON de errores comunes están en este README y en `docs/comandos.md`. 
 ## 12. Documentación y assets complementarios
 
 - [`docs/comandos.md`](docs/comandos.md): scripts npm claves (desarrollo, migraciones, seeds, tests).
-- [`docs/identidadVisual.md`](docs/identidadVisual.md): paleta institucional, tipografías (Inter + Space Grotesk), componentes “glass”.
 - [`docs/implementShowcase.md`](docs/implementShowcase.md): lineamientos para la página pública `/showcase`.
 - Seeds QA: `drizzle/0003_qas_seed.sql` (config económica `default`, usuario QA, inscripción con cuotas en distintos estados).
 - Pruebas: `npm run test -- --run` (modo CI), `--watch`, `--coverage`.
 
 Con estas referencias el equipo puede continuar con Sprint 5 (reportes) y el endurecimiento final manteniendo coherencia visual, técnica y operativa.
+
+---
+
+## 13. Credencial digital (QR)
+
+- **Objetivo:** entregar al socio un identificador único y escaneable luego de que su inscripción pase a `ACTIVE` y registre al menos un pago confirmado.
+- **Backend:** método `getMemberCredential` arma el objeto `MemberCredentialDTO` con datos del socio, inscripción vigente y estado `isReady`. El QR se genera a partir de `credential.qrPayload` (Base64URL con `code`, `memberId`, `enrollmentId`, `issuedAt`). Endpoints:
+  - `GET /api/socios/me/credential` → requiere sesión `USER`.
+  - `GET /api/socios/{memberId}/credential` → requiere sesión `ADMIN`.
+- **Frontend:**
+  - Hooks React Query `useMyCredential` y `useMemberCredential` cachean la respuesta y permiten refrescos manuales.
+  - `MemberCredentialCard` muestra estado, código, QR optimizado (via `qrcode`) y CTA para copiar el código o recargar.
+  - `/socio`: card visible junto al estado financiero; si la credencial no está lista se explica el requisito.
+  - `/admin/inscripciones`: cada fila permite abrir un modal “Ver credencial” para auditorías rápidas.
+- **Estados visibles para el usuario:**
+  1. _“Inscripción pendiente”_ → todavía no se activó la inscripción.
+  2. _“Esperando pago inicial”_ → inscripción activa pero sin pagos registrados.
+  3. _“Credencial activa”_ → QR renderizado y código disponible para control de acceso.
+- **Prerrequisitos operativos:**
+  - Mantener actualizada la configuración económica `default` (montos válidos).
+  - Garantizar que cada socio tenga una única inscripción (constraint `enrollments_member_id_idx`).
+  - Registrar pagos mediante `/api/pagos` o los scripts internos para que el contador de cuotas pagas habilite la credencial.
+- Más detalles en [`docs/credencial-digital.md`](docs/credencial-digital.md).
 
 ---

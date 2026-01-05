@@ -18,17 +18,17 @@ export const createEnrollmentSchema = z.object({
     .max(80, "El nombre del plan no puede superar 80 caracteres.")
     .optional()
     .nullable(),
-  monthlyAmount: z.coerce
+  enrollmentAmount: z.coerce
     .number()
-    .int("El monto debe ser un entero.")
+    .int("El monto de inscripción debe ser un entero.")
     .min(0, "El monto debe ser positivo.")
     .optional(),
-  monthsToGenerate: z.coerce
-    .number()
-    .int()
-    .min(1, "Debes generar al menos una cuota.")
-    .max(24, "No se pueden generar más de 24 cuotas por lote.")
-    .optional(),
+  clubName: z
+    .string()
+    .min(2, "El nombre del club debe tener al menos 2 caracteres.")
+    .max(100, "El nombre del club no puede superar 100 caracteres.")
+    .optional()
+    .nullable(),
   notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
 });
 
@@ -36,15 +36,21 @@ export const enrollmentIdSchema = z.object({
   enrollmentId: z.string().uuid("Identificador inválido."),
 });
 
+export const bulkDeleteEnrollmentsSchema = z.object({
+  enrollmentIds: z
+    .array(z.string().uuid("Identificador inválido."))
+    .min(1, "Enviá al menos un ID."),
+});
+
 export const updateEnrollmentSchema = z.object({
-  status: z.enum(["ACTIVE", "CANCELLED"]),
+  status: z.enum(["PENDING", "ACTIVE", "CANCELLED"]),
   notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
 });
 
 export const listEnrollmentsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(5).max(50).default(10),
-  status: z.enum(["ACTIVE", "CANCELLED"]).optional(),
+  status: z.enum(["PENDING", "ACTIVE", "CANCELLED"]).optional(),
   memberId: z.string().uuid().optional(),
   search: z.string().max(120).optional(),
 });

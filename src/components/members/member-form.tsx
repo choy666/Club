@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useForm, type FieldErrors, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -11,7 +11,14 @@ import {
   type CreateMemberInput,
 } from "@/lib/validations/members";
 import { MEMBER_STATUS_OPTIONS } from "@/constants/member";
-import type { MemberDTO } from "@/types/member";
+import type { MemberDTO, MemberStatus } from "@/types/member";
+
+type StatusOption = {
+  value: MemberStatus;
+  label: string;
+  disabled?: boolean;
+  hidden?: boolean;
+};
 
 const editFormSchema = memberInfoSchema.extend({
   password: z
@@ -49,6 +56,7 @@ export function MemberForm(props: MemberFormProps) {
   const { mode, isSubmitting, serverError } = props;
   const isEditMode = mode === "edit";
   const schema = isEditMode ? editFormSchema : createMemberSchema;
+  const [isPasswordModified, setIsPasswordModified] = useState(false);
 
   const defaultValues = useMemo(() => {
     if (!isEditMode) {
@@ -73,18 +81,53 @@ export function MemberForm(props: MemberFormProps) {
       birthDate: getDateInputValue(member.birthDate),
       status: member.status,
       notes: member.notes ?? "",
-      password: "",
+      password: member.password ?? "••••••••",
     } satisfies EditMemberFormValues;
   }, [isEditMode, props.initialData]);
 
-  const { register, handleSubmit, formState } = useForm<CreateMemberInput | EditMemberFormValues>({
+  const { register, handleSubmit, formState, control, setValue } = useForm<
+    CreateMemberInput | EditMemberFormValues
+  >({
     resolver: zodResolver(schema),
     defaultValues,
   });
   const errors = formState.errors;
   const editErrors = formState.errors as FieldErrors<EditMemberFormValues>;
+  const statusValue = useWatch({
+    control,
+    name: "status",
+  }) as MemberStatus | undefined;
+  const requiresNotes =
+    isEditMode && statusValue === "INACTIVE" && props.initialData?.status !== "INACTIVE";
+  const allowedStatuses: MemberStatus[] = ["PENDING", "INACTIVE"];
+  const selectableStatusOptions: StatusOption[] = MEMBER_STATUS_OPTIONS.filter((option) =>
+    allowedStatuses.includes(option.value)
+  ).map((option) => ({ ...option }));
+  const readonlyStatusOption: StatusOption[] =
+    isEditMode &&
+    props.initialData &&
+    props.initialData.status &&
+    !allowedStatuses.includes(props.initialData.status)
+      ? [
+          {
+            value: props.initialData.status,
+            label: `${
+              MEMBER_STATUS_OPTIONS.find((option) => option.value === props.initialData.status)
+                ?.label ?? props.initialData.status
+            } (actual)`,
+            disabled: true,
+            hidden: true,
+          } satisfies StatusOption,
+        ]
+      : [];
+  const statusOptions: StatusOption[] = [...readonlyStatusOption, ...selectableStatusOptions];
 
   const submitHandler = handleSubmit(async (values) => {
+    // En modo edición, si la contraseña no fue modificada, la eliminamos del payload
+    if (mode === "edit" && !isPasswordModified) {
+      values.password = null;
+    }
+
     if (mode === "create") {
       await props.onSubmit(values as CreateMemberInput);
     } else {
@@ -160,8 +203,12 @@ export function MemberForm(props: MemberFormProps) {
           <div className="space-y-1">
             <label className="text-sm text-base-muted">Estado</label>
             <select {...register("status")} className="select-base">
-              {MEMBER_STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
+              {statusOptions.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  disabled={"disabled" in option && option.disabled}
+                >
                   {option.label}
                 </option>
               ))}
@@ -185,18 +232,32 @@ export function MemberForm(props: MemberFormProps) {
           </div>
         )}
         <div className="space-y-1">
-          <label className="text-sm text-base-muted">
-            Contraseña {mode === "edit" ? "(opcional)" : ""}
-          </label>
-          <input
-            type="password"
-            {...register("password")}
-            placeholder={mode === "edit" ? "Dejar vacío para no cambiar" : "********"}
-            autoComplete="new-password"
-            className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
-          />
+          <label className="text-sm text-base-muted">Contraseña {mode === "edit" ? "" : ""}</label>
+          <div>
+            <input
+              type="text"
+              {...register("password", {
+                onChange: (e) => {
+                  if (isEditMode && !isPasswordModified) {
+                    setIsPasswordModified(true);
+                    setValue("password", e.target.value);
+                  }
+                },
+              })}
+              placeholder={
+                mode === "edit" ? (props.initialData?.password ?? "••••••••") : "********"
+              }
+              autoComplete="new-password"
+              className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
+            />
+          </div>
           {errors.password && (
             <p className="text-sm text-accent-critical">{errors.password.message as string}</p>
+          )}
+          {mode === "edit" && !isPasswordModified && (
+            <p className="text-xs text-base-muted">
+              La contraseña actual es visible. Editá para cambiarla.
+            </p>
           )}
         </div>
       </div>
@@ -205,13 +266,25 @@ export function MemberForm(props: MemberFormProps) {
         <div className="space-y-1">
           <label className="text-sm text-base-muted">Notas</label>
           <textarea
-            {...register("notes")}
+            {...register("notes", {
+              validate: (value) => {
+                if (!requiresNotes) return true;
+                return value && value.trim().length
+                  ? true
+                  : "Debes ingresar una nota para dar de baja al socio.";
+              },
+            })}
             rows={4}
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
             placeholder="Información adicional del socio"
           />
           {editErrors.notes && (
             <p className="text-sm text-accent-critical">{editErrors.notes.message}</p>
+          )}
+          {requiresNotes && !editErrors.notes && (
+            <p className="text-xs text-base-muted">
+              Detallá el motivo antes de cambiar el estado a inactivo.
+            </p>
           )}
         </div>
       )}

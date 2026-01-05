@@ -11,10 +11,9 @@ import type { MemberDTO } from "@/types/member";
 interface MemberTableProps {
   onCreate: () => void;
   onEdit: (member: MemberDTO) => void;
-  onInspect?: (member: MemberDTO) => void;
 }
 
-export function MemberTable({ onCreate, onEdit, onInspect }: MemberTableProps) {
+export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
   const filters = useMemberFiltersStore();
   const { data, isLoading, error } = useMembersList();
   const deleteMutation = useDeleteMember();
@@ -113,22 +112,13 @@ export function MemberTable({ onCreate, onEdit, onInspect }: MemberTableProps) {
                 >
                   Eliminar
                 </button>
-                {onInspect && (
-                  <button
-                    type="button"
-                    className="text-sm text-state-active hover:underline"
-                    onClick={() => onInspect(member)}
-                  >
-                    Ver estado
-                  </button>
-                )}
               </div>
             </td>
           </tr>
         ))}
       </tbody>
     );
-  }, [data, error, hasData, isLoading, deleteMutation.isPending, onEdit, onInspect, handleDelete]);
+  }, [data, error, hasData, isLoading, deleteMutation.isPending, onEdit, handleDelete]);
 
   const mobileContent = useMemo(() => {
     if (isLoading) {
@@ -209,22 +199,13 @@ export function MemberTable({ onCreate, onEdit, onInspect }: MemberTableProps) {
                 >
                   Eliminar
                 </button>
-                {onInspect && (
-                  <button
-                    type="button"
-                    className="text-state-active underline-offset-2 hover:underline"
-                    onClick={() => onInspect(member)}
-                  >
-                    Ver estado
-                  </button>
-                )}
               </div>
             </div>
           </div>
         ))}
       </div>
     );
-  }, [data, error, hasData, isLoading, deleteMutation.isPending, onEdit, onInspect, handleDelete]);
+  }, [data, error, hasData, isLoading, deleteMutation.isPending, onEdit, handleDelete]);
 
   const totalPages = data?.meta.totalPages ?? 1;
 

@@ -26,7 +26,7 @@ export function useRecordPayment() {
       return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: DUES_KEY });
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: ["member"] });
     },
   });

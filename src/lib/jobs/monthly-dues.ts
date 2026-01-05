@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dues, enrollments, members, monthlyRunLog } from "@/db/schema";
-import { buildDueSchedule } from "@/lib/enrollments/schedule";
+import { addMonths, formatDateOnly } from "@/lib/enrollments/schedule";
 
 function normalizeDate(value: Date | string | null | undefined) {
   if (!value) return null;
@@ -89,21 +89,18 @@ export async function generateMonthlyDues(
 
   for (const enrollment of activeEnrollments) {
     const lastDueDate = await deps.findLastDueDate(enrollment.id);
-    const schedule = buildDueSchedule({
-      enrollmentId: enrollment.id,
-      memberId: enrollment.memberId,
-      startDate: lastDueDate ?? enrollment.startDate,
-      monthsToGenerate: 1,
-      monthlyAmount: enrollment.monthlyAmount,
-    });
+    const baseDate = lastDueDate ? new Date(lastDueDate) : new Date(enrollment.startDate);
+    const nextDueDate = formatDateOnly(addMonths(baseDate, 1));
 
-    const [nextDue] = schedule;
-    if (!nextDue) continue;
-
-    const exists = await deps.dueExists(enrollment.id, nextDue.dueDate);
+    const exists = await deps.dueExists(enrollment.id, nextDueDate);
     if (exists) continue;
 
-    await deps.insertDue(nextDue);
+    await deps.insertDue({
+      enrollmentId: enrollment.id,
+      memberId: enrollment.memberId,
+      dueDate: nextDueDate,
+      amount: enrollment.monthlyAmount,
+    });
     createdDues += 1;
   }
 

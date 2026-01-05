@@ -1,7 +1,7 @@
 import { count, eq, ilike, and, or } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { members, users } from "@/db/schema";
+import { enrollments, members, users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import type {
   CreateMemberInput,
@@ -143,6 +143,7 @@ export async function createMember(input: CreateMemberInput): Promise<MemberDTO>
       email,
       role: "USER",
       passwordHash,
+      passwordOriginal: input.password,
     })
     .returning();
 
@@ -180,6 +181,19 @@ export async function updateMember(memberId: string, input: UpdateMemberInput): 
     }
   }
 
+  if (input.status === "ACTIVE" && existing.status !== "ACTIVE") {
+    const activeEnrollment = await db.query.enrollments.findFirst({
+      where: and(eq(enrollments.memberId, memberId), eq(enrollments.status, "ACTIVE")),
+    });
+
+    if (!activeEnrollment) {
+      throw new AppError(
+        "Solo podés activar un socio que cuente con una inscripción aprobada.",
+        409
+      );
+    }
+  }
+
   const userUpdate: Partial<typeof users.$inferInsert> = {
     updatedAt: new Date(),
     email,
@@ -189,8 +203,9 @@ export async function updateMember(memberId: string, input: UpdateMemberInput): 
     userUpdate.name = input.name;
   }
 
-  if (input.password ?? undefined) {
-    userUpdate.passwordHash = await hashPassword(input.password as string);
+  if (input.password !== undefined && input.password !== null && input.password.trim() !== "") {
+    userUpdate.passwordHash = await hashPassword(input.password);
+    userUpdate.passwordOriginal = input.password;
   }
 
   await db.update(users).set(userUpdate).where(eq(users.id, existing.userId));

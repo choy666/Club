@@ -36,7 +36,7 @@ const DEFAULT_STATE: Omit<
   from: "",
   to: "",
   page: 1,
-  perPage: 10,
+  perPage: 50,
 };
 
 export const useDueFiltersStore = create<DueFiltersState>((set) => ({

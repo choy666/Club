@@ -36,6 +36,48 @@ const DUE_STATUS_STYLES: Record<DueDTO["status"], { label: string; className: st
   },
 };
 
+type MemberSummary = {
+  member: DueDTO["member"];
+  dues: DueDTO[];
+  paidCount: number;
+  pendingCount: number;
+  overdueCount: number;
+  frozenCount: number;
+  amountDue: number;
+};
+
+const MEMBER_STATUS_STYLES = {
+  healthy: {
+    label: "Al día",
+    className: "text-state-active bg-state-active/10 border-state-active/40",
+  },
+  warning: {
+    label: "Con pendientes",
+    className: "text-amber-500 bg-amber-500/10 border-amber-500/40",
+  },
+  frozen: {
+    label: "Congelado",
+    className: "text-base-muted bg-base-muted/10 border-base-muted/40",
+  },
+  critical: {
+    label: "En mora",
+    className: "text-accent-critical bg-accent-critical/10 border-accent-critical/40",
+  },
+};
+
+function getMemberFinancialStatus(summary: MemberSummary) {
+  if (summary.overdueCount > 0) {
+    return MEMBER_STATUS_STYLES.critical;
+  }
+  if (summary.pendingCount > 0) {
+    return MEMBER_STATUS_STYLES.warning;
+  }
+  if (summary.frozenCount > 0) {
+    return MEMBER_STATUS_STYLES.frozen;
+  }
+  return MEMBER_STATUS_STYLES.healthy;
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -51,6 +93,7 @@ export function DueTable() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
+  const [selectedSummary, setSelectedSummary] = useState<MemberSummary | null>(null);
   const [manualPaymentForm, setManualPaymentForm] = useState({
     amount: "",
     method: "Transferencia",
@@ -59,7 +102,59 @@ export function DueTable() {
     paidAt: toDateTimeLocalInput(new Date()),
   });
 
-  const hasData = Boolean(data?.data?.length);
+  const duesData = data?.data;
+
+  const memberSummaries = useMemo(() => {
+    if (!duesData) {
+      return [];
+    }
+
+    const summariesMap = new Map<string, MemberSummary>();
+
+    for (const due of duesData) {
+      let summary = summariesMap.get(due.member.id);
+      if (!summary) {
+        summary = {
+          member: due.member,
+          dues: [],
+          paidCount: 0,
+          pendingCount: 0,
+          overdueCount: 0,
+          frozenCount: 0,
+          amountDue: 0,
+        };
+        summariesMap.set(due.member.id, summary);
+      }
+
+      summary.dues.push(due);
+      switch (due.status) {
+        case "PAID":
+          summary.paidCount += 1;
+          break;
+        case "PENDING":
+          summary.pendingCount += 1;
+          summary.amountDue += due.amount;
+          break;
+        case "OVERDUE":
+          summary.overdueCount += 1;
+          summary.amountDue += due.amount;
+          break;
+        case "FROZEN":
+          summary.frozenCount += 1;
+          break;
+        default:
+          break;
+      }
+    }
+
+    return Array.from(summariesMap.values()).sort((a, b) => {
+      const nameA = a.member.name ?? "";
+      const nameB = b.member.name ?? "";
+      return nameA.localeCompare(nameB, "es");
+    });
+  }, [duesData]);
+
+  const hasData = memberSummaries.length > 0;
   const totalPages = data?.meta.totalPages ?? 1;
 
   const openManualPayment = useCallback((due: DueDTO) => {
@@ -129,14 +224,14 @@ export function DueTable() {
     closeManualPayment,
   ]);
 
-  const tableContent = useMemo(() => {
+  const renderSummaryTable = () => {
     if (isLoading) {
       return (
         <tbody>
           {Array.from({ length: 4 }).map((_, index) => (
-            <tr key={index} className="border-b border-base-border/60">
-              <td colSpan={6} className="py-6 text-center text-base-muted animate-pulse">
-                Cargando cuotas...
+            <tr key={`summary-skeleton-${index}`} className="border-b border-base-border/60">
+              <td colSpan={7} className="py-6 text-center text-base-muted animate-pulse">
+                Cargando seguimiento de socios...
               </td>
             </tr>
           ))}
@@ -148,7 +243,7 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={6} className="py-6 text-center text-accent-critical">
+            <td colSpan={7} className="py-6 text-center text-accent-critical">
               No se pudieron cargar las cuotas.
             </td>
           </tr>
@@ -160,8 +255,8 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={6} className="py-6 text-center text-base-muted">
-              No hay cuotas con los filtros actuales.
+            <td colSpan={7} className="py-6 text-center text-base-muted">
+              No hay socios con cuotas para los filtros actuales.
             </td>
           </tr>
         </tbody>
@@ -170,50 +265,44 @@ export function DueTable() {
 
     return (
       <tbody>
-        {data?.data.map((due) => {
-          const statusConfig = DUE_STATUS_STYLES[due.status];
+        {memberSummaries.map((summary) => {
+          const statusConfig = getMemberFinancialStatus(summary);
+          const pendingTotal = summary.pendingCount + summary.overdueCount + summary.frozenCount;
           return (
             <tr
-              key={due.id}
+              key={summary.member.id}
               className="border-b border-base-border/60 transition-colors hover:bg-base-secondary/30"
             >
               <td className="px-6 py-4">
                 <div className="flex flex-col">
-                  <span className="font-semibold">{due.member.name ?? "Sin nombre"}</span>
-                  <span className="text-sm text-base-muted">{due.member.documentNumber}</span>
-                  <span className="text-xs text-base-muted">{due.member.email}</span>
+                  <span className="font-semibold">{summary.member.name ?? "Sin nombre"}</span>
+                  <span className="text-xs text-base-muted">{summary.member.email}</span>
                 </div>
               </td>
-              <td className="px-6 py-4">
-                <div className="flex flex-col">
-                  <span className="font-semibold">{due.enrollment.planName ?? "Sin plan"}</span>
-                  <span className="text-sm text-base-muted">{due.enrollment.id}</span>
-                </div>
+              <td className="px-6 py-4 text-sm text-base-muted">{summary.member.documentNumber}</td>
+              <td className="px-6 py-4 text-sm">
+                <span className="font-semibold">{summary.paidCount}</span>
+                <span className="text-xs text-base-muted"> / {summary.dues.length}</span>
               </td>
-              <td className="px-6 py-4 text-sm text-base-muted">
-                {new Date(due.dueDate).toLocaleDateString("es-AR")}
+              <td className="px-6 py-4 text-sm">
+                <span className="font-semibold">{pendingTotal}</span>
+                <span className="text-xs text-base-muted"> cuotas</span>
               </td>
-              <td className="px-6 py-4 font-semibold">{formatCurrency(due.amount)}</td>
+              <td className="px-6 py-4 font-semibold">{formatCurrency(summary.amountDue)}</td>
               <td className="px-6 py-4">
                 <span
                   className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
                 >
                   {statusConfig.label}
                 </span>
-                {due.paidAt && (
-                  <p className="mt-1 text-xs text-base-muted">
-                    Pagada: {new Date(due.paidAt).toLocaleDateString("es-AR")}
-                  </p>
-                )}
               </td>
               <td className="px-6 py-4">
                 <button
                   type="button"
-                  className="btn-secondary px-3 py-1 text-xs"
-                  onClick={() => openManualPayment(due)}
-                  disabled={recordPaymentMutation.isPending}
+                  className="btn-secondary px-4 py-1 text-xs"
+                  onClick={() => setSelectedSummary(summary)}
                 >
-                  {due.status === "PAID" ? "Editar pago" : "Pago manual"}
+                  Ver seguimiento
                 </button>
               </td>
             </tr>
@@ -221,15 +310,15 @@ export function DueTable() {
         })}
       </tbody>
     );
-  }, [data, error, hasData, isLoading, openManualPayment, recordPaymentMutation.isPending]);
+  };
 
-  const mobileContent = useMemo(() => {
+  const renderMobileCards = () => {
     if (isLoading) {
       return (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <div
-              key={`due-mobile-skeleton-${index}`}
+              key={`summary-mobile-skeleton-${index}`}
               className="rounded-2xl border border-base-border/60 bg-base-secondary/30 p-4 animate-pulse"
             >
               <div className="h-4 w-32 rounded bg-base-border/50" />
@@ -251,62 +340,65 @@ export function DueTable() {
     if (!hasData) {
       return (
         <div className="rounded-2xl border border-base-border/60 bg-base-secondary/30 p-4 text-center text-base-muted">
-          No hay cuotas con los filtros actuales.
+          No hay socios con cuotas para los filtros actuales.
         </div>
       );
     }
 
     return (
       <div className="space-y-4">
-        {data?.data.map((due) => {
-          const statusConfig = DUE_STATUS_STYLES[due.status];
+        {memberSummaries.map((summary) => {
+          const statusConfig = getMemberFinancialStatus(summary);
+          const pendingTotal = summary.pendingCount + summary.overdueCount + summary.frozenCount;
           return (
             <div
-              key={`due-card-${due.id}`}
+              key={`member-summary-${summary.member.id}`}
               className="rounded-2xl border border-base-border/70 bg-base-secondary/20 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]"
             >
               <div className="flex flex-col gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Socio</p>
-                  <p className="text-lg font-semibold">{due.member.name ?? "Sin nombre"}</p>
-                  <span className="text-sm text-base-muted">{due.member.documentNumber}</span>
-                  <p className="text-xs text-base-muted">{due.member.email}</p>
+                  <p className="text-lg font-semibold">{summary.member.name ?? "Sin nombre"}</p>
+                  <p className="text-xs text-base-muted">{summary.member.email}</p>
                 </div>
-
-                <div className="grid gap-3 text-sm">
-                  <div className="rounded-xl border border-base-border/50 bg-base-secondary/40 px-4 py-3">
-                    <p className="text-xs uppercase tracking-widest text-base-muted">Inscripción</p>
-                    <p className="font-semibold">{due.enrollment.planName ?? "Sin plan"}</p>
-                    <span className="text-xs text-base-muted">{due.enrollment.id}</span>
+                <div className="text-sm text-base-muted">
+                  <span className="rounded-full border border-base-border/80 px-2 py-1 text-xs uppercase tracking-widest">
+                    DNI {summary.member.documentNumber}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Cuotas pagadas
+                    </p>
+                    <p className="text-lg font-semibold">{summary.paidCount}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-full border border-base-border/80 px-2 py-1 text-xs uppercase tracking-widest">
-                      Vence {new Date(due.dueDate).toLocaleDateString("es-AR")}
-                    </span>
-                    <span className="text-base font-semibold">{formatCurrency(due.amount)}</span>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Cuotas pendientes
+                    </p>
+                    <p className="text-lg font-semibold">{pendingTotal}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Monto adeudado
+                    </p>
+                    <p className="text-lg font-semibold">{formatCurrency(summary.amountDue)}</p>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap items-center gap-3 text-sm">
+                <div className="flex items-center gap-3">
                   <span
                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
                   >
                     {statusConfig.label}
                   </span>
-                  {due.paidAt && (
-                    <span className="text-xs text-base-muted">
-                      Pagada: {new Date(due.paidAt).toLocaleDateString("es-AR")}
-                    </span>
-                  )}
                 </div>
-
                 <button
                   type="button"
                   className="btn-secondary text-xs uppercase tracking-[0.25em]"
-                  onClick={() => openManualPayment(due)}
-                  disabled={recordPaymentMutation.isPending}
+                  onClick={() => setSelectedSummary(summary)}
                 >
-                  {due.status === "PAID" ? "Editar pago" : "Pago manual"}
+                  Ver seguimiento
                 </button>
               </div>
             </div>
@@ -314,7 +406,7 @@ export function DueTable() {
         })}
       </div>
     );
-  }, [data, error, hasData, isLoading, openManualPayment, recordPaymentMutation.isPending]);
+  };
 
   return (
     <section className="space-y-8">
@@ -377,13 +469,16 @@ export function DueTable() {
                   Socio
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Inscripción
+                  DNI
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Vencimiento
+                  Cuotas / Pagadas
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Monto
+                  Cuotas / Pendientes
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
+                  Monto adeudado
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Estado
@@ -393,10 +488,10 @@ export function DueTable() {
                 </th>
               </tr>
             </thead>
-            {tableContent}
+            {renderSummaryTable()}
           </table>
         </div>
-        <div className="block md:hidden">{mobileContent}</div>
+        <div className="block md:hidden">{renderMobileCards()}</div>
         {hasData && (
           <div className="flex flex-col gap-3 border-t border-base-border/70 px-6 py-4 text-sm text-base-muted md:flex-row md:items-center md:justify-between">
             <span className="text-center md:text-left">
@@ -423,6 +518,148 @@ export function DueTable() {
           </div>
         )}
       </div>
+
+      <Modal
+        title="Seguimiento de socio"
+        open={Boolean(selectedSummary)}
+        onClose={() => setSelectedSummary(null)}
+      >
+        {selectedSummary && (
+          <div className="space-y-6">
+            <div className="neo-panel border border-base-border/60 px-5 py-4 text-sm">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Datos del socio</p>
+              <p className="text-lg font-semibold">
+                {selectedSummary.member.name ?? "Sin nombre"} ·{" "}
+                {selectedSummary.member.documentNumber}
+              </p>
+              <p className="text-sm text-base-muted">{selectedSummary.member.email}</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  label: "Cuotas pagadas",
+                  value: selectedSummary.paidCount,
+                },
+                {
+                  label: "Cuotas pendientes",
+                  value:
+                    selectedSummary.pendingCount +
+                    selectedSummary.overdueCount +
+                    selectedSummary.frozenCount,
+                },
+                {
+                  label: "Monto adeudado",
+                  value: formatCurrency(selectedSummary.amountDue),
+                },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-2xl border border-base-border/60 bg-base-secondary/20 px-4 py-3 text-center"
+                >
+                  <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                    {metric.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <div className="neo-panel space-y-4 border border-base-border/70 px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Cuotas pendientes
+                    </p>
+                    <p className="text-sm text-base-muted">
+                      Generadas dinámicamente con el valor actual de cada periodo.
+                    </p>
+                  </div>
+                </div>
+                {selectedSummary.dues.filter((due) => due.status !== "PAID").length === 0 && (
+                  <p className="text-sm text-base-muted">Este socio no tiene cuotas pendientes.</p>
+                )}
+                <div className="space-y-3">
+                  {selectedSummary.dues
+                    .filter((due) => due.status !== "PAID")
+                    .map((due) => (
+                      <div
+                        key={`pending-${due.id}`}
+                        className="rounded-2xl border border-base-border/60 bg-base-secondary/20 p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                          <div className="space-y-1">
+                            <p className="font-semibold">
+                              Vence {new Date(due.dueDate).toLocaleDateString("es-AR")}
+                            </p>
+                            <p className="text-xs text-base-muted">
+                              ID inscripción: {due.enrollment.id}
+                            </p>
+                          </div>
+                          <p className="text-lg font-semibold">{formatCurrency(due.amount)}</p>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1 font-semibold uppercase tracking-widest ${DUE_STATUS_STYLES[due.status].className}`}
+                          >
+                            {DUE_STATUS_STYLES[due.status].label}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-primary text-[0.65rem] uppercase tracking-[0.3em]"
+                            onClick={() => openManualPayment(due)}
+                            disabled={recordPaymentMutation.isPending}
+                          >
+                            Registrar pago manual
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className="neo-panel space-y-3 border border-base-border/70 px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                    Historial de pagos
+                  </p>
+                  <span className="text-xs text-base-muted">
+                    {selectedSummary.paidCount} registro(s)
+                  </span>
+                </div>
+                {selectedSummary.dues.filter((due) => due.status === "PAID").length === 0 && (
+                  <p className="text-sm text-base-muted">Sin pagos registrados todavía.</p>
+                )}
+                <div className="space-y-2">
+                  {selectedSummary.dues
+                    .filter((due) => due.status === "PAID")
+                    .map((due) => (
+                      <div
+                        key={`paid-${due.id}`}
+                        className="flex flex-wrap items-center justify-between rounded-xl border border-base-border/60 bg-base-secondary/10 px-4 py-2 text-sm"
+                      >
+                        <div>
+                          <p className="font-semibold">
+                            {formatCurrency(due.amount)} ·{" "}
+                            {new Date(due.dueDate).toLocaleDateString("es-AR")}
+                          </p>
+                          {due.paidAt && (
+                            <p className="text-xs text-base-muted">
+                              Pagada {new Date(due.paidAt).toLocaleDateString("es-AR")}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs uppercase tracking-[0.3em] text-state-active">
+                          Pagada
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal title="Pago manual" open={Boolean(manualPaymentDue)} onClose={closeManualPayment}>
         {manualPaymentDue && (

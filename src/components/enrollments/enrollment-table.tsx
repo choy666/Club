@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 
 import {
   useCreateEnrollment,
   useEnrollmentsList,
   useUpdateEnrollment,
+  useDeleteEnrollment,
 } from "@/hooks/use-enrollments";
+import { useMemberCredential } from "@/hooks/use-members";
 import { useEnrollmentFiltersStore } from "@/store/enrollment-filters-store";
 import { EnrollmentFilters } from "./enrollment-filters";
 import { Modal } from "@/components/ui/modal";
@@ -15,6 +17,7 @@ import { EnrollmentCreateForm, EnrollmentEditForm } from "./enrollment-form";
 import type { EnrollmentDTO } from "@/types/enrollment";
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
+import { MemberCredentialCard } from "@/components/credentials/member-credential-card";
 
 type Feedback = {
   type: "success" | "error";
@@ -22,6 +25,10 @@ type Feedback = {
 };
 
 const STATUS_STYLES: Record<EnrollmentDTO["status"], { label: string; className: string }> = {
+  PENDING: {
+    label: "Pendiente",
+    className: "text-amber-500 bg-amber-100/40 border-amber-500/40",
+  },
   ACTIVE: {
     label: "Activa",
     className: "text-state-active bg-state-active/10 border-state-active/40",
@@ -32,31 +39,70 @@ const STATUS_STYLES: Record<EnrollmentDTO["status"], { label: string; className:
   },
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
-}
-
 export function EnrollmentTable() {
   const filters = useEnrollmentFiltersStore();
   const { data, isLoading, error } = useEnrollmentsList();
   const createMutation = useCreateEnrollment();
   const updateMutation = useUpdateEnrollment();
+  const deleteMutation = useDeleteEnrollment();
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [selected, setSelected] = useState<EnrollmentDTO | null>(null);
+  const [credentialTarget, setCredentialTarget] = useState<EnrollmentDTO | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const credentialQuery = useMemberCredential(credentialTarget?.member.id, {
+    enabled: Boolean(credentialTarget),
+  });
 
   const hasData = Boolean(data?.data?.length);
   const totalPages = data?.meta.totalPages ?? 1;
+  const isDeleting = deleteMutation.isPending;
+
+  const handleDelete = useCallback(
+    async (enrollment: EnrollmentDTO) => {
+      if (enrollment.hasPaidDues) {
+        if (typeof window !== "undefined") {
+          window.alert("No se puede eliminar una inscripción con cuotas pagadas.");
+        }
+        return;
+      }
+
+      const confirmed =
+        typeof window === "undefined"
+          ? false
+          : window.confirm(
+              "¿Eliminar la inscripción? Se borrarán las cuotas pendientes y el socio volverá a estado PENDING."
+            );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await deleteMutation.mutateAsync(enrollment.id);
+        setFeedback({ type: "success", message: "Inscripción eliminada." });
+      } catch (mutationError: unknown) {
+        const errorMessage = getErrorMessage(mutationError, "No se pudo eliminar la inscripción.");
+        setFeedback({
+          type: "error",
+          message: errorMessage,
+        });
+        if (typeof window !== "undefined") {
+          window.alert(errorMessage);
+        }
+      }
+    },
+    [deleteMutation]
+  );
 
   function closeModal() {
     setModalMode(null);
     setSelected(null);
     setFormError(null);
+  }
+
+  function closeCredentialModal() {
+    setCredentialTarget(null);
   }
 
   const handleCreate = useCallback(
@@ -80,6 +126,9 @@ export function EnrollmentTable() {
           message: errorMessage,
         });
         setFormError(errorMessage);
+        if (typeof window !== "undefined") {
+          window.alert(errorMessage);
+        }
       }
     },
     [createMutation]
@@ -112,7 +161,7 @@ export function EnrollmentTable() {
     [selected, updateMutation]
   );
 
-  const tableContent = useMemo(() => {
+  const renderTableContent = () => {
     if (isLoading) {
       return (
         <tbody>
@@ -155,6 +204,8 @@ export function EnrollmentTable() {
       <tbody>
         {data?.data.map((enrollment) => {
           const statusConfig = STATUS_STYLES[enrollment.status];
+          const deleteDisabled = enrollment.hasPaidDues || isDeleting;
+
           return (
             <tr
               key={enrollment.id}
@@ -163,19 +214,11 @@ export function EnrollmentTable() {
               <td className="px-6 py-4">
                 <div className="flex flex-col">
                   <span className="font-semibold">{enrollment.member.name ?? "Sin nombre"}</span>
-                  <span className="text-sm text-base-muted">
-                    {enrollment.member.documentNumber}
-                  </span>
                   <span className="text-xs text-base-muted">{enrollment.member.email}</span>
                 </div>
               </td>
-              <td className="px-6 py-4">
-                <div className="flex flex-col">
-                  <span className="font-semibold">{enrollment.planName ?? "Sin plan"}</span>
-                  <span className="text-sm text-base-muted">
-                    {formatCurrency(enrollment.monthlyAmount)}
-                  </span>
-                </div>
+              <td className="px-6 py-4 text-sm text-base-muted">
+                {enrollment.member.documentNumber}
               </td>
               <td className="px-6 py-4">
                 <span
@@ -187,53 +230,47 @@ export function EnrollmentTable() {
               <td className="px-6 py-4 text-sm text-base-muted">
                 {new Date(enrollment.startDate).toLocaleDateString("es-AR")}
               </td>
-              <td className="px-6 py-4 text-sm text-base-muted">
-                Generó {enrollment.monthsToGenerate} cuota(s)
-              </td>
               <td className="px-6 py-4">
                 <button
                   type="button"
-                  className="text-sm text-accent-primary hover:underline"
+                  className="btn-secondary px-4 py-1 text-xs"
                   onClick={() => {
-                    setSelected(enrollment);
-                    setModalMode("edit");
+                    setCredentialTarget(enrollment);
                   }}
                 >
-                  Editar
+                  Ver credencial
                 </button>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    type="button"
+                    className="text-sm text-accent-primary hover:underline"
+                    onClick={() => {
+                      setSelected(enrollment);
+                      setModalMode("edit");
+                    }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm text-accent-critical hover:underline disabled:cursor-not-allowed disabled:text-base-muted"
+                    disabled={deleteDisabled}
+                    onClick={() => void handleDelete(enrollment)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           );
         })}
       </tbody>
     );
-  }, [data, error, hasData, isLoading]);
+  };
 
-  const mobileContent = useMemo(() => {
-    if (isLoading) {
-      return (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`enrollment-mobile-skeleton-${index}`}
-              className="rounded-2xl border border-base-border/60 bg-base-secondary/30 p-4 animate-pulse"
-            >
-              <div className="h-4 w-32 rounded bg-base-border/50" />
-              <div className="mt-3 h-3 w-24 rounded bg-base-border/40" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="rounded-2xl border border-accent-critical/60 bg-accent-critical/10 p-4 text-sm text-accent-critical">
-          No se pudieron cargar las inscripciones.
-        </div>
-      );
-    }
-
+  const renderMobileContent = () => {
     if (!hasData) {
       return (
         <div className="rounded-2xl border border-base-border/60 bg-base-secondary/30 p-4 text-center text-base-muted">
@@ -246,6 +283,7 @@ export function EnrollmentTable() {
       <div className="space-y-4">
         {data?.data.map((enrollment) => {
           const statusConfig = STATUS_STYLES[enrollment.status];
+          const deleteDisabled = enrollment.hasPaidDues || isDeleting;
           return (
             <div
               key={`enrollment-card-${enrollment.id}`}
@@ -255,52 +293,59 @@ export function EnrollmentTable() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Socio</p>
                   <p className="text-lg font-semibold">{enrollment.member.name ?? "Sin nombre"}</p>
-                  <span className="text-sm text-base-muted">
-                    {enrollment.member.documentNumber}
-                  </span>
                   <p className="text-xs text-base-muted">{enrollment.member.email}</p>
                 </div>
 
-                <div className="rounded-xl border border-base-border/50 bg-base-secondary/40 px-4 py-3 text-sm">
-                  <p className="text-xs uppercase tracking-widest text-base-muted">Plan / Monto</p>
-                  <p className="text-base font-semibold">{enrollment.planName ?? "Sin plan"}</p>
-                  <span className="text-base-muted">
-                    {formatCurrency(enrollment.monthlyAmount)}
+                <div className="flex flex-wrap items-center gap-3 text-sm text-base-muted">
+                  <span className="rounded-full border border-base-border/80 px-2 py-1 text-xs uppercase tracking-widest">
+                    DNI {enrollment.member.documentNumber}
                   </span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 text-sm">
                   <span
                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
                   >
                     {statusConfig.label}
                   </span>
-                  <span className="text-base-muted">
-                    Inicio: {new Date(enrollment.startDate).toLocaleDateString("es-AR")}
-                  </span>
+                  <span>Inicio: {new Date(enrollment.startDate).toLocaleDateString("es-AR")}</span>
                 </div>
 
-                <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                  Generó {enrollment.monthsToGenerate} cuota(s)
-                </p>
-
-                <button
-                  type="button"
-                  className="btn-secondary text-xs uppercase tracking-[0.25em]"
-                  onClick={() => {
-                    setSelected(enrollment);
-                    setModalMode("edit");
-                  }}
-                >
-                  Editar inscripción
-                </button>
+                <div className="grid gap-2 text-xs uppercase tracking-[0.25em]">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setCredentialTarget(enrollment);
+                    }}
+                  >
+                    Ver credencial
+                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-primary flex-1"
+                      onClick={() => {
+                        setSelected(enrollment);
+                        setModalMode("edit");
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-accent flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={deleteDisabled}
+                      onClick={() => handleDelete(enrollment)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
     );
-  }, [data, error, hasData, isLoading]);
+  };
 
   return (
     <section className="space-y-8">
@@ -315,7 +360,7 @@ export function EnrollmentTable() {
           <h2 className="mt-2 text-3xl font-semibold font-[var(--font-space)] tracking-tight">
             Gestión de inscripciones
           </h2>
-          <p className="text-sm text-base-muted">Altas, planes y cuotas con estética futurista.</p>
+          <p className="text-sm text-base-muted">Altas, bajas, cuotas y pagos a tu alcance.</p>
         </div>
         <motion.button
           type="button"
@@ -342,7 +387,7 @@ export function EnrollmentTable() {
             <span>{feedback.message}</span>
             <button
               type="button"
-              className="text-[0.65rem] uppercase tracking-[0.35em]"
+              className="text-sm text-state-active hover:underline"
               onClick={() => setFeedback(null)}
             >
               Cerrar
@@ -362,7 +407,7 @@ export function EnrollmentTable() {
                   Socio
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Plan / Monto
+                  DNI
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Estado
@@ -371,17 +416,17 @@ export function EnrollmentTable() {
                   Inicio
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Cuotas
+                  Credencial
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Acciones
                 </th>
               </tr>
             </thead>
-            {tableContent}
+            {renderTableContent()}
           </table>
         </div>
-        <div className="block md:hidden">{mobileContent}</div>
+        <div className="block md:hidden">{renderMobileContent()}</div>
         {hasData && (
           <div className="flex flex-col gap-3 border-t border-base-border/70 px-6 py-4 text-sm text-base-muted md:flex-row md:items-center md:justify-between">
             <span className="text-center md:text-left">
@@ -427,6 +472,21 @@ export function EnrollmentTable() {
             onSubmit={handleEdit}
             isSubmitting={updateMutation.isPending}
             serverError={formError}
+          />
+        )}
+      </Modal>
+      <Modal
+        title="Credencial digital"
+        open={credentialTarget !== null}
+        onClose={closeCredentialModal}
+      >
+        {credentialTarget && (
+          <MemberCredentialCard
+            credential={credentialQuery.data}
+            isLoading={credentialQuery.isLoading || credentialQuery.isFetching}
+            error={credentialQuery.error instanceof Error ? credentialQuery.error.message : null}
+            onRefresh={() => credentialQuery.refetch()}
+            subtitle={`Socio ${credentialTarget.member.documentNumber}`}
           />
         )}
       </Modal>

@@ -9,11 +9,11 @@ export interface EnrollmentDTO {
   startDate: string;
   planName: string | null;
   monthlyAmount: number;
-  monthsToGenerate: number;
   status: EnrollmentStatus;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  hasPaidDues: boolean;
   member: {
     id: string;
     name: string | null;
@@ -21,6 +21,34 @@ export interface EnrollmentDTO {
     documentNumber: string;
     status: typeof members.$inferSelect.status;
   };
+}
+
+export interface MemberCredentialDTO {
+  member: {
+    id: string;
+    name: string | null;
+    email: string;
+    documentNumber: string;
+    status: typeof members.$inferSelect.status;
+  };
+  enrollment: {
+    id: string;
+    planName: string | null;
+    monthlyAmount: number;
+    status: EnrollmentStatus;
+    startDate: string;
+    updatedAt: string;
+  } | null;
+  credential: {
+    code: string;
+    issuedAt: string;
+    qrPayload: string;
+  } | null;
+  isReady: boolean;
+}
+
+export interface MemberCredentialResponse {
+  data: MemberCredentialDTO;
 }
 
 export interface EnrollmentListResponse {

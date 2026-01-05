@@ -30,6 +30,7 @@ export function mapMemberRow(row: MemberRow): MemberDTO {
     birthDate: toIso(member.birthDate),
     status: member.status,
     notes: member.notes ?? null,
+    password: user.passwordOriginal ?? null,
     createdAt: toIso(member.createdAt) ?? new Date().toISOString(),
     updatedAt: toIso(member.updatedAt) ?? new Date().toISOString(),
   };

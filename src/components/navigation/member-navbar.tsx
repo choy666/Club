@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AuthButton } from "@/components/auth/auth-button";
+
 const memberLinks = [
   { href: "/socio", label: "Resumen" },
   { href: "/socio#estado", label: "Estado financiero" },
@@ -71,6 +73,8 @@ export function MemberNavbar() {
           {linkItems}
         </nav>
 
+        <AuthButton variant="member" />
+
         <button
           type="button"
           className="flex items-center gap-2 rounded-full border border-base-border/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-base-muted transition hover:border-emerald-300 hover:text-emerald-200 lg:hidden"
@@ -102,6 +106,10 @@ export function MemberNavbar() {
         aria-hidden={!isMenuOpen}
       >
         <nav className="flex flex-col gap-2 text-sm">{linkItems}</nav>
+
+        <div className="mt-4 flex justify-center">
+          <AuthButton variant="member" />
+        </div>
       </div>
     </header>
   );

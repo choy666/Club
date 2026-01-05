@@ -84,6 +84,7 @@ describe("POST /api/inscripciones", () => {
       startDate: "2025-02-01",
       monthlyAmount: 45000,
       monthsToGenerate: 6,
+      monthsPaid: 2,
     };
 
     mockCreateEnrollment.mockResolvedValueOnce({

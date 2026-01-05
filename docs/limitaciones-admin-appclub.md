@@ -34,6 +34,20 @@ Este documento resume el alcance actual del panel administrativo de AppClub y de
 3. **Validaciones económicas**: el monto mensual debe ser positivo y las cuotas por generar oscilan entre 1 y 24; fuera de ese rango la operación falla.
 4. **Dependencia de configuración económica**: cuando no se envían montos/cuotas explícitos se usan los valores de la configuración `default`. Si esa configuración no existe o está incompleta, la inscripción falla.
 5. **Pagos y cuotas congeladas**: no se pueden registrar pagos sobre cuotas con estado `FROZEN`; primero debe reactivarse el socio.
+6. **Borrado condicionado**: el endpoint `DELETE /api/inscripciones/{id}` y la UI sólo permiten eliminar inscripciones que no tengan ninguna cuota pagada. Para limpiezas completas de ambientes QA/DEV se debe usar `npm run reset:enrollments`, que borra pagos, cuotas e inscripciones y restablece a los socios en estado `PENDING`.
+
+### 4.1 Variables de entorno que alimentan la configuración económica `default`
+
+| Variable                               | Significado                                                                                                               | Ejemplo actual |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `ECONOMIC_DEFAULT_CURRENCY_CODE`       | Código ISO de la moneda utilizada para sugerencias y formateo.                                                            | `ARS`          |
+| `ECONOMIC_DEFAULT_MONTHLY_AMOUNT`      | Monto mensual sugerido cuando el admin deja el campo vacío.                                                               | `35000`        |
+| `ECONOMIC_DEFAULT_MONTHS_TO_GENERATE`  | Cantidad de cuotas que se crean automáticamente si no se ingresan manualmente.                                            | `12`           |
+| `ECONOMIC_DEFAULT_DUE_DAY`             | Día del mes usado como referencia de vencimiento para mostrar en el formulario.                                           | `10`           |
+| `ECONOMIC_DEFAULT_LATE_FEE_PERCENTAGE` | Porcentaje de recargo pensado para morosidad (todavía no se aplica, pero queda documentado para futuros flujos).          | `0`            |
+| `ECONOMIC_DEFAULT_GRACE_PERIOD_DAYS`   | Días de gracia antes de marcar una cuota como `OVERDUE`. Con valor `1`, el día posterior al vencimiento ya queda en mora. | `1`            |
+
+**Nota:** Estas variables también se sincronizan con la tabla `economic_configs`. Si la fila `default` no existe o difiere, los formularios quedan sin sugerencias y el backend devuelve 404 al iniciar una inscripción.
 
 ## 5. Limitaciones generales del admin
 

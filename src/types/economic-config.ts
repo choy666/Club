@@ -3,7 +3,6 @@ export interface EconomicConfigDTO {
   slug: string;
   currencyCode: string;
   defaultMonthlyAmount: number;
-  defaultMonthsToGenerate: number;
   dueDay: number;
   lateFeePercentage: number;
   createdAt: string;

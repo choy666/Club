@@ -1,12 +1,13 @@
 import { db } from "@/db/client";
 import { dues, enrollments, members, users } from "@/db/schema";
 import type { DueDTO, EnrollmentDTO } from "@/types/enrollment";
-import { eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 type EnrollmentRow = {
   enrollments: typeof enrollments.$inferSelect;
   members: typeof members.$inferSelect;
   users: typeof users.$inferSelect;
+  hasPaidDues?: boolean | null;
 };
 
 type DueRow = {
@@ -32,11 +33,11 @@ export function mapEnrollmentRow(row: EnrollmentRow): EnrollmentDTO {
     startDate: toIsoDate(enrollment.startDate),
     planName: enrollment.planName ?? null,
     monthlyAmount: enrollment.monthlyAmount,
-    monthsToGenerate: enrollment.monthsToGenerate,
     status: enrollment.status,
     notes: enrollment.notes ?? null,
     createdAt: toIsoDate(enrollment.createdAt),
     updatedAt: toIsoDate(enrollment.updatedAt),
+    hasPaidDues: Boolean(row.hasPaidDues),
     member: {
       id: member.id,
       name: user.name ?? null,
@@ -77,13 +78,46 @@ export function mapDueRow(row: DueRow): DueDTO {
   };
 }
 
+export const enrollmentHasPaidDuesExpression = sql<boolean>`exists(
+  select 1
+  from ${dues}
+  where ${dues.enrollmentId} = ${enrollments.id} and ${dues.status} = 'PAID'
+)`;
+
 export async function findEnrollmentById(enrollmentId: string) {
   const result = await db
-    .select()
+    .select({
+      enrollments,
+      members,
+      users,
+      hasPaidDues: enrollmentHasPaidDuesExpression,
+    })
     .from(enrollments)
     .innerJoin(members, eq(enrollments.memberId, members.id))
     .innerJoin(users, eq(members.userId, users.id))
     .where(eq(enrollments.id, enrollmentId))
+    .limit(1);
+
+  if (!result.length) {
+    return null;
+  }
+
+  return mapEnrollmentRow(result[0]);
+}
+
+export async function findEnrollmentByMemberId(memberId: string) {
+  const result = await db
+    .select({
+      enrollments,
+      members,
+      users,
+      hasPaidDues: enrollmentHasPaidDuesExpression,
+    })
+    .from(enrollments)
+    .innerJoin(members, eq(enrollments.memberId, members.id))
+    .innerJoin(users, eq(members.userId, users.id))
+    .where(eq(enrollments.memberId, memberId))
+    .orderBy(desc(enrollments.createdAt))
     .limit(1);
 
   if (!result.length) {

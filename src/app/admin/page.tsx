@@ -7,14 +7,9 @@ import { getErrorMessage } from "@/lib/errors-client";
 import { MemberTable } from "@/components/members/member-table";
 import { Modal } from "@/components/ui/modal";
 import { MemberForm } from "@/components/members/member-form";
-import { MemberFinancialAlert } from "@/components/members/member-financial-alert";
 import type { MemberDTO } from "@/types/member";
-import {
-  useCreateMember,
-  useMemberFinancialSnapshot,
-  useMembersList,
-  useUpdateMember,
-} from "@/hooks/use-members";
+import { useCreateMember, useMembersList, useUpdateMember } from "@/hooks/use-members";
+import { useDashboardSummary } from "@/hooks/use-dashboard-summary";
 
 type Feedback = {
   type: "success" | "error";
@@ -25,22 +20,19 @@ export default function AdminMembersPage() {
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberDTO | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [highlightMemberId, setHighlightMemberId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
   const membersListQuery = useMembersList();
+  const summaryQuery = useDashboardSummary();
 
-  const eligibleMembers = useMemo(() => {
-    const members = membersListQuery.data?.data ?? [];
-    return members.filter((member) => member.status === "ACTIVE" || member.status === "INACTIVE");
-  }, [membersListQuery.data]);
+  const summary = summaryQuery.data;
 
   const summaryMetrics = useMemo(() => {
-    const members = membersListQuery.data?.data ?? [];
-    const active = members.filter((member) => member.status === "ACTIVE").length;
-    const inactive = members.filter((member) => member.status === "INACTIVE").length;
+    const active = summary?.activeMembers ?? 0;
+    const inactive = summary?.inactiveMembers ?? 0;
+    const pending = summary?.pendingMembers ?? 0;
     return [
       {
         label: "Socios activos",
@@ -53,23 +45,12 @@ export default function AdminMembersPage() {
         helper: "Contactar para reincorporar",
       },
       {
-        label: "Socios elegibles",
-        value: eligibleMembers.length,
-        helper: "Pueden analizarse en el panel",
+        label: "Socios pendientes",
+        value: pending,
+        helper: "Deben inscribirse",
       },
     ];
-  }, [eligibleMembers.length, membersListQuery.data]);
-
-  const hasEligibleMembers = eligibleMembers.length > 0;
-
-  const highlightMember = useMemo(() => {
-    if (!highlightMemberId) return null;
-    return eligibleMembers.find((member) => member.id === highlightMemberId) ?? null;
-  }, [highlightMemberId, eligibleMembers]);
-
-  const snapshotQuery = useMemberFinancialSnapshot(highlightMemberId ?? undefined, {
-    enabled: Boolean(highlightMemberId),
-  });
+  }, [summary?.activeMembers, summary?.inactiveMembers, summary?.pendingMembers]);
 
   function closeModal() {
     setModalMode(null);
@@ -86,6 +67,7 @@ export default function AdminMembersPage() {
         message: "Socio creado correctamente.",
       });
       await membersListQuery.refetch();
+      await summaryQuery.refetch();
       closeModal();
     } catch (error) {
       clientLogger.error("Error al crear socio", error);
@@ -106,6 +88,8 @@ export default function AdminMembersPage() {
         memberId: selectedMember.id,
         input: values,
       });
+      await membersListQuery.refetch();
+      await summaryQuery.refetch();
       setFeedback({
         type: "success",
         message: "Socio actualizado correctamente.",
@@ -121,20 +105,6 @@ export default function AdminMembersPage() {
       setFormError(errorMessage);
     }
   }
-
-  const financialAlertDescription = highlightMember
-    ? `Mostrando el estado financiero de ${highlightMember.name ?? "socio sin nombre"}`
-    : hasEligibleMembers
-      ? "Seleccioná un socio activo/inactivo para revisar su situación económica."
-      : "No hay socios activos o inactivos disponibles para consultar.";
-
-  const financialAlertErrorMessage = !hasEligibleMembers
-    ? "Situación económica del socio no disponible porque no hay socios activos o inactivos habilitados."
-    : highlightMemberId && snapshotQuery.error instanceof Error
-      ? snapshotQuery.error.message === "Configuración económica no encontrada."
-        ? "No pudimos calcular la situación económica del socio seleccionado. Revisá la configuración económica antes de reintentar."
-        : snapshotQuery.error.message
-      : null;
 
   return (
     <>
@@ -216,47 +186,6 @@ export default function AdminMembersPage() {
               setSelectedMember(member);
               setModalMode("edit");
             }}
-            onInspect={(member) => setHighlightMemberId(member.id)}
-          />
-
-          <MemberFinancialAlert
-            className="w-full"
-            title="Alertas de morosidad"
-            description={financialAlertDescription}
-            snapshot={snapshotQuery.data}
-            isLoading={snapshotQuery.isLoading || snapshotQuery.isRefetching}
-            errorMessage={financialAlertErrorMessage}
-            actions={
-              <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                <select
-                  className="select-base md:w-64"
-                  disabled={!hasEligibleMembers}
-                  value={highlightMemberId ?? ""}
-                  onChange={(event) => {
-                    setHighlightMemberId(event.target.value ? event.target.value : null);
-                  }}
-                >
-                  <option value="">
-                    {hasEligibleMembers
-                      ? "Socios (seleccioná uno)"
-                      : "Socios (sin registros habilitados)"}
-                  </option>
-                  {eligibleMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name ?? member.email}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="btn-secondary whitespace-nowrap"
-                  onClick={() => snapshotQuery.refetch()}
-                  disabled={!highlightMemberId || snapshotQuery.isFetching || !hasEligibleMembers}
-                >
-                  Refrescar estado
-                </button>
-              </div>
-            }
           />
         </section>
       </div>

@@ -13,6 +13,7 @@ export interface MemberDTO {
   birthDate: string | null;
   status: MemberStatus;
   notes: string | null;
+  password?: string | null;
   createdAt: string;
   updatedAt: string;
 }

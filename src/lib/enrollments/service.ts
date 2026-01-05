@@ -4,7 +4,6 @@ import { and, count, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { dues, enrollments, members, payments, users } from "@/db/schema";
 import { AppError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import { getEconomicConfigBySlug } from "@/lib/economic-config/service";
 import type {
   CreateEnrollmentInput,
@@ -20,7 +19,7 @@ import {
   mapDueRow,
   mapEnrollmentRow,
 } from "@/lib/enrollments/queries";
-import { buildDueSchedule, formatDateOnly } from "@/lib/enrollments/schedule";
+import { formatDateOnly } from "@/lib/enrollments/schedule";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 import type {
   DueDTO,
@@ -172,29 +171,29 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
   try {
     let createdEnrollmentId: string | null = null;
 
-    await db.transaction(async (tx) => {
-      const [created] = await tx
-        .insert(enrollments)
-        .values({
-          memberId: input.memberId,
-          startDate: startDateValue,
-          planName: input.planName ?? null,
-          monthlyAmount,
-          notes: input.notes ?? null,
-          status: "ACTIVE",
-        })
-        .returning();
+    // Crear la inscripción
+    const [created] = await db
+      .insert(enrollments)
+      .values({
+        memberId: input.memberId,
+        startDate: startDateValue,
+        planName: input.planName ?? null,
+        monthlyAmount,
+        notes: input.notes ?? null,
+        status: "ACTIVE",
+      })
+      .returning();
 
-      createdEnrollmentId = created.id;
+    createdEnrollmentId = created.id;
 
-      await tx
-        .update(members)
-        .set({
-          status: MEMBER_STATUS_BY_ENROLLMENT["ACTIVE"],
-          updatedAt: sql`now()`,
-        })
-        .where(eq(members.id, input.memberId));
-    });
+    // Actualizar el estado del miembro
+    await db
+      .update(members)
+      .set({
+        status: MEMBER_STATUS_BY_ENROLLMENT["ACTIVE"],
+        updatedAt: sql`now()`,
+      })
+      .where(eq(members.id, input.memberId));
 
     if (!createdEnrollmentId) {
       throw new AppError("No se pudo crear la inscripción.", 500);
@@ -247,17 +246,20 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
     throw new AppError("No se puede eliminar una inscripción que tiene cuotas pagadas.", 409);
   }
 
-  await db.transaction(async (tx) => {
-    await tx.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
-    await tx.delete(enrollments).where(eq(enrollments.id, enrollmentId));
-    await tx
-      .update(members)
-      .set({
-        status: "PENDING",
-        updatedAt: sql`now()`,
-      })
-      .where(eq(members.id, existing.member.id));
-  });
+  // Eliminar cuotas asociadas
+  await db.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
+  
+  // Eliminar la inscripción
+  await db.delete(enrollments).where(eq(enrollments.id, enrollmentId));
+  
+  // Actualizar el estado del miembro
+  await db
+    .update(members)
+    .set({
+      status: "PENDING",
+      updatedAt: sql`now()`,
+    })
+    .where(eq(members.id, existing.member.id));
 
   return existing;
 }
@@ -379,52 +381,52 @@ export async function recordPayment(
     paidAt: paidAtDate,
   };
 
-  const result = await db.transaction(async (tx) => {
-    if (existing.status !== "PAID") {
-      await tx
-        .update(dues)
-        .set({
-          status: "PAID",
-          paidAt: paidAtDate,
-          updatedAt: sql`now()`,
-        })
-        .where(eq(dues.id, dueId));
-    }
+  // Actualizar estado de la cuota si no está pagada
+  if (existing.status !== "PAID") {
+    await db
+      .update(dues)
+      .set({
+        status: "PAID",
+        paidAt: paidAtDate,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(dues.id, dueId));
+  }
 
-    const [paymentRow] = await tx
-      .insert(payments)
-      .values({
-        ...paymentValues,
-      })
-      .onConflictDoUpdate({
-        target: payments.dueId,
-        set: {
-          amount: paymentValues.amount,
-          method: paymentValues.method,
-          reference: paymentValues.reference,
-          notes: paymentValues.notes,
-          paidAt: paymentValues.paidAt,
-          updatedAt: sql`now()`,
-        },
-      })
-      .returning();
+  // Crear el registro de pago
+  const [paymentRow] = await db
+    .insert(payments)
+    .values({
+      ...paymentValues,
+    })
+    .onConflictDoUpdate({
+      target: payments.dueId,
+      set: {
+        amount: paymentValues.amount,
+        method: paymentValues.method,
+        reference: paymentValues.reference,
+        notes: paymentValues.notes,
+        paidAt: paymentValues.paidAt,
+        updatedAt: sql`now()`,
+      },
+    })
+    .returning();
 
     if (!paymentRow) {
-      throw new AppError("No se pudo registrar el pago.", 500);
-    }
+    throw new AppError("No se pudo registrar el pago.", 500);
+  }
 
-    const dueUpdated: DueDTO = {
-      ...existing,
-      status: "PAID",
-      paidAt: paidAtDate.toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  const dueUpdated: DueDTO = {
+    ...existing,
+    status: "PAID",
+    paidAt: paidAtDate.toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
-    return {
-      due: dueUpdated,
-      payment: mapPaymentRow(paymentRow),
-    };
-  });
+  const result = {
+    due: dueUpdated,
+    payment: mapPaymentRow(paymentRow),
+  };
 
   if (options?.syncStatus !== false) {
     await refreshMemberFinancialStatus(existing.member.id);

@@ -38,7 +38,7 @@ class Logger {
 
   private addLog(entry: LogEntry): void {
     this.logs.push(entry);
-    
+
     // Mantener solo los últimos maxLogs registros
     if (this.logs.length > this.maxLogs) {
       this.logs = this.logs.slice(-this.maxLogs);
@@ -49,9 +49,9 @@ class Logger {
     const contextStr = entry.context ? ` | Context: ${JSON.stringify(entry.context)}` : "";
     const userStr = entry.userId ? ` | User: ${entry.userId}` : "";
     const opStr = entry.operation ? ` | Op: ${entry.operation}` : "";
-    
+
     const logMessage = `[${timestamp}] ${entry.level.toUpperCase()}: ${entry.message}${contextStr}${userStr}${opStr}`;
-    
+
     switch (entry.level) {
       case "error":
         console.error(logMessage);
@@ -67,37 +67,57 @@ class Logger {
     }
   }
 
-  info(message: string, context?: Record<string, unknown>, userId?: string, operation?: string): void {
+  info(
+    message: string,
+    context?: Record<string, unknown>,
+    userId?: string,
+    operation?: string
+  ): void {
     const entry = this.createLogEntry("info", message, context, userId, operation);
     this.addLog(entry);
   }
 
-  warn(message: string, context?: Record<string, unknown>, userId?: string, operation?: string): void {
+  warn(
+    message: string,
+    context?: Record<string, unknown>,
+    userId?: string,
+    operation?: string
+  ): void {
     const entry = this.createLogEntry("warn", message, context, userId, operation);
     this.addLog(entry);
   }
 
-  error(message: string, context?: Record<string, unknown>, userId?: string, operation?: string): void {
+  error(
+    message: string,
+    context?: Record<string, unknown>,
+    userId?: string,
+    operation?: string
+  ): void {
     const entry = this.createLogEntry("error", message, context, userId, operation);
     this.addLog(entry);
   }
 
-  debug(message: string, context?: Record<string, unknown>, userId?: string, operation?: string): void {
+  debug(
+    message: string,
+    context?: Record<string, unknown>,
+    userId?: string,
+    operation?: string
+  ): void {
     const entry = this.createLogEntry("debug", message, context, userId, operation);
     this.addLog(entry);
   }
 
   getLogs(level?: LogEntry["level"], limit?: number): LogEntry[] {
     let filteredLogs = this.logs;
-    
+
     if (level) {
-      filteredLogs = this.logs.filter(log => log.level === level);
+      filteredLogs = this.logs.filter((log) => log.level === level);
     }
-    
+
     if (limit) {
       filteredLogs = filteredLogs.slice(-limit);
     }
-    
+
     return [...filteredLogs];
   }
 

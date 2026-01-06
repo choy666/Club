@@ -31,7 +31,7 @@ export function MemberCredentialCard({
 
   const code = credential?.credential?.code ?? null;
   const qrPayload = credential?.credential?.qrPayload ?? null;
-  
+
   // Obtener estadísticas de cuotas
   const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
 
@@ -167,7 +167,9 @@ export function MemberCredentialCard({
 
             {/* Estado Crediticio */}
             <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Estado Crediticio</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                Estado Crediticio
+              </p>
               <div className="mt-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-base-muted">Cuotas pagadas</span>
@@ -175,8 +177,8 @@ export function MemberCredentialCard({
                 </div>
                 {/* Barra de progreso */}
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${duesStats?.percentage || 0}%` }}
                   />
                 </div>

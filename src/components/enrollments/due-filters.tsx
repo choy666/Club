@@ -9,10 +9,7 @@ export function DueFilters() {
   return (
     <div className="neo-panel flex flex-col gap-6 p-6 md:flex-row md:items-end md:justify-between">
       <div className="flex flex-1 flex-col gap-2">
-        <label
-          htmlFor="due-search"
-          className="text-xs uppercase tracking-[0.3em] text-base-muted"
-        >
+        <label htmlFor="due-search" className="text-xs uppercase tracking-[0.3em] text-base-muted">
           Buscar cuota
         </label>
         <input
@@ -24,10 +21,7 @@ export function DueFilters() {
         />
       </div>
       <div className="flex flex-col gap-2 md:w-64">
-        <label
-          htmlFor="due-status"
-          className="text-xs uppercase tracking-[0.3em] text-base-muted"
-        >
+        <label htmlFor="due-status" className="text-xs uppercase tracking-[0.3em] text-base-muted">
           Estado de cuota
         </label>
         <select

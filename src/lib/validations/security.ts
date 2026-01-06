@@ -26,7 +26,9 @@ export function validateMultiplePayment(dueIds: string[]) {
   });
 
   if (dueIds.length > limits.maxDuesPerPayment) {
-    throw new Error(`No se pueden pagar más de ${limits.maxDuesPerPayment} cuotas en una sola transacción`);
+    throw new Error(
+      `No se pueden pagar más de ${limits.maxDuesPerPayment} cuotas en una sola transacción`
+    );
   }
 
   if (dueIds.length === 0) {
@@ -44,16 +46,16 @@ export function validateVitalicioPromotion(paidDuesCount: number, currentStatus:
   });
 
   if (paidDuesCount < requirements.requiredPaidDues) {
-    return { 
-      eligible: false, 
-      reason: `Se requieren al menos ${requirements.requiredPaidDues} cuotas pagadas` 
+    return {
+      eligible: false,
+      reason: `Se requieren al menos ${requirements.requiredPaidDues} cuotas pagadas`,
     };
   }
 
   if (!requirements.allowedStatuses.includes(currentStatus as "ACTIVE" | "INACTIVE")) {
-    return { 
-      eligible: false, 
-      reason: "El estado actual del socio no permite promoción a vitalicio" 
+    return {
+      eligible: false,
+      reason: "El estado actual del socio no permite promoción a vitalicio",
     };
   }
 
@@ -68,9 +70,9 @@ export function validateMemberDeletion(paidDuesCount: number) {
   });
 
   if (!rules.allowDeletionWithPaidDues && paidDuesCount > rules.maxPaidDuesForDeletion) {
-    return { 
-      canDelete: false, 
-      reason: "No se puede eliminar un socio con cuotas pagadas" 
+    return {
+      canDelete: false,
+      reason: "No se puede eliminar un socio con cuotas pagadas",
     };
   }
 

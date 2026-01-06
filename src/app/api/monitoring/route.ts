@@ -9,20 +9,20 @@ export async function GET(request: NextRequest) {
     const operation = searchParams.get("operation");
 
     // Métricas de rendimiento
-    const performanceMetrics = operation 
+    const performanceMetrics = operation
       ? performanceMonitor.getMetrics(operation)
       : performanceMonitor.getMetrics();
 
     const performanceStats = {
       totalOperations: performanceMetrics.length,
       averageTimes: {} as Record<string, number>,
-      slowOperations: performanceMetrics.filter(m => m.duration > 1000),
+      slowOperations: performanceMetrics.filter((m) => m.duration > 1000),
       recentMetrics: performanceMetrics.slice(-10),
     };
 
     // Calcular tiempos promedio por operación
-    const operations = [...new Set(performanceMetrics.map(m => m.operation))];
-    operations.forEach(op => {
+    const operations = [...new Set(performanceMetrics.map((m) => m.operation))];
+    operations.forEach((op) => {
       performanceStats.averageTimes[op] = performanceMonitor.getAverageTime(op);
     });
 
@@ -51,11 +51,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    logger.error("Error getting monitoring data", { error: (error as Error).message, stack: (error as Error).stack }, "system");
-    return NextResponse.json(
-      { error: "Error al obtener datos de monitoreo" },
-      { status: 500 }
+    logger.error(
+      "Error getting monitoring data",
+      { error: (error as Error).message, stack: (error as Error).stack },
+      "system"
     );
+    return NextResponse.json({ error: "Error al obtener datos de monitoreo" }, { status: 500 });
   }
 }
 
@@ -89,10 +90,11 @@ export async function DELETE(request: NextRequest) {
     logger.info(`Cleared monitoring data: ${type}`, {}, "system");
     return NextResponse.json({ message: `Datos de ${type} limpiados exitosamente` });
   } catch (error) {
-    logger.error("Error clearing monitoring data", { error: (error as Error).message, stack: (error as Error).stack }, "system");
-    return NextResponse.json(
-      { error: "Error al limpiar datos de monitoreo" },
-      { status: 500 }
+    logger.error(
+      "Error clearing monitoring data",
+      { error: (error as Error).message, stack: (error as Error).stack },
+      "system"
     );
+    return NextResponse.json({ error: "Error al limpiar datos de monitoreo" }, { status: 500 });
   }
 }

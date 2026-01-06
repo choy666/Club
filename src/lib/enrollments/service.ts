@@ -250,7 +250,7 @@ export async function updateEnrollment(
   // Si el estado cambió, actualizar el estado del miembro correspondiente
   if (input.status && input.status !== existing.status) {
     const newMemberStatus = MEMBER_STATUS_BY_ENROLLMENT[input.status];
-    
+
     await db
       .update(members)
       .set({
@@ -280,10 +280,10 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
 
   // Eliminar cuotas asociadas
   await db.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
-  
+
   // Eliminar la inscripción
   await db.delete(enrollments).where(eq(enrollments.id, enrollmentId));
-  
+
   // Actualizar el estado del miembro
   await db
     .update(members)
@@ -299,44 +299,43 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
 export const checkAndPromoteToVitalicio = withCache(
   async (...args: unknown[]) => {
     const [memberId] = args as [string];
-    logger.info(`Checking vitalicio promotion for member: ${memberId}`, {}, memberId, "vitalicio_check");
-    
+    logger.info(
+      `Checking vitalicio promotion for member: ${memberId}`,
+      {},
+      memberId,
+      "vitalicio_check"
+    );
+
     const endTimer = performanceMonitor.startTimer("checkAndPromoteToVitalicio");
-    
+
     try {
       const paidDuesCount = await db
         .select({ count: count() })
         .from(dues)
-        .where(and(
-          eq(dues.memberId, memberId),
-          eq(dues.status, "PAID")
-        ));
+        .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID")));
 
       if (paidDuesCount[0].count >= 360) {
         await db
           .update(members)
-          .set({ 
+          .set({
             status: "VITALICIO",
-            updatedAt: sql`now()` 
+            updatedAt: sql`now()`,
           })
           .where(eq(members.id, memberId));
-        
+
         await db
           .update(dues)
-          .set({ 
+          .set({
             status: "FROZEN",
-            statusChangedAt: sql`now()` 
+            statusChangedAt: sql`now()`,
           })
-          .where(and(
-            eq(dues.memberId, memberId),
-            eq(dues.status, "PENDING")
-          ));
-        
+          .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")));
+
         logVitalicioPromotion(memberId, paidDuesCount[0].count, true);
         endTimer();
         return true;
       }
-      
+
       logVitalicioPromotion(memberId, paidDuesCount[0].count, false);
       endTimer();
       return false;
@@ -353,25 +352,34 @@ export const checkAndPromoteToVitalicio = withCache(
   10 * 60 * 1000 // 10 minutos
 );
 
-export const payMultipleDues = measurePerformance("payMultipleDues")(async (input: PayDuesInput) => {
-  logger.info(`Processing multiple dues payment for member: ${input.memberId}`, {
-    dueIdsCount: input.dueIds.length,
-    paymentMethod: input.paymentMethod
-  }, input.memberId, "payment");
+export const payMultipleDues = measurePerformance("payMultipleDues")(async (
+  input: PayDuesInput
+) => {
+  logger.info(
+    `Processing multiple dues payment for member: ${input.memberId}`,
+    {
+      dueIdsCount: input.dueIds.length,
+      paymentMethod: input.paymentMethod,
+    },
+    input.memberId,
+    "payment"
+  );
 
   try {
     // Validar límites de pago
     validateMultiplePayment(input.dueIds);
-    
+
     // Validar que las cuotas pertenezcan al socio
     const duesToPay = await db
       .select()
       .from(dues)
-      .where(and(
-        inArray(dues.id, input.dueIds),
-        eq(dues.memberId, input.memberId),
-        eq(dues.status, "PENDING")
-      ));
+      .where(
+        and(
+          inArray(dues.id, input.dueIds),
+          eq(dues.memberId, input.memberId),
+          eq(dues.status, "PENDING")
+        )
+      );
 
     if (duesToPay.length !== input.dueIds.length) {
       throw new AppError("Algunas cuotas no son válidas o ya están pagadas");
@@ -389,20 +397,20 @@ export const payMultipleDues = measurePerformance("payMultipleDues")(async (inpu
           paymentMethod: input.paymentMethod,
           paymentNotes: input.paymentNotes,
           statusChangedAt: sql`now()`,
-          updatedAt: sql`now()` 
+          updatedAt: sql`now()`,
         })
         .where(eq(dues.id, due.id));
     }
 
     // Verificar si alcanza estado vitalicio
     const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
-    
+
     logPayment("completed", input.memberId, duesToPay.length, totalAmount, true);
-    
+
     // Invalidar cache relevante
     queryCache.delete(cacheKeys.memberDues(input.memberId));
     queryCache.delete(cacheKeys.memberStats(input.memberId));
-    
+
     return {
       paidDues: duesToPay.length,
       promotedToVitalicio,
@@ -572,7 +580,7 @@ export async function recordPayment(
     })
     .returning();
 
-    if (!paymentRow) {
+  if (!paymentRow) {
     throw new AppError("No se pudo registrar el pago.", 500);
   }
 

@@ -90,14 +90,14 @@ describe("DuePaymentPanel", () => {
 
   it("muestra el título y nombre del miembro", () => {
     renderComponent();
-    
+
     expect(screen.getByText("Pagar Cuotas")).toBeInTheDocument();
     expect(screen.getByText("Juan Pérez")).toBeInTheDocument();
   });
 
   it("muestra el resumen inicial con cuotas pendientes", () => {
     renderComponent();
-    
+
     expect(screen.getByText("Cuotas seleccionadas")).toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.getByText("Total a pagar")).toBeInTheDocument();
@@ -106,13 +106,13 @@ describe("DuePaymentPanel", () => {
 
   it("permite seleccionar cuotas individualmente", async () => {
     renderComponent();
-    
+
     const checkboxes = screen.getAllByRole("checkbox");
     expect(checkboxes).toHaveLength(2);
-    
+
     // Seleccionar primera cuota
     fireEvent.click(checkboxes[0]);
-    
+
     await waitFor(() => {
       expect(screen.getByText("1")).toBeInTheDocument();
       expect(screen.getByText("$5.000")).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe("DuePaymentPanel", () => {
 
   it("muestra métodos de pago disponibles", () => {
     renderComponent();
-    
+
     expect(screen.getByText("Efectivo")).toBeInTheDocument();
     expect(screen.getByText("Transferencia bancaria")).toBeInTheDocument();
     expect(screen.getByText("Mercado Pago")).toBeInTheDocument();
@@ -129,7 +129,7 @@ describe("DuePaymentPanel", () => {
 
   it("deshabilita el botón de pagar cuando no hay cuotas seleccionadas", () => {
     renderComponent();
-    
+
     const payButton = screen.getByRole("button", { name: /Pagar/ });
     expect(payButton).toBeDisabled();
   });

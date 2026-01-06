@@ -244,10 +244,7 @@ export async function deleteMember(memberId: string) {
   const paidDues = await db
     .select()
     .from(dues)
-    .where(and(
-      eq(dues.memberId, memberId),
-      eq(dues.status, "PAID")
-    ));
+    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID")));
 
   if (paidDues.length > 0) {
     throw new AppError("No se puede eliminar un socio con cuotas pagadas");
@@ -256,14 +253,11 @@ export async function deleteMember(memberId: string) {
   // Congelar cuotas pendientes
   await db
     .update(dues)
-    .set({ 
+    .set({
       status: "FROZEN",
-      statusChangedAt: sql`now()` 
+      statusChangedAt: sql`now()`,
     })
-    .where(and(
-      eq(dues.memberId, memberId),
-      eq(dues.status, "PENDING")
-    ));
+    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")));
 
   await db.delete(members).where(eq(members.id, memberId));
   await db.delete(users).where(eq(users.id, existing.userId));

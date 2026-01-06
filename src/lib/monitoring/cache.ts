@@ -32,7 +32,7 @@ class QueryCache {
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    
+
     if (!entry) {
       return null;
     }
@@ -40,7 +40,7 @@ class QueryCache {
     // Verificar si ha expirado
     const now = new Date();
     const age = now.getTime() - entry.timestamp.getTime();
-    
+
     if (age > entry.ttl) {
       this.cache.delete(key);
       logger.debug(`Cache EXPIRED: ${key}`, { age, ttl: entry.ttl });
@@ -104,7 +104,7 @@ export function withCache<T extends (...args: unknown[]) => Promise<unknown>>(
 ): T {
   return (async (...args: Parameters<T>) => {
     const key = keyGenerator(...args);
-    
+
     // Intentar obtener del cache
     const cached = queryCache.get(key);
     if (cached !== null) {
@@ -113,7 +113,7 @@ export function withCache<T extends (...args: unknown[]) => Promise<unknown>>(
 
     // Ejecutar función y cachear resultado
     const endTimer = performanceMonitor.startTimer(`query:${key}`);
-    
+
     try {
       const result = await fn(...args);
       queryCache.set(key, result, ttl);
@@ -130,9 +130,9 @@ export function withCache<T extends (...args: unknown[]) => Promise<unknown>>(
 export const cacheKeys = {
   memberDues: (memberId: string) => `member:${memberId}:dues`,
   memberStats: (memberId: string) => `member:${memberId}:stats`,
-  enrollmentList: (page: number, filters: Record<string, unknown>) => 
+  enrollmentList: (page: number, filters: Record<string, unknown>) =>
     `enrollments:page:${page}:filters:${JSON.stringify(filters)}`,
-  dueList: (enrollmentId: string, status?: string) => 
+  dueList: (enrollmentId: string, status?: string) =>
     `dues:${enrollmentId}${status ? `:status:${status}` : ""}`,
 };
 

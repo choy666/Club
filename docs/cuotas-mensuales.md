@@ -25,11 +25,13 @@
 ## 3. Ejecución operativa
 
 1. **Manual / CLI**
+
    ```bash
    npm run jobs:generate-dues operador=cron
    ```
 
    - El segundo argumento es opcional; por defecto queda `manual`.
+
 2. **Automatizada (cron serverless)**
    - Programar un cron (GitHub Actions, Vercel Cron, servicio externo) que ejecute el script el primer día de cada mes.
    - Verificar logs (`monthly_run_log`) y métricas (cuotas generadas, operator).

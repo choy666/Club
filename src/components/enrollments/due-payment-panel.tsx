@@ -14,22 +14,22 @@ interface DuePaymentPanelProps {
 
 export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaymentPanelProps) {
   const [selectedDues, setSelectedDues] = useState<string[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO">("EFECTIVO");
+  const [paymentMethod, setPaymentMethod] = useState<"EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO">(
+    "EFECTIVO"
+  );
   const [paymentNotes, setPaymentNotes] = useState("");
   const payMutation = usePayMultipleDues();
 
   // Filtrar cuotas pendientes
-  const pendingDues = dues.filter(due => due.status === "PENDING");
+  const pendingDues = dues.filter((due) => due.status === "PENDING");
   const totalAmount = selectedDues.reduce((sum, dueId) => {
-    const due = pendingDues.find(d => d.id === dueId);
+    const due = pendingDues.find((d) => d.id === dueId);
     return sum + (due?.amount || 0);
   }, 0);
 
   const handleToggleDue = (dueId: string) => {
-    setSelectedDues(prev => 
-      prev.includes(dueId) 
-        ? prev.filter(id => id !== dueId)
-        : [...prev, dueId]
+    setSelectedDues((prev) =>
+      prev.includes(dueId) ? prev.filter((id) => id !== dueId) : [...prev, dueId]
     );
   };
 
@@ -37,7 +37,7 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
     if (selectedDues.length === pendingDues.length) {
       setSelectedDues([]);
     } else {
-      setSelectedDues(pendingDues.map(due => due.id));
+      setSelectedDues(pendingDues.map((due) => due.id));
     }
   };
 
@@ -103,12 +103,14 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
             onClick={handleSelectAll}
             className="text-xs text-accent-primary hover:underline"
           >
-            {selectedDues.length === pendingDues.length ? "Deseleccionar todas" : "Seleccionar todas"}
+            {selectedDues.length === pendingDues.length
+              ? "Deseleccionar todas"
+              : "Seleccionar todas"}
           </button>
         </div>
 
         <div className="max-h-60 overflow-y-auto space-y-2">
-          {pendingDues.map(due => (
+          {pendingDues.map((due) => (
             <div
               key={due.id}
               className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -126,8 +128,12 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
                   className="rounded border-base-border"
                 />
                 <div>
-                  <p className="text-sm font-medium">Cuota - {new Date(due.dueDate).toLocaleDateString("es-AR")}</p>
-                  <p className="text-xs text-base-muted">Vencimiento: {new Date(due.dueDate).toLocaleDateString("es-AR")}</p>
+                  <p className="text-sm font-medium">
+                    Cuota - {new Date(due.dueDate).toLocaleDateString("es-AR")}
+                  </p>
+                  <p className="text-xs text-base-muted">
+                    Vencimiento: {new Date(due.dueDate).toLocaleDateString("es-AR")}
+                  </p>
                 </div>
               </div>
               <p className="font-semibold">${due.amount.toLocaleString("es-AR")}</p>
@@ -141,7 +147,9 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
         <label className="text-sm font-medium">Método de pago</label>
         <select
           value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value as "EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO")}
+          onChange={(e) =>
+            setPaymentMethod(e.target.value as "EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO")
+          }
           className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
         >
           <option value="EFECTIVO">Efectivo</option>
@@ -180,7 +188,9 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: 1.02 }}
         >
-          {payMutation.isPending ? "Procesando..." : `Pagar $${totalAmount.toLocaleString("es-AR")}`}
+          {payMutation.isPending
+            ? "Procesando..."
+            : `Pagar $${totalAmount.toLocaleString("es-AR")}`}
         </motion.button>
       </div>
     </div>

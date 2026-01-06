@@ -95,7 +95,9 @@ export function DueTable() {
   const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<MemberSummary | null>(null);
-  const [paymentPanelMember, setPaymentPanelMember] = useState<{ id: string; name: string } | null>(null);
+  const [paymentPanelMember, setPaymentPanelMember] = useState<{ id: string; name: string } | null>(
+    null
+  );
   const [manualPaymentForm, setManualPaymentForm] = useState({
     amount: "",
     method: "Transferencia",
@@ -304,10 +306,12 @@ export function DueTable() {
                     <button
                       type="button"
                       className="btn-primary px-4 py-1 text-xs"
-                      onClick={() => setPaymentPanelMember({
-                        id: summary.member.id,
-                        name: summary.member.name ?? "Sin nombre"
-                      })}
+                      onClick={() =>
+                        setPaymentPanelMember({
+                          id: summary.member.id,
+                          name: summary.member.name ?? "Sin nombre",
+                        })
+                      }
                     >
                       Pagar cuotas
                     </button>
@@ -821,7 +825,7 @@ export function DueTable() {
           <DuePaymentPanel
             memberId={paymentPanelMember.id}
             memberName={paymentPanelMember.name}
-            dues={duesData?.filter(due => due.member.id === paymentPanelMember.id) || []}
+            dues={duesData?.filter((due) => due.member.id === paymentPanelMember.id) || []}
             onClose={() => setPaymentPanelMember(null)}
           />
         </Modal>

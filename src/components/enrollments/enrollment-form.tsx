@@ -26,10 +26,10 @@ interface EnrollmentCreateFormProps {
   serverError?: string | null;
 }
 
-export function EnrollmentCreateForm({ 
-  onSubmit, 
-  isSubmitting = false, 
-  serverError = null 
+export function EnrollmentCreateForm({
+  onSubmit,
+  isSubmitting = false,
+  serverError = null,
 }: EnrollmentCreateFormProps) {
   const { data: membersOptions, isLoading: membersLoading } = useMembersOptions();
   const { data: economicConfig } = useEconomicConfig();
@@ -134,7 +134,8 @@ export function EnrollmentCreateForm({
       </div>
 
       <div className="rounded-md border border-base-border/60 bg-base-secondary/30 px-4 py-3 text-sm text-base-muted">
-        Al crear la inscripción, el socio pasará a estado &quot;Activo&quot; automáticamente y se generará:
+        Al crear la inscripción, el socio pasará a estado &quot;Activo&quot; automáticamente y se
+        generará:
         <ul className="mt-2 list-disc list-inside space-y-1">
           <li>Su credencial digital con QR para acceso</li>
           <li>12 cuotas mensuales (la primera para el próximo mes)</li>

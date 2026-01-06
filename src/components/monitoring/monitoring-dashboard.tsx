@@ -4,15 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Activity, 
-  Database, 
-  AlertCircle, 
-  Trash2, 
-  RefreshCw,
-  TrendingUp,
-  Zap
-} from "lucide-react";
+import { Activity, Database, AlertCircle, Trash2, RefreshCw, TrendingUp, Zap } from "lucide-react";
 
 interface MonitoringData {
   timestamp: string;
@@ -59,19 +51,15 @@ interface MonitoringData {
 
 export function MonitoringDashboard() {
   const [data, setData] = useState<MonitoringData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const fetchMonitoringData = async () => {
     try {
-      setLoading(true);
       const response = await fetch("/api/monitoring");
       const monitoringData = await response.json();
       setData(monitoringData);
     } catch (error) {
       console.error("Error fetching monitoring data:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -85,7 +73,10 @@ export function MonitoringDashboard() {
   };
 
   useEffect(() => {
-    fetchMonitoringData();
+    const loadData = async () => {
+      await fetchMonitoringData();
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -124,10 +115,7 @@ export function MonitoringDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
+          <Button variant="outline" onClick={() => setAutoRefresh(!autoRefresh)}>
             <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? "animate-spin" : ""}`} />
             Auto Refresh
           </Button>
@@ -156,7 +144,9 @@ export function MonitoringDashboard() {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMemory(data.system.memoryUsage.heapUsed)}</div>
+            <div className="text-2xl font-bold">
+              {formatMemory(data.system.memoryUsage.heapUsed)}
+            </div>
             <p className="text-xs text-muted-foreground">
               Total: {formatMemory(data.system.memoryUsage.heapTotal)}
             </p>
@@ -170,9 +160,7 @@ export function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.performance.totalOperations}</div>
-            <p className="text-xs text-muted-foreground">
-              Operaciones registradas
-            </p>
+            <p className="text-xs text-muted-foreground">Operaciones registradas</p>
           </CardContent>
         </Card>
 
@@ -183,9 +171,7 @@ export function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.cache.size}</div>
-            <p className="text-xs text-muted-foreground">
-              Entradas en cache
-            </p>
+            <p className="text-xs text-muted-foreground">Entradas en cache</p>
           </CardContent>
         </Card>
       </div>
@@ -203,9 +189,7 @@ export function MonitoringDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Tiempos Promedio por Operación</CardTitle>
-              <CardDescription>
-                Tiempos de respuesta promedio en milisegundos
-              </CardDescription>
+              <CardDescription>Tiempos de respuesta promedio en milisegundos</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -226,9 +210,7 @@ export function MonitoringDashboard() {
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-orange-500" />
                 Operaciones Lentas
-                <Badge variant="destructive">
-                  {data.performance.slowOperations.length}
-                </Badge>
+                <Badge variant="destructive">{data.performance.slowOperations.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -243,9 +225,7 @@ export function MonitoringDashboard() {
                             {new Date(op.timestamp).toLocaleString()}
                           </p>
                         </div>
-                        <Badge variant="destructive">
-                          {op.duration.toFixed(2)}ms
-                        </Badge>
+                        <Badge variant="destructive">{op.duration.toFixed(2)}ms</Badge>
                       </div>
                     </div>
                   ))}
@@ -260,11 +240,7 @@ export function MonitoringDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Estadísticas de Cache
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => clearData("cache")}
-                >
+                <Button size="sm" variant="outline" onClick={() => clearData("cache")}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Limpiar Cache
                 </Button>
@@ -293,14 +269,8 @@ export function MonitoringDashboard() {
               <CardTitle className="flex items-center justify-between">
                 Logs Recientes
                 <div className="flex gap-2">
-                  <Badge variant="destructive">
-                    {data.logs.errors} errores
-                  </Badge>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => clearData("logs")}
-                  >
+                  <Badge variant="destructive">{data.logs.errors} errores</Badge>
+                  <Button size="sm" variant="outline" onClick={() => clearData("logs")}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Limpiar Logs
                   </Button>
@@ -313,10 +283,13 @@ export function MonitoringDashboard() {
                   {data.logs.recent.map((log, index) => (
                     <div key={index} className="border rounded p-2">
                       <div className="flex items-start gap-2">
-                        <Badge 
+                        <Badge
                           variant={
-                            log.level === "error" ? "destructive" : 
-                            log.level === "warn" ? "secondary" : "default"
+                            log.level === "error"
+                              ? "destructive"
+                              : log.level === "warn"
+                                ? "secondary"
+                                : "default"
                           }
                         >
                           {log.level}

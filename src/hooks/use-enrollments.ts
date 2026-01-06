@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import { CreateEnrollmentInput, PayDuesInput, UpdateEnrollmentInput } from "@/lib/validations/enrollments";
+import {
+  CreateEnrollmentInput,
+  PayDuesInput,
+  UpdateEnrollmentInput,
+} from "@/lib/validations/enrollments";
 import type {
   DueListResponse,
   DueResponse,
@@ -110,10 +114,13 @@ export function usePayMultipleDues() {
 
   return useMutation({
     mutationFn: async (input: PayDuesInput) => {
-      const response = await apiFetch<{ paidDues: number; promotedToVitalicio: boolean }>("/api/cuotas/pagar", {
-        method: "POST",
-        body: JSON.stringify(input),
-      });
+      const response = await apiFetch<{ paidDues: number; promotedToVitalicio: boolean }>(
+        "/api/cuotas/pagar",
+        {
+          method: "POST",
+          body: JSON.stringify(input),
+        }
+      );
       return response;
     },
     onSuccess: () => {

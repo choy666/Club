@@ -17,7 +17,12 @@ export const userRoleEnum = pgEnum("user_role", ["ADMIN", "USER"]);
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
-export const memberStatusEnum = pgEnum("member_status", ["ACTIVE", "INACTIVE", "PENDING", "VITALICIO"]);
+export const memberStatusEnum = pgEnum("member_status", [
+  "ACTIVE",
+  "INACTIVE",
+  "PENDING",
+  "VITALICIO",
+]);
 
 export const enrollmentStatusEnum = pgEnum("enrollment_status", ["PENDING", "ACTIVE", "CANCELLED"]);
 

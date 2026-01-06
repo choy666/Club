@@ -57,7 +57,7 @@ export function DeactivateMemberModal({
               <p className="text-sm">
                 <span className="font-medium">Socio:</span> {memberName}
               </p>
-              
+
               {hasPaidDues ? (
                 <div className="text-sm text-base-muted space-y-2">
                   <p>• El socio tiene cuotas pagadas registradas</p>
@@ -84,7 +84,7 @@ export function DeactivateMemberModal({
             >
               Cancelar
             </button>
-            
+
             {!hasPaidDues && (
               <motion.button
                 type="button"

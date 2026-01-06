@@ -170,34 +170,6 @@ const docsLinks = [
   },
 ];
 
-const roadmap = [
-  {
-    title: "Producción inmediata",
-    status: "Listo",
-    date: "Ene 2026",
-    description: "Sistema operativo para gestión de socios, inscripciones, cuotas y pagos.",
-  },
-  {
-    title: "Optimizaciones de rendimiento",
-    status: "En curso",
-    date: "Feb 2026",
-    description: "Health checks, rate limiting y monitoreo avanzado para 99.9% disponibilidad.",
-  },
-  {
-    title: "Portal del socio",
-    status: "Planeado",
-    date: "Mar 2026",
-    description: "App móvil para que los socios vean sus credenciales y estados de cuenta.",
-  },
-];
-
-const statusColors: Record<string, string> = {
-  Listo: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
-  "En progreso": "text-amber-300 border-amber-500/40 bg-amber-500/10",
-  "En curso": "text-amber-300 border-amber-500/40 bg-amber-500/10",
-  Planeado: "text-slate-300 border-slate-600/50 bg-slate-600/10",
-};
-
 export const metadata: Metadata = {
   title: "Showcase · AppClub",
   description:
@@ -388,32 +360,6 @@ export default function ShowcasePage() {
                 </Link>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="space-y-8">
-          <header className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-base-muted">Plan futuro</p>
-            <h2 className="text-3xl font-semibold">Plan de desarrollo</h2>
-          </header>
-          <div className="space-y-4">
-            {roadmap.map((item) => (
-              <article
-                key={item.title}
-                className="glass-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between"
-              >
-                <div>
-                  <p className="text-sm uppercase tracking-[0.3em] text-base-muted">{item.date}</p>
-                  <h3 className="text-xl font-semibold">{item.title}</h3>
-                  <p className="text-sm text-base-muted">{item.description}</p>
-                </div>
-                <span
-                  className={`self-start rounded-full border px-3 py-1 text-xs font-semibold md:self-center ${statusColors[item.status] ?? "text-base-muted border-base-border/50"}`}
-                >
-                  {item.status}
-                </span>
-              </article>
-            ))}
           </div>
         </section>
 

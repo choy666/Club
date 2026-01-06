@@ -35,10 +35,14 @@ export function EnrollmentCreateForm({
   const { data: economicConfig } = useEconomicConfig();
 
   const defaultValues = useMemo<CreateEnrollmentInput>(() => {
-    const today = new Date().toISOString().split("T")[0] ?? "";
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const localDate = `${year}-${month}-${day}`;
     return {
       memberId: "",
-      startDate: today,
+      startDate: localDate,
       planName: "Inscripción",
       enrollmentAmount: economicConfig?.defaultMonthlyAmount,
       clubName: clientEnv.NAME_CLUB,

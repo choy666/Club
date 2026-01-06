@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { DueStatus } from "@/types/enrollment";
 
 interface DueFiltersState {
+  search: string;
   status: DueStatus | "ALL";
   memberId: string;
   enrollmentId: string;
@@ -9,6 +10,7 @@ interface DueFiltersState {
   to: string;
   page: number;
   perPage: number;
+  setSearch: (value: string) => void;
   setStatus: (value: DueStatus | "ALL") => void;
   setMemberId: (value: string) => void;
   setEnrollmentId: (value: string) => void;
@@ -22,6 +24,7 @@ interface DueFiltersState {
 const DEFAULT_STATE: Omit<
   DueFiltersState,
   | "setStatus"
+  | "setSearch"
   | "setMemberId"
   | "setEnrollmentId"
   | "setFrom"
@@ -30,6 +33,7 @@ const DEFAULT_STATE: Omit<
   | "setPerPage"
   | "resetFilters"
 > = {
+  search: "",
   status: "ALL",
   memberId: "",
   enrollmentId: "",
@@ -41,6 +45,11 @@ const DEFAULT_STATE: Omit<
 
 export const useDueFiltersStore = create<DueFiltersState>((set) => ({
   ...DEFAULT_STATE,
+  setSearch: (value) =>
+    set({
+      search: value,
+      page: 1,
+    }),
   setStatus: (value) =>
     set({
       status: value,

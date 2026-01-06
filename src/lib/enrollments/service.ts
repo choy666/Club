@@ -1,14 +1,19 @@
 import { createHash } from "crypto";
-import { and, count, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { and, count, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dues, enrollments, members, payments, users } from "@/db/schema";
 import { AppError } from "@/lib/errors";
 import { getEconomicConfigBySlug } from "@/lib/economic-config/service";
+import { validateMultiplePayment } from "@/lib/validations/security";
+import { logger, logPayment, logVitalicioPromotion, logError } from "@/lib/monitoring/logger";
+import { performanceMonitor, measurePerformance } from "@/lib/monitoring/performance";
+import { withCache, cacheKeys, queryCache } from "@/lib/monitoring/cache";
 import type {
   CreateEnrollmentInput,
-  ListDuesInput,
   ListEnrollmentsInput,
+  ListDuesInput,
+  PayDuesInput,
   UpdateEnrollmentInput,
 } from "@/lib/validations/enrollments";
 import {
@@ -19,7 +24,7 @@ import {
   mapDueRow,
   mapEnrollmentRow,
 } from "@/lib/enrollments/queries";
-import { formatDateOnly } from "@/lib/enrollments/schedule";
+import { formatDateOnly, buildDueSchedule } from "@/lib/enrollments/schedule";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 import type {
   DueDTO,
@@ -159,7 +164,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
     throw new AppError("El socio ya tiene una inscripción registrada.", 409);
   }
 
-  const monthlyAmount = economicConfig.defaultMonthlyAmount;
+  const monthlyAmount = input.enrollmentAmount ?? economicConfig.defaultMonthlyAmount;
 
   if (!monthlyAmount || monthlyAmount <= 0) {
     throw new AppError("No hay un monto mensual válido configurado para esta inscripción.", 400);
@@ -194,6 +199,19 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
         updatedAt: sql`now()`,
       })
       .where(eq(members.id, input.memberId));
+
+    // Generar cuotas mensuales automáticamente (generar para 360 meses - 30 años)
+    const dueSchedule = buildDueSchedule({
+      enrollmentId: createdEnrollmentId,
+      memberId: input.memberId,
+      startDate: startDateValue,
+      monthsToGenerate: 360,
+      monthlyAmount,
+    });
+
+    if (dueSchedule.length > 0) {
+      await db.insert(dues).values(dueSchedule);
+    }
 
     if (!createdEnrollmentId) {
       throw new AppError("No se pudo crear la inscripción.", 500);
@@ -278,8 +296,126 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
   return existing;
 }
 
+export const checkAndPromoteToVitalicio = withCache(
+  async (...args: unknown[]) => {
+    const [memberId] = args as [string];
+    logger.info(`Checking vitalicio promotion for member: ${memberId}`, {}, memberId, "vitalicio_check");
+    
+    const endTimer = performanceMonitor.startTimer("checkAndPromoteToVitalicio");
+    
+    try {
+      const paidDuesCount = await db
+        .select({ count: count() })
+        .from(dues)
+        .where(and(
+          eq(dues.memberId, memberId),
+          eq(dues.status, "PAID")
+        ));
+
+      if (paidDuesCount[0].count >= 360) {
+        await db
+          .update(members)
+          .set({ 
+            status: "VITALICIO",
+            updatedAt: sql`now()` 
+          })
+          .where(eq(members.id, memberId));
+        
+        await db
+          .update(dues)
+          .set({ 
+            status: "FROZEN",
+            statusChangedAt: sql`now()` 
+          })
+          .where(and(
+            eq(dues.memberId, memberId),
+            eq(dues.status, "PENDING")
+          ));
+        
+        logVitalicioPromotion(memberId, paidDuesCount[0].count, true);
+        endTimer();
+        return true;
+      }
+      
+      logVitalicioPromotion(memberId, paidDuesCount[0].count, false);
+      endTimer();
+      return false;
+    } catch (error) {
+      logError("checkAndPromoteToVitalicio", error as Error, { memberId });
+      endTimer();
+      throw error;
+    }
+  },
+  (...args: unknown[]) => {
+    const [memberId] = args as [string];
+    return cacheKeys.memberStats(memberId);
+  },
+  10 * 60 * 1000 // 10 minutos
+);
+
+export const payMultipleDues = measurePerformance("payMultipleDues")(async (input: PayDuesInput) => {
+  logger.info(`Processing multiple dues payment for member: ${input.memberId}`, {
+    dueIdsCount: input.dueIds.length,
+    paymentMethod: input.paymentMethod
+  }, input.memberId, "payment");
+
+  try {
+    // Validar límites de pago
+    validateMultiplePayment(input.dueIds);
+    
+    // Validar que las cuotas pertenezcan al socio
+    const duesToPay = await db
+      .select()
+      .from(dues)
+      .where(and(
+        inArray(dues.id, input.dueIds),
+        eq(dues.memberId, input.memberId),
+        eq(dues.status, "PENDING")
+      ));
+
+    if (duesToPay.length !== input.dueIds.length) {
+      throw new AppError("Algunas cuotas no son válidas o ya están pagadas");
+    }
+
+    const totalAmount = duesToPay.reduce((sum, due) => sum + due.amount, 0);
+
+    // Actualizar cada cuota
+    for (const due of duesToPay) {
+      await db
+        .update(dues)
+        .set({
+          status: "PAID",
+          paidAmount: due.amount,
+          paymentMethod: input.paymentMethod,
+          paymentNotes: input.paymentNotes,
+          statusChangedAt: sql`now()`,
+          updatedAt: sql`now()` 
+        })
+        .where(eq(dues.id, due.id));
+    }
+
+    // Verificar si alcanza estado vitalicio
+    const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
+    
+    logPayment("completed", input.memberId, duesToPay.length, totalAmount, true);
+    
+    // Invalidar cache relevante
+    queryCache.delete(cacheKeys.memberDues(input.memberId));
+    queryCache.delete(cacheKeys.memberStats(input.memberId));
+    
+    return {
+      paidDues: duesToPay.length,
+      promotedToVitalicio,
+    };
+  } catch (error) {
+    logPayment("failed", input.memberId, input.dueIds.length, 0, false);
+    logError("payMultipleDues", error as Error, { input });
+    throw error;
+  }
+});
+
 export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
-  const { page, perPage, enrollmentId, memberId, status, from, to } = input;
+  const { page, perPage, enrollmentId, memberId, status, from, to, search } = input;
   const offset = (page - 1) * perPage;
 
   const filters = [];
@@ -302,6 +438,16 @@ export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
 
   if (to) {
     filters.push(lte(dues.dueDate, formatDateOnly(new Date(to))));
+  }
+
+  // Búsqueda por nombre, correo o documento del socio
+  if (search) {
+    const searchCondition = or(
+      ilike(users.name, `%${search}%`),
+      ilike(users.email, `%${search}%`),
+      ilike(members.documentNumber, `%${search}%`)
+    );
+    filters.push(searchCondition);
   }
 
   const where = filters.length ? and(...filters) : undefined;
@@ -481,18 +627,10 @@ export async function getMemberCredential(memberId: string): Promise<MemberCrede
   const enrollment = await findEnrollmentByMemberId(memberId);
   const { nextStatus } = await determineMemberFinancialStatus(memberId);
 
-  const paidResult = await db
-    .select({ value: count() })
-    .from(dues)
-    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID")));
-
-  const hasPaidDues = (paidResult[0]?.value ?? 0) > 0;
-
   const isReady =
     Boolean(enrollment) &&
     enrollment?.status === "ACTIVE" &&
-    nextStatus === "ACTIVE" &&
-    hasPaidDues;
+    (nextStatus === "ACTIVE" || nextStatus === "PENDING");
 
   let credential: MemberCredentialDTO["credential"] = null;
   if (isReady && enrollment) {

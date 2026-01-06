@@ -40,7 +40,7 @@ const baseMemberInfoSchema = z.object({
 });
 
 export const memberInfoSchema = baseMemberInfoSchema.extend({
-  status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]).optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "PENDING", "VITALICIO"]).optional(),
   notes: z.string().max(400, "Las notas no pueden superar 400 caracteres.").optional().nullable(),
 });
 

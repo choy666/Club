@@ -17,7 +17,7 @@ export const userRoleEnum = pgEnum("user_role", ["ADMIN", "USER"]);
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
-export const memberStatusEnum = pgEnum("member_status", ["ACTIVE", "INACTIVE", "PENDING"]);
+export const memberStatusEnum = pgEnum("member_status", ["ACTIVE", "INACTIVE", "PENDING", "VITALICIO"]);
 
 export const enrollmentStatusEnum = pgEnum("enrollment_status", ["PENDING", "ACTIVE", "CANCELLED"]);
 
@@ -115,6 +115,10 @@ export const dues = pgTable("dues", {
   amount: integer("amount").notNull(),
   status: dueStatusEnum("status").notNull().default("PENDING"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
+  paidAmount: integer("paid_amount"),
+  paymentMethod: text("payment_method"),
+  paymentNotes: text("payment_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

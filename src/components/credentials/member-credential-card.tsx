@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useMemberDuesStats } from "@/hooks/use-member-stats";
 
 import type { MemberCredentialDTO } from "@/types/enrollment";
 
@@ -22,7 +23,7 @@ export function MemberCredentialCard({
   error,
   onRefresh,
   title = "Credencial digital",
-  subtitle = "QR listo para control de acceso. Se habilita tras activar la inscripción y registrar el primer pago.",
+  subtitle = "QR listo para control de acceso. Se genera automáticamente al inscribir al socio.",
   compact,
 }: MemberCredentialCardProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -30,6 +31,9 @@ export function MemberCredentialCard({
 
   const code = credential?.credential?.code ?? null;
   const qrPayload = credential?.credential?.qrPayload ?? null;
+  
+  // Obtener estadísticas de cuotas
+  const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +69,7 @@ export function MemberCredentialCard({
       if (credential.enrollment.status !== "ACTIVE") {
         return { label: "Inscripción pendiente", tone: "warning" };
       }
-      return { label: "Esperando pago inicial", tone: "warning" };
+      return { label: "Credencial en proceso", tone: "warning" };
     }
     return { label: "Credencial activa", tone: "success" };
   }, [credential]);
@@ -139,7 +143,13 @@ export function MemberCredentialCard({
                     <span className="font-semibold">{credential.enrollment.planName ?? "—"}</span>
                   </p>
                   <p>
-                    Monto mensual:{" "}
+                    Fecha de inscripción:{" "}
+                    <span className="font-semibold">
+                      {new Date(credential.enrollment.startDate).toLocaleDateString("es-AR")}
+                    </span>
+                  </p>
+                  <p>
+                    Monto:{" "}
                     <span className="font-semibold">
                       ${credential.enrollment.monthlyAmount.toLocaleString("es-AR")}
                     </span>
@@ -153,6 +163,27 @@ export function MemberCredentialCard({
                   Todavía no tiene una inscripción asociada.
                 </p>
               )}
+            </div>
+
+            {/* Estado Crediticio */}
+            <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Estado Crediticio</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-base-muted">Cuotas pagadas</span>
+                  <span className="font-semibold">{duesStats?.paidCount || 0}/360</span>
+                </div>
+                {/* Barra de progreso */}
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${duesStats?.percentage || 0}%` }}
+                  />
+                </div>
+                <p className="text-xs text-base-muted text-center">
+                  {duesStats?.percentage || 0}% hacia estatus vitalicio
+                </p>
+              </div>
             </div>
 
             <div className="rounded-xl border border-base-border/60 bg-base-secondary/30 px-5 py-4">
@@ -177,7 +208,7 @@ export function MemberCredentialCard({
                 </div>
               ) : (
                 <p className="mt-2 text-sm text-base-muted">
-                  Activá la inscripción y registrá el primer pago para generar el código único.
+                  Activá la inscripción para generar el código único.
                 </p>
               )}
             </div>
@@ -201,8 +232,8 @@ export function MemberCredentialCard({
             ) : (
               <div className="text-sm text-base-muted">
                 {credential.isReady
-                  ? "Generando QR..."
-                  : "QR disponible una vez que la credencial esté activa."}
+                  ? "QR generado y listo para usar"
+                  : "QR disponible una vez que la inscripción esté activa."}
               </div>
             )}
           </div>

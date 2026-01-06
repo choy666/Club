@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import { CreateEnrollmentInput, UpdateEnrollmentInput } from "@/lib/validations/enrollments";
+import { CreateEnrollmentInput, PayDuesInput, UpdateEnrollmentInput } from "@/lib/validations/enrollments";
 import type {
   DueListResponse,
   DueResponse,
@@ -105,6 +105,25 @@ export function useDeleteEnrollment() {
   });
 }
 
+export function usePayMultipleDues() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: PayDuesInput) => {
+      const response = await apiFetch<{ paidDues: number; promotedToVitalicio: boolean }>("/api/cuotas/pagar", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+}
+
 export function useDuesList() {
   const filters = useDueFiltersStore();
 
@@ -115,6 +134,10 @@ export function useDuesList() {
         page: String(filters.page),
         perPage: String(filters.perPage),
       });
+
+      if (filters.search.trim()) {
+        params.set("search", filters.search.trim());
+      }
 
       if (filters.status !== "ALL") {
         params.set("status", filters.status);

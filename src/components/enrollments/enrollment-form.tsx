@@ -11,6 +11,7 @@ import {
   type UpdateEnrollmentInput,
 } from "@/lib/validations/enrollments";
 import { useMembersOptions } from "@/hooks/use-enrollments";
+import { useEconomicConfig } from "@/hooks/use-economic-config";
 import type { EnrollmentDTO } from "@/types/enrollment";
 import { clientEnv } from "@/lib/client-env";
 
@@ -19,16 +20,19 @@ function getDateValue(value?: string | null) {
   return value.split("T")[0] ?? "";
 }
 
-export function EnrollmentCreateForm({
-  onSubmit,
-  isSubmitting,
-  serverError,
-}: {
+interface EnrollmentCreateFormProps {
   onSubmit: (values: CreateEnrollmentInput) => Promise<void> | void;
   isSubmitting?: boolean;
   serverError?: string | null;
-}) {
+}
+
+export function EnrollmentCreateForm({ 
+  onSubmit, 
+  isSubmitting = false, 
+  serverError = null 
+}: EnrollmentCreateFormProps) {
   const { data: membersOptions, isLoading: membersLoading } = useMembersOptions();
+  const { data: economicConfig } = useEconomicConfig();
 
   const defaultValues = useMemo<CreateEnrollmentInput>(() => {
     const today = new Date().toISOString().split("T")[0] ?? "";
@@ -36,11 +40,11 @@ export function EnrollmentCreateForm({
       memberId: "",
       startDate: today,
       planName: "Inscripción",
-      enrollmentAmount: undefined,
+      enrollmentAmount: economicConfig?.defaultMonthlyAmount,
       clubName: clientEnv.NAME_CLUB,
       notes: "",
     };
-  }, []);
+  }, [economicConfig]);
 
   const {
     register,
@@ -85,7 +89,7 @@ export function EnrollmentCreateForm({
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-sm text-base-muted">Importe de inscripción</label>
+          <label className="text-sm text-base-muted">Monto de inscripción</label>
           <input
             type="number"
             {...register("enrollmentAmount", { valueAsNumber: true })}
@@ -130,8 +134,11 @@ export function EnrollmentCreateForm({
       </div>
 
       <div className="rounded-md border border-base-border/60 bg-base-secondary/30 px-4 py-3 text-sm text-base-muted">
-        La inscripción creará automáticamente la credencial del socio. La credencial estará
-        disponible inmediatamente después de crear la inscripción.
+        Al crear la inscripción, el socio pasará a estado &quot;Activo&quot; automáticamente y se generará:
+        <ul className="mt-2 list-disc list-inside space-y-1">
+          <li>Su credencial digital con QR para acceso</li>
+          <li>12 cuotas mensuales (la primera para el próximo mes)</li>
+        </ul>
       </div>
 
       <div className="flex justify-end">

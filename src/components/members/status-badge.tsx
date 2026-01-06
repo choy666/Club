@@ -13,6 +13,10 @@ const STATUS_STYLES: Record<MemberStatus, { label: string; className: string }> 
     label: "Pendiente",
     className: "text-state-pending bg-state-pending/10 border-state-pending/30",
   },
+  VITALICIO: {
+    label: "Vitalicio",
+    className: "text-purple-700 bg-purple-100 border-purple-200",
+  },
 };
 
 interface StatusBadgeProps {

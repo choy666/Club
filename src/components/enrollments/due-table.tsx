@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 import { DueFilters } from "./due-filters";
+import { DuePaymentPanel } from "./due-payment-panel";
 import { useDueFiltersStore } from "@/store/due-filters-store";
 import { useDuesList } from "@/hooks/use-enrollments";
 import type { DueDTO } from "@/types/enrollment";
@@ -94,6 +95,7 @@ export function DueTable() {
   const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<MemberSummary | null>(null);
+  const [paymentPanelMember, setPaymentPanelMember] = useState<{ id: string; name: string } | null>(null);
   const [manualPaymentForm, setManualPaymentForm] = useState({
     amount: "",
     method: "Transferencia",
@@ -297,13 +299,27 @@ export function DueTable() {
                 </span>
               </td>
               <td className="px-6 py-4">
-                <button
-                  type="button"
-                  className="btn-secondary px-4 py-1 text-xs"
-                  onClick={() => setSelectedSummary(summary)}
-                >
-                  Ver seguimiento
-                </button>
+                <div className="flex gap-2">
+                  {pendingTotal > 0 && (
+                    <button
+                      type="button"
+                      className="btn-primary px-4 py-1 text-xs"
+                      onClick={() => setPaymentPanelMember({
+                        id: summary.member.id,
+                        name: summary.member.name ?? "Sin nombre"
+                      })}
+                    >
+                      Pagar cuotas
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-secondary px-4 py-1 text-xs"
+                    onClick={() => setSelectedSummary(summary)}
+                  >
+                    Ver seguimiento
+                  </button>
+                </div>
               </td>
             </tr>
           );
@@ -794,6 +810,22 @@ export function DueTable() {
           </div>
         )}
       </Modal>
+
+      {/* Modal de Pagos Masivos */}
+      {paymentPanelMember && (
+        <Modal
+          open={!!paymentPanelMember}
+          onClose={() => setPaymentPanelMember(null)}
+          title="Pago de Cuotas"
+        >
+          <DuePaymentPanel
+            memberId={paymentPanelMember.id}
+            memberName={paymentPanelMember.name}
+            dues={duesData?.filter(due => due.member.id === paymentPanelMember.id) || []}
+            onClose={() => setPaymentPanelMember(null)}
+          />
+        </Modal>
+      )}
     </section>
   );
 }

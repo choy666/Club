@@ -117,7 +117,7 @@ export function MemberForm(props: MemberFormProps) {
             } (actual)`,
             disabled: true,
             hidden: true,
-          } satisfies StatusOption,
+          },
         ]
       : [];
   const statusOptions: StatusOption[] = [...readonlyStatusOption, ...selectableStatusOptions];

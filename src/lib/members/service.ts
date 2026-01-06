@@ -1,7 +1,7 @@
-import { count, eq, ilike, and, or } from "drizzle-orm";
+import { count, eq, ilike, and, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { enrollments, members, users } from "@/db/schema";
+import { dues, enrollments, members, users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import type {
   CreateMemberInput,
@@ -239,6 +239,31 @@ export async function deleteMember(memberId: string) {
   if (!existing) {
     throw new AppError("Socio no encontrado.", 404);
   }
+
+  // Verificar si tiene cuotas pagadas
+  const paidDues = await db
+    .select()
+    .from(dues)
+    .where(and(
+      eq(dues.memberId, memberId),
+      eq(dues.status, "PAID")
+    ));
+
+  if (paidDues.length > 0) {
+    throw new AppError("No se puede eliminar un socio con cuotas pagadas");
+  }
+
+  // Congelar cuotas pendientes
+  await db
+    .update(dues)
+    .set({ 
+      status: "FROZEN",
+      statusChangedAt: sql`now()` 
+    })
+    .where(and(
+      eq(dues.memberId, memberId),
+      eq(dues.status, "PENDING")
+    ));
 
   await db.delete(members).where(eq(members.id, memberId));
   await db.delete(users).where(eq(users.id, existing.userId));

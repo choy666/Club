@@ -56,6 +56,7 @@ export const listEnrollmentsSchema = z.object({
 });
 
 export const listDuesSchema = z.object({
+  search: z.string().max(120).optional(),
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(5).max(50).default(10),
   status: z.enum(["PENDING", "PAID", "OVERDUE", "FROZEN"]).optional(),
@@ -69,6 +70,13 @@ export const dueIdSchema = z.object({
   dueId: z.string().uuid("Identificador inválido."),
 });
 
+export const payDuesSchema = z.object({
+  memberId: z.string().uuid(),
+  dueIds: z.array(z.string().uuid()).min(1),
+  paymentMethod: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADO_PAGO"]),
+  paymentNotes: z.string().optional(),
+});
+
 export const payDueSchema = z.object({
   paidAt: isoDateString.optional(),
 });
@@ -77,3 +85,4 @@ export type CreateEnrollmentInput = z.infer<typeof createEnrollmentSchema>;
 export type UpdateEnrollmentInput = z.infer<typeof updateEnrollmentSchema>;
 export type ListEnrollmentsInput = z.infer<typeof listEnrollmentsSchema>;
 export type ListDuesInput = z.infer<typeof listDuesSchema>;
+export type PayDuesInput = z.infer<typeof payDuesSchema>;

@@ -76,9 +76,7 @@ describe("createEnrollment", () => {
     const promise = createEnrollment({
       memberId: "member-1",
       startDate: "2025-01-01",
-      monthlyAmount: 15000,
-      monthsToGenerate: 1,
-      monthsPaid: 0,
+      enrollmentAmount: 15000,
     });
 
     await expect(promise).rejects.toBeInstanceOf(AppError);

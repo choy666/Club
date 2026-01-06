@@ -7,7 +7,7 @@ import { AppError } from "@/lib/errors";
 import { getEconomicConfigBySlug } from "@/lib/economic-config/service";
 import { validateMultiplePayment } from "@/lib/validations/security";
 import { logger, logPayment, logVitalicioPromotion, logError } from "@/lib/monitoring/logger";
-import { performanceMonitor, measurePerformance } from "@/lib/monitoring/performance";
+import { performanceMonitor, withPerformanceMeasurement } from "@/lib/monitoring/performance";
 import { withCache, cacheKeys, queryCache } from "@/lib/monitoring/cache";
 import type {
   CreateEnrollmentInput,
@@ -352,75 +352,76 @@ export const checkAndPromoteToVitalicio = withCache(
   10 * 60 * 1000 // 10 minutos
 );
 
-export const payMultipleDues = measurePerformance("payMultipleDues")(async (
-  input: PayDuesInput
-) => {
-  logger.info(
-    `Processing multiple dues payment for member: ${input.memberId}`,
-    {
-      dueIdsCount: input.dueIds.length,
-      paymentMethod: input.paymentMethod,
-    },
-    input.memberId,
-    "payment"
-  );
+export const payMultipleDues = withPerformanceMeasurement(
+  "payMultipleDues",
+  async (input: PayDuesInput) => {
+    logger.info(
+      `Processing multiple dues payment for member: ${input.memberId}`,
+      {
+        dueIdsCount: input.dueIds.length,
+        paymentMethod: input.paymentMethod,
+      },
+      input.memberId,
+      "payment"
+    );
 
-  try {
-    // Validar límites de pago
-    validateMultiplePayment(input.dueIds);
+    try {
+      // Validar límites de pago
+      validateMultiplePayment(input.dueIds);
 
-    // Validar que las cuotas pertenezcan al socio
-    const duesToPay = await db
-      .select()
-      .from(dues)
-      .where(
-        and(
-          inArray(dues.id, input.dueIds),
-          eq(dues.memberId, input.memberId),
-          eq(dues.status, "PENDING")
-        )
-      );
+      // Validar que las cuotas pertenezcan al socio
+      const duesToPay = await db
+        .select()
+        .from(dues)
+        .where(
+          and(
+            inArray(dues.id, input.dueIds),
+            eq(dues.memberId, input.memberId),
+            eq(dues.status, "PENDING")
+          )
+        );
 
-    if (duesToPay.length !== input.dueIds.length) {
-      throw new AppError("Algunas cuotas no son válidas o ya están pagadas");
+      if (duesToPay.length !== input.dueIds.length) {
+        throw new AppError("Algunas cuotas no son válidas o ya están pagadas");
+      }
+
+      const totalAmount = duesToPay.reduce((sum, due) => sum + due.amount, 0);
+
+      // Actualizar cada cuota
+      for (const due of duesToPay) {
+        await db
+          .update(dues)
+          .set({
+            status: "PAID",
+            paidAmount: due.amount,
+            paymentMethod: input.paymentMethod,
+            paymentNotes: input.paymentNotes,
+            statusChangedAt: sql`now()`,
+            updatedAt: sql`now()`,
+          })
+          .where(eq(dues.id, due.id));
+      }
+
+      // Verificar si alcanza estado vitalicio
+      const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
+
+      logPayment("completed", input.memberId, duesToPay.length, totalAmount, true);
+
+      // Invalidar cache relevante
+      queryCache.delete(cacheKeys.memberDues(input.memberId));
+      queryCache.delete(cacheKeys.memberStats(input.memberId));
+
+      return {
+        paidDues: duesToPay.length,
+        promotedToVitalicio,
+      };
+    } catch (error) {
+      logPayment("failed", input.memberId, input.dueIds.length, 0, false);
+      logError("payMultipleDues", error as Error, { input });
+      throw error;
     }
-
-    const totalAmount = duesToPay.reduce((sum, due) => sum + due.amount, 0);
-
-    // Actualizar cada cuota
-    for (const due of duesToPay) {
-      await db
-        .update(dues)
-        .set({
-          status: "PAID",
-          paidAmount: due.amount,
-          paymentMethod: input.paymentMethod,
-          paymentNotes: input.paymentNotes,
-          statusChangedAt: sql`now()`,
-          updatedAt: sql`now()`,
-        })
-        .where(eq(dues.id, due.id));
-    }
-
-    // Verificar si alcanza estado vitalicio
-    const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
-
-    logPayment("completed", input.memberId, duesToPay.length, totalAmount, true);
-
-    // Invalidar cache relevante
-    queryCache.delete(cacheKeys.memberDues(input.memberId));
-    queryCache.delete(cacheKeys.memberStats(input.memberId));
-
-    return {
-      paidDues: duesToPay.length,
-      promotedToVitalicio,
-    };
-  } catch (error) {
-    logPayment("failed", input.memberId, input.dueIds.length, 0, false);
-    logError("payMultipleDues", error as Error, { input });
-    throw error;
   }
-});
+);
 
 export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
   const { page, perPage, enrollmentId, memberId, status, from, to, search } = input;

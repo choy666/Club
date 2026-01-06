@@ -95,3 +95,22 @@ export function measurePerformance(operationName?: string) {
     return descriptor;
   };
 }
+
+// Función de orden superior para medir performance directamente
+export function withPerformanceMeasurement<T extends (...args: never[]) => Promise<unknown>>(
+  operationName: string,
+  fn: T
+): T {
+  return (async (...args: Parameters<T>) => {
+    const endTimer = performanceMonitor.startTimer(operationName);
+
+    try {
+      const result = await fn(...args);
+      endTimer();
+      return result;
+    } catch (error) {
+      endTimer();
+      throw error;
+    }
+  }) as T;
+}

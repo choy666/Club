@@ -141,8 +141,11 @@ export function EnrollmentCreateForm({
         Al crear la inscripción, el socio pasará a estado &quot;Activo&quot; automáticamente y se
         generará:
         <ul className="mt-2 list-disc list-inside space-y-1">
-          <li>Su credencial digital con QR para acceso</li>
-          <li>12 cuotas mensuales (la primera para el próximo mes)</li>
+          <li>Su credencial digital con QR único de identificación</li>
+          <li>
+            360 cuotas totales hasta alcanzar el estado de socio vitalicio(la primera para el
+            próximo mes)
+          </li>
         </ul>
       </div>
 

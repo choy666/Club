@@ -18,6 +18,9 @@
     "jobs:generate-dues": "tsx scripts/generate-monthly-dues.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "reset:enrollments": "tsx scripts/delete-all-enrollments.ts",
+    "cleanup:dues": "tsx scripts/cleanup-orphaned-dues.ts",
+    "fix:member-ids": "tsx scripts/fix-member-id-inconsistencies.ts",
+    "diagnose:dues": "tsx scripts/diagnose-dues-error.ts",
     "test": "vitest"
   },
   "dependencies": {

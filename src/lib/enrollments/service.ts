@@ -156,8 +156,24 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
     throw new AppError("Socio no encontrado.", 404);
   }
 
+  // Logging para depuración
+  logger.info(
+    `Intentando inscribir socio - ID: ${member.id}, Estado actual: ${member.status}, Estado requerido: PENDING`,
+    {
+      memberId: member.id,
+      memberStatus: member.status,
+      memberName: member.user?.name || "Sin nombre",
+      memberEmail: member.user?.email || "Sin email",
+    },
+    member.id,
+    "enrollment_validation"
+  );
+
   if (member.status !== "PENDING") {
-    throw new AppError("Solo se pueden inscribir socios pendientes.", 409);
+    throw new AppError(
+      `No se puede inscribir al socio. Estado actual: ${member.status}. Estado requerido: PENDING.`,
+      409
+    );
   }
 
   if (existingEnrollment) {
@@ -278,22 +294,26 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
     throw new AppError("No se puede eliminar una inscripción que tiene cuotas pagadas.", 409);
   }
 
-  // Eliminar cuotas asociadas
-  await db.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
+  try {
+    // Eliminar cuotas asociadas
+    await db.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
 
-  // Eliminar la inscripción
-  await db.delete(enrollments).where(eq(enrollments.id, enrollmentId));
+    // Eliminar la inscripción
+    await db.delete(enrollments).where(eq(enrollments.id, enrollmentId));
 
-  // Actualizar el estado del miembro
-  await db
-    .update(members)
-    .set({
-      status: "PENDING",
-      updatedAt: sql`now()`,
-    })
-    .where(eq(members.id, existing.member.id));
+    // Actualizar el estado del miembro
+    await db
+      .update(members)
+      .set({
+        status: "PENDING",
+        updatedAt: sql`now()`,
+      })
+      .where(eq(members.id, existing.member.id));
 
-  return existing;
+    return existing;
+  } catch (error) {
+    throw new AppError(`Error al eliminar inscripción: ${(error as Error).message}`, 500);
+  }
 }
 
 export const checkAndPromoteToVitalicio = withCache(

@@ -66,7 +66,8 @@ export function useCreateEnrollment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
-      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
@@ -92,7 +93,10 @@ export function useUpdateEnrollment() {
         queryKey: [ENROLLMENTS_KEY, variables.enrollmentId],
       });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }
@@ -110,9 +114,10 @@ export function useDeleteEnrollment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
-      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
     },
   });
 }
@@ -153,12 +158,12 @@ export function useDuesList() {
         perPage: String(filters.perPage),
       });
 
-      if (filters.search.trim()) {
-        params.set("search", filters.search.trim());
-      }
-
       if (filters.status !== "ALL") {
         params.set("status", filters.status);
+      }
+
+      if (filters.search.trim()) {
+        params.set("search", filters.search.trim());
       }
 
       if (filters.memberId.trim()) {
@@ -182,6 +187,7 @@ export function useDuesList() {
       return response;
     },
     refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutos en lugar de 0
   });
 }
 

@@ -33,7 +33,7 @@ export default function AdminMembersPage() {
   useEffect(() => {
     void membersListQuery.refetch();
     void summaryQuery.refetch();
-  }, [membersListQuery, summaryQuery]);
+  }, [membersListQuery, summaryQuery]); // Incluir dependencias para satisfacer ESLint
 
   const summaryMetrics = useMemo(() => {
     const active = summary?.activeMembers ?? 0;

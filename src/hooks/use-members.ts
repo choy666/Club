@@ -11,8 +11,10 @@ import type { MemberCredentialDTO, MemberCredentialResponse } from "@/types/enro
 import { useMemberFiltersStore } from "@/store/members-filters-store";
 import type { CreateMemberInput, UpdateMemberInput } from "@/lib/validations/members";
 import { DASHBOARD_SUMMARY_KEY } from "@/hooks/use-dashboard-summary";
+import { REPORTS_KEY } from "@/hooks/use-reports";
 
 const MEMBERS_KEY = ["members"];
+const MEMBERS_OPTIONS_KEY = ["members", "pending-options"];
 const MEMBER_DETAIL_KEY = (id: string) => [...MEMBERS_KEY, id];
 const MEMBER_ME_KEY = ["member", "me"];
 const MEMBER_SNAPSHOT_KEY = (memberId: string | null) => [
@@ -153,7 +155,9 @@ export function useCreateMember() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }
@@ -178,7 +182,9 @@ export function useUpdateMember() {
         queryKey: MEMBERS_KEY,
       });
       void queryClient.invalidateQueries({ queryKey: MEMBER_ME_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }
@@ -195,7 +201,9 @@ export function useDeleteMember() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }

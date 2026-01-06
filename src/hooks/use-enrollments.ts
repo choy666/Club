@@ -15,6 +15,8 @@ import type {
 import { useEnrollmentFiltersStore } from "@/store/enrollment-filters-store";
 import { useDueFiltersStore } from "@/store/due-filters-store";
 import type { MembersListResponse } from "@/types/member";
+import { DASHBOARD_SUMMARY_KEY } from "@/hooks/use-dashboard-summary";
+import { REPORTS_KEY } from "@/hooks/use-reports";
 
 export const ENROLLMENTS_KEY = ["enrollments"] as const;
 export const DUES_KEY = ["dues"] as const;
@@ -64,6 +66,8 @@ export function useCreateEnrollment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }
@@ -88,6 +92,7 @@ export function useUpdateEnrollment() {
         queryKey: [ENROLLMENTS_KEY, variables.enrollmentId],
       });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
     },
   });
 }
@@ -105,6 +110,9 @@ export function useDeleteEnrollment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
     },
   });
 }
@@ -127,6 +135,9 @@ export function usePayMultipleDues() {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }
@@ -188,6 +199,11 @@ export function usePayDue() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
   });
 }

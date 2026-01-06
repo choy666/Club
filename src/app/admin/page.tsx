@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
@@ -29,6 +29,12 @@ export default function AdminMembersPage() {
 
   const summary = summaryQuery.data;
 
+  // Refrescar datos al montar la página para asegurar información actualizada
+  useEffect(() => {
+    void membersListQuery.refetch();
+    void summaryQuery.refetch();
+  }, [membersListQuery, summaryQuery]);
+
   const summaryMetrics = useMemo(() => {
     const active = summary?.activeMembers ?? 0;
     const inactive = summary?.inactiveMembers ?? 0;
@@ -47,7 +53,7 @@ export default function AdminMembersPage() {
       {
         label: "Socios pendientes",
         value: pending,
-        helper: "Deben inscribirse",
+        helper: "Faltan inscribir",
       },
     ];
   }, [summary?.activeMembers, summary?.inactiveMembers, summary?.pendingMembers]);

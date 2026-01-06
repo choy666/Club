@@ -37,6 +37,9 @@ Listado rápido de scripts y utilidades más usados. Ejecutar siempre desde la r
 | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run jobs:generate-dues [operador]` | Ejecuta el job mensual que genera la próxima cuota de cada socio activo. El parámetro `operador` es opcional y se registra en `monthly_run_log` para auditoría. |
 | `npm run reset:enrollments`             | Limpia todas las inscripciones/cuotas/pagos y devuelve a los socios a estado `PENDING`. Úsalo sólo en QA/DEV antes de recrear el padrón.                        |
+| `npm run cleanup:dues`                  | Elimina cuotas huérfanas y inconsistentes. Script de mantenimiento para mantener integridad de datos.                                                           |
+| `npm run fix:member-ids`                | Corrige inconsistencias entre member_id de cuotas e inscripciones.                                                                                              |
+| `npm run diagnose:dues`                 | Diagnóstico completo de errores en cuotas. Genera reporte detallado de problemas encontrados.                                                                   |
 
 ## 🗄️ Base de datos y migraciones
 

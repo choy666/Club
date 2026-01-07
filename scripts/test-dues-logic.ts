@@ -8,7 +8,7 @@ import { dues, members, users, enrollments } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 async function testDuesLogic() {
-  console.log('🧪 [TEST] Iniciando prueba de lógica de cuotas...\n');
+  console.log("🧪 [TEST] Iniciando prueba de lógica de cuotas...\n");
 
   try {
     // 1. Obtener todas las cuotas con sus datos relacionados
@@ -46,7 +46,7 @@ async function testDuesLogic() {
       .orderBy(dues.dueDate)
       .limit(10);
 
-    console.log('📊 [TEST] Muestra de cuotas encontradas:');
+    console.log("📊 [TEST] Muestra de cuotas encontradas:");
     allDues.forEach((item, index) => {
       const due = item.dues;
       const member = item.members;
@@ -58,17 +58,17 @@ async function testDuesLogic() {
       console.log(`Socio: ${user.name} (${member.documentNumber})`);
       console.log(`Estado: ${due.status}`);
       console.log(`Fecha vencimiento: ${due.dueDate}`);
-      console.log(`Fecha pago: ${due.paidAt || 'No pagado'}`);
+      console.log(`Fecha pago: ${due.paidAt || "No pagado"}`);
       console.log(`Inscripción: ${enrollment.startDate} - $${enrollment.monthlyAmount}`);
     });
 
     // 2. Analizar estados por socio
     const memberStats = new Map();
-    
+
     allDues.forEach((item) => {
       const memberId = item.members.id;
-      const memberName = item.users.name || 'Sin nombre';
-      
+      const memberName = item.users.name || "Sin nombre";
+
       if (!memberStats.has(memberId)) {
         memberStats.set(memberId, {
           name: memberName,
@@ -81,29 +81,29 @@ async function testDuesLogic() {
           totalDebt: 0,
         });
       }
-      
+
       const stats = memberStats.get(memberId);
       stats.total++;
-      
+
       switch (item.dues.status) {
-        case 'PAID':
+        case "PAID":
           stats.paid++;
           break;
-        case 'PENDING':
+        case "PENDING":
           stats.pending++;
           stats.totalDebt += item.dues.amount;
           break;
-        case 'OVERDUE':
+        case "OVERDUE":
           stats.overdue++;
           stats.totalDebt += item.dues.amount;
           break;
-        case 'FROZEN':
+        case "FROZEN":
           stats.frozen++;
           break;
       }
     });
 
-    console.log('\n📈 [TEST] Resumen por socio:');
+    console.log("\n📈 [TEST] Resumen por socio:");
     memberStats.forEach((stats) => {
       console.log(`\n--- Socio: ${stats.name} (${stats.documentNumber}) ---`);
       console.log(`Total cuotas: ${stats.total}`);
@@ -112,45 +112,46 @@ async function testDuesLogic() {
       console.log(`Vencidas: ${stats.overdue}`);
       console.log(`Congeladas: ${stats.frozen}`);
       console.log(`Deuda total: $${stats.totalDebt}`);
-      
+
       // Calcular estado final
-      let estado = 'Al día';
+      let estado = "Al día";
       if (stats.overdue > 0) {
-        estado = 'En mora';
+        estado = "En mora";
       } else if (stats.pending > 0) {
-        estado = 'Con pendientes';
+        estado = "Con pendientes";
       } else if (stats.frozen > 0) {
-        estado = 'Congelado';
+        estado = "Congelado";
       }
       console.log(`Estado calculado: ${estado}`);
     });
 
     // 3. Verificar lógica de fechas
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    console.log('\n📅 [TEST] Verificación de fechas:');
+    const todayStr = today.toISOString().split("T")[0];
+
+    console.log("\n📅 [TEST] Verificación de fechas:");
     console.log(`Fecha actual: ${todayStr}`);
-    
+
     allDues.forEach((item) => {
       const due = item.dues;
-      const isOverdue = due.status === 'PENDING' && due.dueDate < todayStr;
-      
-      console.log(`Cuota ${due.id}: vence ${due.dueDate}, está vencida? ${isOverdue}, estado actual: ${due.status}`);
-      
-      if (isOverdue && due.status !== 'OVERDUE') {
+      const isOverdue = due.status === "PENDING" && due.dueDate < todayStr;
+
+      console.log(
+        `Cuota ${due.id}: vence ${due.dueDate}, está vencida? ${isOverdue}, estado actual: ${due.status}`
+      );
+
+      if (isOverdue && due.status !== "OVERDUE") {
         console.warn(`⚠️ [TEST] Cuota ${due.id} debería estar OVERDUE pero está ${due.status}`);
       }
-      
-      if (!isOverdue && due.status === 'OVERDUE') {
+
+      if (!isOverdue && due.status === "OVERDUE") {
         console.warn(`⚠️ [TEST] Cuota ${due.id} está OVERDUE pero no debería estarlo`);
       }
     });
 
-    console.log('\n✅ [TEST] Prueba completada exitosamente');
-
+    console.log("\n✅ [TEST] Prueba completada exitosamente");
   } catch (error) {
-    console.error('❌ [TEST] Error en prueba:', error);
+    console.error("❌ [TEST] Error en prueba:", error);
   }
 }
 

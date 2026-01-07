@@ -32,7 +32,6 @@ export default function AdminReportsPage() {
 
   const reportsQuery = useReports(filters);
 
-  
   function handleFormChange<K extends keyof ReportFiltersInput>(
     key: K,
     value: ReportFiltersInput[K]

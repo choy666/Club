@@ -190,7 +190,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
 
   // Normalizar la fecha usando la nueva utilidad que mantiene la fecha local exacta
   const startDateValue = toLocalDateOnly(input.startDate);
-  
+
   // Logging detallado de la fecha
   logger.info(
     `Procesando fecha de inscripción - Input: ${input.startDate} -> Normalizada: ${startDateValue}`,
@@ -236,7 +236,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
         updatedAt: created.updatedAt,
       },
       created.id,
-    "enrollment_created"
+      "enrollment_created"
     );
 
     createdEnrollmentId = created.id;
@@ -261,7 +261,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
 
     if (dueSchedule.length > 0) {
       await db.insert(dues).values(dueSchedule);
-      
+
       // Logging de primeras cuotas generadas
       logger.info(
         `Cuotas generadas exitosamente`,
@@ -899,8 +899,8 @@ export async function getMemberFinancialSnapshot(
 }
 
 export async function getMemberSummaries(): Promise<MemberSummary[]> {
-  console.log('🔍 [SERVICE] Obteniendo resúmenes completos de socios...');
-  
+  console.log("🔍 [SERVICE] Obteniendo resúmenes completos de socios...");
+
   const allDues = await db
     .select({
       dues: {
@@ -941,7 +941,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
 
   for (const row of allDues) {
     const memberId = row.members.id;
-    
+
     if (!summariesMap.has(memberId)) {
       summariesMap.set(memberId, {
         member: {
@@ -985,18 +985,18 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
 
     // Actualizar contadores según estado
     switch (row.dues.status) {
-      case 'PAID':
+      case "PAID":
         summary.paidCount++;
         break;
-      case 'PENDING':
+      case "PENDING":
         summary.pendingCount++;
         summary.amountDue += row.dues.amount;
         break;
-      case 'OVERDUE':
+      case "OVERDUE":
         summary.overdueCount++;
         summary.amountDue += row.dues.amount;
         break;
-      case 'FROZEN':
+      case "FROZEN":
         summary.frozenCount++;
         break;
     }

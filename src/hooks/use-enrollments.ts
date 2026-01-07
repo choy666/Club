@@ -58,15 +58,15 @@ export function useCreateEnrollment() {
   return useMutation({
     mutationFn: async (input: CreateEnrollmentInput) => {
       // Logging detallado antes de enviar al backend
-      console.log('🚀 [HOOK] Enviando inscripción al backend:', {
+      console.log("🚀 [HOOK] Enviando inscripción al backend:", {
         input,
         timestamp: new Date().toISOString(),
         timezoneOffset: new Date().getTimezoneOffset(),
-        localDate: new Date().toLocaleString('es-AR'),
+        localDate: new Date().toLocaleString("es-AR"),
         parsedStartDate: {
           original: input.startDate,
           type: typeof input.startDate,
-        }
+        },
       });
 
       const response = await apiFetch<EnrollmentResponse>("/api/inscripciones", {
@@ -74,7 +74,7 @@ export function useCreateEnrollment() {
         body: JSON.stringify(input),
       });
 
-      console.log('📥 [HOOK] Respuesta del backend:', {
+      console.log("📥 [HOOK] Respuesta del backend:", {
         response,
         data: response.data,
         timestamp: new Date().toISOString(),
@@ -83,13 +83,13 @@ export function useCreateEnrollment() {
       return response.data;
     },
     onSuccess: (data) => {
-      console.log('✅ [HOOK] Inscripción creada exitosamente:', {
+      console.log("✅ [HOOK] Inscripción creada exitosamente:", {
         enrollmentId: data.id,
         startDate: data.startDate,
         memberName: data.member?.name,
         timestamp: new Date().toISOString(),
       });
-      
+
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
@@ -97,7 +97,7 @@ export function useCreateEnrollment() {
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
     onError: (error) => {
-      console.error('❌ [HOOK] Error al crear inscripción:', {
+      console.error("❌ [HOOK] Error al crear inscripción:", {
         error,
         timestamp: new Date().toISOString(),
       });
@@ -227,9 +227,9 @@ export function useMemberSummaries() {
   return useQuery({
     queryKey: ["member-summaries"],
     queryFn: async () => {
-      console.log('🔍 [HOOK] Obteniendo resúmenes completos de socios...');
+      console.log("🔍 [HOOK] Obteniendo resúmenes completos de socios...");
       const response = await apiFetch<{ data: MemberSummary[] }>("/api/cuotas/resumen");
-      console.log('📥 [HOOK] Resúmenes recibidos:', response.data);
+      console.log("📥 [HOOK] Resúmenes recibidos:", response.data);
       return response.data;
     },
     refetchOnWindowFocus: false,

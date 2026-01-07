@@ -30,11 +30,7 @@ export function CircularProgress({
       style={{ width: size, height: size }}
     >
       {/* Background circle */}
-      <svg
-        className="absolute inset-0 transform -rotate-90"
-        width={size}
-        height={size}
-      >
+      <svg className="absolute inset-0 transform -rotate-90" width={size} height={size}>
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -58,14 +54,12 @@ export function CircularProgress({
           strokeLinecap="round"
         />
       </svg>
-      
+
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {children || (
           <>
-            <span className="text-lg font-semibold text-gray-900">
-              {Math.round(value)}%
-            </span>
+            <span className="text-lg font-semibold text-gray-900">{Math.round(value)}%</span>
             <span className="text-xs text-gray-500">completado</span>
           </>
         )}
@@ -83,7 +77,7 @@ interface DuesProgressProps {
 
 export function DuesProgress({ paid, total, size = 120, className }: DuesProgressProps) {
   const percentage = total > 0 ? (paid / total) * 100 : 0;
-  
+
   return (
     <CircularProgress
       value={percentage}

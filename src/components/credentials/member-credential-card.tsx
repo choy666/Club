@@ -147,7 +147,7 @@ export function MemberCredentialCard({
                     <span className="font-semibold">
                       {(() => {
                         const dateStr = credential.enrollment.startDate;
-                        const [year, month, day] = dateStr.split('-');
+                        const [year, month, day] = dateStr.split("-");
                         return `${day}/${month}/${year}`;
                       })()}
                     </span>

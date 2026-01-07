@@ -29,7 +29,6 @@ export default function AdminMembersPage() {
 
   const summary = summaryQuery.data;
 
-  
   const summaryMetrics = useMemo(() => {
     const active = summary?.activeMembers ?? 0;
     const inactive = summary?.inactiveMembers ?? 0;

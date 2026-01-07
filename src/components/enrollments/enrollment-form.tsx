@@ -16,7 +16,6 @@ import type { EnrollmentDTO } from "@/types/enrollment";
 import { clientEnv } from "@/lib/client-env";
 import { getTodayLocal } from "@/lib/utils/date-utils";
 
-
 interface EnrollmentCreateFormProps {
   onSubmit: (values: CreateEnrollmentInput) => Promise<void> | void;
   isSubmitting?: boolean;

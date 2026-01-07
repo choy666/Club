@@ -1,9 +1,9 @@
 import { dues } from "@/db/schema";
-import { 
-  toLocalDateOnly, 
-  fromLocalDateOnly, 
-  addMonthsLocal, 
-  DATE_ONLY_REGEX 
+import {
+  toLocalDateOnly,
+  fromLocalDateOnly,
+  addMonthsLocal,
+  DATE_ONLY_REGEX,
 } from "@/lib/utils/date-utils";
 
 export type BuildDueScheduleInput = {
@@ -19,7 +19,7 @@ function toDate(value: Date | string) {
   if (value instanceof Date) {
     return toLocalDateOnly(value);
   }
-  
+
   if (DATE_ONLY_REGEX.test(value)) {
     return value; // Ya está en formato correcto
   }
@@ -33,7 +33,7 @@ function toDate(value: Date | string) {
 }
 
 export function addMonths(date: Date | string, months: number) {
-  const baseDate = typeof date === 'string' ? fromLocalDateOnly(date) : date;
+  const baseDate = typeof date === "string" ? fromLocalDateOnly(date) : date;
   return addMonthsLocal(baseDate, months);
 }
 

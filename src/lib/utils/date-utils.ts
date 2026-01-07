@@ -10,7 +10,7 @@ export const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
  * Esta es la función principal para normalizar fechas en todo el sistema
  */
 export function toLocalDateOnly(date: Date | string): string {
-  if (typeof date === 'string') {
+  if (typeof date === "string") {
     if (DATE_ONLY_REGEX.test(date)) {
       return date; // Ya está en formato correcto
     }
@@ -18,13 +18,13 @@ export function toLocalDateOnly(date: Date | string): string {
   }
 
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    throw new Error('Fecha inválida');
+    throw new Error("Fecha inválida");
   }
 
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
 
@@ -34,19 +34,17 @@ export function toLocalDateOnly(date: Date | string): string {
  */
 export function fromLocalDateOnly(dateString: string): Date {
   if (!DATE_ONLY_REGEX.test(dateString)) {
-    throw new Error('Formato de fecha inválido. Se espera YYYY-MM-DD');
+    throw new Error("Formato de fecha inválido. Se espera YYYY-MM-DD");
   }
 
-  const [year, month, day] = dateString.split('-').map(Number);
-  
+  const [year, month, day] = dateString.split("-").map(Number);
+
   // Crear fecha en zona horaria local (no UTC)
   const date = new Date(year, month - 1, day);
-  
+
   // Validar que la fecha sea correcta (evita fechas como 2023-02-30)
-  if (date.getFullYear() !== year || 
-      date.getMonth() !== month - 1 || 
-      date.getDate() !== day) {
-    throw new Error('Fecha inválida');
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    throw new Error("Fecha inválida");
   }
 
   return date;
@@ -63,21 +61,21 @@ export function getTodayLocal(): string {
  * Agrega meses a una fecha manteniendo la zona horaria local
  */
 export function addMonthsLocal(date: Date | string, months: number): Date {
-  const baseDate = typeof date === 'string' ? fromLocalDateOnly(date) : date;
-  
+  const baseDate = typeof date === "string" ? fromLocalDateOnly(date) : date;
+
   const newDate = new Date(baseDate);
   const targetMonth = newDate.getMonth() + months;
   const targetYear = newDate.getFullYear() + Math.floor(targetMonth / 12);
   const finalMonth = targetMonth % 12;
-  
+
   newDate.setFullYear(targetYear, finalMonth, newDate.getDate());
-  
+
   // Ajuste para fin de mes (ej: 31 de enero + 1 mes = 28/29 de febrero)
   const originalDay = baseDate.getDate();
   if (newDate.getDate() !== originalDay) {
     newDate.setDate(0); // Último día del mes anterior
   }
-  
+
   return newDate;
 }
 
@@ -101,12 +99,12 @@ export function isDateInRange(date: string, startDate: string, endDate: string):
 /**
  * Formatea una fecha para visualización (opcional, para UI)
  */
-export function formatDateForDisplay(date: string | Date, locale = 'es-AR'): string {
-  const dateObj = typeof date === 'string' ? fromLocalDateOnly(date) : date;
+export function formatDateForDisplay(date: string | Date, locale = "es-AR"): string {
+  const dateObj = typeof date === "string" ? fromLocalDateOnly(date) : date;
   return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 

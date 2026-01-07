@@ -19,7 +19,6 @@ type Feedback = {
   message: string;
 };
 
-
 export type MemberSummary = {
   member: DueDTO["member"];
   dues: DueDTO[];
@@ -143,7 +142,6 @@ export function DueTable() {
 
   const hasData = memberSummaries.length > 0;
   const totalPages = data?.meta.totalPages ?? 1;
-
 
   const closeManualPayment = useCallback(() => {
     setManualPaymentDue(null);

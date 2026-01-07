@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api-client";
 import {
   CreateEnrollmentInput,
   PayDuesInput,
+  PaySequentialDuesInput,
   UpdateEnrollmentInput,
 } from "@/lib/validations/enrollments";
 import type {
@@ -248,6 +249,33 @@ export function usePayDue() {
       });
 
       return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
+      void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+    },
+  });
+}
+
+export function usePaySequentialDues() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: PaySequentialDuesInput) => {
+      const response = await apiFetch<{
+        paidDues: number;
+        totalAmount: number;
+        promotedToVitalicio: boolean;
+        nextDueDate: string | null;
+      }>("/api/cuotas/pagar-secuencial", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      return response;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });

@@ -77,6 +77,17 @@ export const payDuesSchema = z.object({
   paymentNotes: z.string().optional(),
 });
 
+export const paySequentialDuesSchema = z.object({
+  memberId: z.string().uuid(),
+  numberOfDues: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(60, "No se pueden pagar más de 60 cuotas en una sola operación."),
+  paymentMethod: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADO_PAGO"]),
+  paymentNotes: z.string().optional(),
+});
+
 export const payDueSchema = z.object({
   paidAt: isoDateString.optional(),
 });
@@ -86,3 +97,4 @@ export type UpdateEnrollmentInput = z.infer<typeof updateEnrollmentSchema>;
 export type ListEnrollmentsInput = z.infer<typeof listEnrollmentsSchema>;
 export type ListDuesInput = z.infer<typeof listDuesSchema>;
 export type PayDuesInput = z.infer<typeof payDuesSchema>;
+export type PaySequentialDuesInput = z.infer<typeof paySequentialDuesSchema>;

@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 
 import { DueFilters } from "./due-filters";
-import { DuePaymentPanel } from "./due-payment-panel";
-import { useDueFiltersStore } from "@/store/due-filters-store";
-import { useDuesList } from "@/hooks/use-enrollments";
+import { SequentialPaymentPanel } from "./sequential-payment-panel";
+import { useMemberSummaries } from "@/hooks/use-enrollments";
 import type { DueDTO } from "@/types/enrollment";
 import { Modal } from "@/components/ui/modal";
 import { useRecordPayment } from "@/hooks/use-payments";
@@ -70,8 +69,7 @@ function formatCurrency(value: number) {
 }
 
 export function DueTable() {
-  const filters = useDueFiltersStore();
-  const { data, isLoading, error } = useDuesList();
+  const { data: summariesData, isLoading, error } = useMemberSummaries();
   const recordPaymentMutation = useRecordPayment();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
@@ -88,60 +86,9 @@ export function DueTable() {
     paidAt: toDateTimeLocalInput(new Date()),
   });
 
-  const duesData = data?.data;
-
-  const memberSummaries = useMemo(() => {
-    if (!duesData) {
-      return [];
-    }
-
-    const summariesMap = new Map<string, MemberSummary>();
-
-    for (const due of duesData) {
-      let summary = summariesMap.get(due.member.id);
-      if (!summary) {
-        summary = {
-          member: due.member,
-          dues: [],
-          paidCount: 0,
-          pendingCount: 0,
-          overdueCount: 0,
-          frozenCount: 0,
-          amountDue: 0,
-        };
-        summariesMap.set(due.member.id, summary);
-      }
-
-      summary.dues.push(due);
-      switch (due.status) {
-        case "PAID":
-          summary.paidCount += 1;
-          break;
-        case "PENDING":
-          summary.pendingCount += 1;
-          summary.amountDue += due.amount;
-          break;
-        case "OVERDUE":
-          summary.overdueCount += 1;
-          summary.amountDue += due.amount;
-          break;
-        case "FROZEN":
-          summary.frozenCount += 1;
-          break;
-        default:
-          break;
-      }
-    }
-
-    return Array.from(summariesMap.values()).sort((a, b) => {
-      const nameA = a.member.name ?? "";
-      const nameB = b.member.name ?? "";
-      return nameA.localeCompare(nameB, "es");
-    });
-  }, [duesData]);
+  const memberSummaries = summariesData ?? [];
 
   const hasData = memberSummaries.length > 0;
-  const totalPages = data?.meta.totalPages ?? 1;
 
   const closeManualPayment = useCallback(() => {
     setManualPaymentDue(null);
@@ -482,31 +429,6 @@ export function DueTable() {
           </table>
         </div>
         <div className="block md:hidden">{renderMobileCards()}</div>
-        {hasData && (
-          <div className="flex flex-col gap-3 border-t border-base-border/70 px-6 py-4 text-sm text-base-muted md:flex-row md:items-center md:justify-between">
-            <span className="text-center md:text-left">
-              Página {filters.page} de {totalPages}
-            </span>
-            <div className="flex justify-center gap-3 md:justify-end">
-              <button
-                type="button"
-                className="btn-secondary px-4 py-1 text-xs"
-                onClick={() => filters.setPage(Math.max(1, filters.page - 1))}
-                disabled={filters.page === 1}
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                className="btn-secondary px-4 py-1 text-xs"
-                onClick={() => filters.setPage(Math.min(totalPages, filters.page + 1))}
-                disabled={filters.page >= totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <Modal
@@ -744,10 +666,12 @@ export function DueTable() {
           onClose={() => setPaymentPanelMember(null)}
           title="Pago de Cuotas"
         >
-          <DuePaymentPanel
+          <SequentialPaymentPanel
             memberId={paymentPanelMember.id}
             memberName={paymentPanelMember.name}
-            dues={duesData?.filter((due) => due.member.id === paymentPanelMember.id) || []}
+            memberSummary={
+              memberSummaries.find((summary) => summary.member.id === paymentPanelMember.id)!
+            }
             onClose={() => setPaymentPanelMember(null)}
           />
         </Modal>

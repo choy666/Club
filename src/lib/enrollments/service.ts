@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { and, count, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dues, enrollments, members, payments, users } from "@/db/schema";
@@ -14,6 +14,7 @@ import type {
   ListEnrollmentsInput,
   ListDuesInput,
   PayDuesInput,
+  PaySequentialDuesInput,
   UpdateEnrollmentInput,
 } from "@/lib/validations/enrollments";
 import {
@@ -490,6 +491,91 @@ export const payMultipleDues = withPerformanceMeasurement(
     }
   }
 );
+
+export const paySequentialDues = withPerformanceMeasurement(
+  "paySequentialDues",
+  async (input: PaySequentialDuesInput) => {
+    logger.info(
+      `Processing sequential dues payment for member: ${input.memberId}`,
+      {
+        numberOfDues: input.numberOfDues,
+        paymentMethod: input.paymentMethod,
+      },
+      input.memberId,
+      "sequential_payment"
+    );
+
+    try {
+      // Obtener las cuotas pendientes ordenadas por fecha (ascendente)
+      const pendingDues = await db
+        .select()
+        .from(dues)
+        .where(and(eq(dues.memberId, input.memberId), eq(dues.status, "PENDING")))
+        .orderBy(asc(dues.dueDate))
+        .limit(input.numberOfDues);
+
+      if (pendingDues.length === 0) {
+        throw new AppError("No hay cuotas pendientes para pagar");
+      }
+
+      if (pendingDues.length < input.numberOfDues) {
+        logger.warn(
+          `Only ${pendingDues.length} pending dues available, requested ${input.numberOfDues}`,
+          { memberId: input.memberId }
+        );
+      }
+
+      const totalAmount = pendingDues.reduce((sum, due) => sum + due.amount, 0);
+
+      // Actualizar cada cuota a pagada
+      for (const due of pendingDues) {
+        await db
+          .update(dues)
+          .set({
+            status: "PAID",
+            paidAmount: due.amount,
+            paymentMethod: input.paymentMethod,
+            paymentNotes: input.paymentNotes,
+            statusChangedAt: sql`now()`,
+            updatedAt: sql`now()`,
+          })
+          .where(eq(dues.id, due.id));
+      }
+
+      // Verificar si alcanza estado vitalicio
+      const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
+
+      logPayment("completed", input.memberId, pendingDues.length, totalAmount, true);
+
+      // Invalidar cache relevante
+      queryCache.delete(cacheKeys.memberDues(input.memberId));
+      queryCache.delete(cacheKeys.memberStats(input.memberId));
+
+      return {
+        paidDues: pendingDues.length,
+        totalAmount,
+        promotedToVitalicio,
+        nextDueDate:
+          pendingDues.length < input.numberOfDues ? null : await getNextDueDate(input.memberId),
+      };
+    } catch (error) {
+      logPayment("failed", input.memberId, input.numberOfDues, 0, false);
+      logError("paySequentialDues", error as Error, { input });
+      throw error;
+    }
+  }
+);
+
+async function getNextDueDate(memberId: string): Promise<string | null> {
+  const nextDue = await db
+    .select({ dueDate: dues.dueDate })
+    .from(dues)
+    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")))
+    .orderBy(asc(dues.dueDate))
+    .limit(1);
+
+  return nextDue[0]?.dueDate ? toLocalDateOnly(nextDue[0].dueDate) : null;
+}
 
 export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
   const { page, perPage, enrollmentId, memberId, status, from, to, search } = input;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -32,11 +32,7 @@ export default function AdminReportsPage() {
 
   const reportsQuery = useReports(filters);
 
-  // Refrescar datos al montar la página para asegurar reportes actualizados
-  useEffect(() => {
-    void reportsQuery.refetch();
-  }, [reportsQuery]);
-
+  
   function handleFormChange<K extends keyof ReportFiltersInput>(
     key: K,
     value: ReportFiltersInput[K]

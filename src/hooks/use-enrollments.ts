@@ -15,6 +15,7 @@ import type {
 import { useEnrollmentFiltersStore } from "@/store/enrollment-filters-store";
 import { useDueFiltersStore } from "@/store/due-filters-store";
 import type { MembersListResponse } from "@/types/member";
+import type { MemberSummary } from "@/components/enrollments/due-table";
 import { DASHBOARD_SUMMARY_KEY } from "@/hooks/use-dashboard-summary";
 import { REPORTS_KEY } from "@/hooks/use-reports";
 
@@ -56,19 +57,50 @@ export function useCreateEnrollment() {
 
   return useMutation({
     mutationFn: async (input: CreateEnrollmentInput) => {
+      // Logging detallado antes de enviar al backend
+      console.log('🚀 [HOOK] Enviando inscripción al backend:', {
+        input,
+        timestamp: new Date().toISOString(),
+        timezoneOffset: new Date().getTimezoneOffset(),
+        localDate: new Date().toLocaleString('es-AR'),
+        parsedStartDate: {
+          original: input.startDate,
+          type: typeof input.startDate,
+        }
+      });
+
       const response = await apiFetch<EnrollmentResponse>("/api/inscripciones", {
         method: "POST",
         body: JSON.stringify(input),
       });
 
+      console.log('📥 [HOOK] Respuesta del backend:', {
+        response,
+        data: response.data,
+        timestamp: new Date().toISOString(),
+      });
+
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ [HOOK] Inscripción creada exitosamente:', {
+        enrollmentId: data.id,
+        startDate: data.startDate,
+        memberName: data.member?.name,
+        timestamp: new Date().toISOString(),
+      });
+      
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+    },
+    onError: (error) => {
+      console.error('❌ [HOOK] Error al crear inscripción:', {
+        error,
+        timestamp: new Date().toISOString(),
+      });
     },
   });
 }
@@ -187,7 +219,21 @@ export function useDuesList() {
       return response;
     },
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // 5 minutos en lugar de 0
+    staleTime: 1000 * 30, // 30 segundos para refrescar más rápido después de pagos
+  });
+}
+
+export function useMemberSummaries() {
+  return useQuery({
+    queryKey: ["member-summaries"],
+    queryFn: async () => {
+      console.log('🔍 [HOOK] Obteniendo resúmenes completos de socios...');
+      const response = await apiFetch<{ data: MemberSummary[] }>("/api/cuotas/resumen");
+      console.log('📥 [HOOK] Resúmenes recibidos:', response.data);
+      return response.data;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 2, // 2 minutos
   });
 }
 

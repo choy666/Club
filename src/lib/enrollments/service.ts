@@ -25,6 +25,8 @@ import {
   mapEnrollmentRow,
 } from "@/lib/enrollments/queries";
 import { formatDateOnly, buildDueSchedule } from "@/lib/enrollments/schedule";
+import { toLocalDateOnly } from "@/lib/utils/date-utils";
+import type { MemberSummary } from "@/components/enrollments/due-table";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 import type {
   DueDTO,
@@ -186,8 +188,22 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
     throw new AppError("No hay un monto mensual válido configurado para esta inscripción.", 400);
   }
 
-  const startDate = new Date(input.startDate);
-  const startDateValue = formatDateOnly(startDate);
+  // Normalizar la fecha usando la nueva utilidad que mantiene la fecha local exacta
+  const startDateValue = toLocalDateOnly(input.startDate);
+  
+  // Logging detallado de la fecha
+  logger.info(
+    `Procesando fecha de inscripción - Input: ${input.startDate} -> Normalizada: ${startDateValue}`,
+    {
+      originalInput: input.startDate,
+      normalizedValue: startDateValue,
+      inputType: typeof input.startDate,
+      timezoneOffset: new Date().getTimezoneOffset(),
+      localDate: new Date().toISOString(),
+    },
+    member.id,
+    "date_processing"
+  );
 
   try {
     let createdEnrollmentId: string | null = null;
@@ -205,6 +221,24 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
       })
       .returning();
 
+    // Logging del registro creado en BD
+    logger.info(
+      `Inscripción creada exitosamente en BD`,
+      {
+        enrollmentId: created.id,
+        memberId: created.memberId,
+        startDate: created.startDate,
+        planName: created.planName,
+        monthlyAmount: created.monthlyAmount,
+        status: created.status,
+        notes: created.notes,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      },
+      created.id,
+    "enrollment_created"
+    );
+
     createdEnrollmentId = created.id;
 
     // Actualizar el estado del miembro
@@ -218,7 +252,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
 
     // Generar cuotas mensuales automáticamente (generar para 360 meses - 30 años)
     const dueSchedule = buildDueSchedule({
-      enrollmentId: createdEnrollmentId,
+      enrollmentId: createdEnrollmentId!,
       memberId: input.memberId,
       startDate: startDateValue,
       monthsToGenerate: 360,
@@ -227,13 +261,27 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
 
     if (dueSchedule.length > 0) {
       await db.insert(dues).values(dueSchedule);
+      
+      // Logging de primeras cuotas generadas
+      logger.info(
+        `Cuotas generadas exitosamente`,
+        {
+          enrollmentId: createdEnrollmentId,
+          totalCuotas: dueSchedule.length,
+          primeraCuota: dueSchedule[0],
+          ultimaCuota: dueSchedule[dueSchedule.length - 1],
+          muestraPrimeras5: dueSchedule.slice(0, 5),
+        },
+        createdEnrollmentId,
+        "dues_generated"
+      );
     }
 
     if (!createdEnrollmentId) {
       throw new AppError("No se pudo crear la inscripción.", 500);
     }
 
-    const enrollment = await findEnrollmentById(createdEnrollmentId);
+    const enrollment = await findEnrollmentById(createdEnrollmentId!);
     if (!enrollment) {
       throw new AppError("No se pudo crear la inscripción.", 500);
     }
@@ -848,4 +896,118 @@ export async function getMemberFinancialSnapshot(
     nextDueDate: nextDueResult[0]?.dueDate ?? null,
     gracePeriodDays: graceDays,
   };
+}
+
+export async function getMemberSummaries(): Promise<MemberSummary[]> {
+  console.log('🔍 [SERVICE] Obteniendo resúmenes completos de socios...');
+  
+  const allDues = await db
+    .select({
+      dues: {
+        id: dues.id,
+        memberId: dues.memberId,
+        enrollmentId: dues.enrollmentId,
+        dueDate: dues.dueDate,
+        amount: dues.amount,
+        status: dues.status,
+        paidAt: dues.paidAt,
+        createdAt: dues.createdAt,
+        updatedAt: dues.updatedAt,
+      },
+      members: {
+        id: members.id,
+        documentNumber: members.documentNumber,
+        status: members.status,
+      },
+      users: {
+        name: users.name,
+        email: users.email,
+      },
+      enrollments: {
+        id: enrollments.id,
+        planName: enrollments.planName,
+        monthlyAmount: enrollments.monthlyAmount,
+      },
+    })
+    .from(dues)
+    .innerJoin(members, eq(dues.memberId, members.id))
+    .innerJoin(users, eq(members.userId, users.id))
+    .innerJoin(enrollments, eq(dues.enrollmentId, enrollments.id))
+    .orderBy(dues.dueDate);
+
+  console.log(`📊 [SERVICE] Procesando ${allDues.length} cuotas para resumen...`);
+
+  const summariesMap = new Map<string, MemberSummary>();
+
+  for (const row of allDues) {
+    const memberId = row.members.id;
+    
+    if (!summariesMap.has(memberId)) {
+      summariesMap.set(memberId, {
+        member: {
+          id: row.members.id,
+          name: row.users.name,
+          email: row.users.email,
+          documentNumber: row.members.documentNumber,
+        },
+        dues: [],
+        paidCount: 0,
+        pendingCount: 0,
+        overdueCount: 0,
+        frozenCount: 0,
+        amountDue: 0,
+      });
+    }
+
+    const summary = summariesMap.get(memberId)!;
+    summary.dues.push({
+      id: row.dues.id,
+      memberId: row.dues.memberId,
+      enrollmentId: row.dues.enrollmentId,
+      dueDate: toLocalDateOnly(row.dues.dueDate),
+      amount: row.dues.amount,
+      status: row.dues.status,
+      paidAt: row.dues.paidAt ? row.dues.paidAt.toISOString() : null,
+      createdAt: row.dues.createdAt.toISOString(),
+      updatedAt: row.dues.updatedAt.toISOString(),
+      member: {
+        id: row.members.id,
+        name: row.users.name,
+        email: row.users.email,
+        documentNumber: row.members.documentNumber,
+      },
+      enrollment: {
+        id: row.enrollments.id,
+        planName: row.enrollments.planName,
+        monthlyAmount: row.enrollments.monthlyAmount,
+      },
+    });
+
+    // Actualizar contadores según estado
+    switch (row.dues.status) {
+      case 'PAID':
+        summary.paidCount++;
+        break;
+      case 'PENDING':
+        summary.pendingCount++;
+        summary.amountDue += row.dues.amount;
+        break;
+      case 'OVERDUE':
+        summary.overdueCount++;
+        summary.amountDue += row.dues.amount;
+        break;
+      case 'FROZEN':
+        summary.frozenCount++;
+        break;
+    }
+  }
+
+  const summaries = Array.from(summariesMap.values()).sort((a, b) => {
+    const nameA = a.member.name ?? "";
+    const nameB = b.member.name ?? "";
+    return nameA.localeCompare(nameB, "es");
+  });
+
+  console.log(`✅ [SERVICE] Resúmenes generados: ${summaries.length} socios`);
+  return summaries;
 }

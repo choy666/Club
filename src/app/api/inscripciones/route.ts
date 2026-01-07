@@ -32,9 +32,30 @@ export async function POST(request: NextRequest) {
     const payload = await request.json();
     const input = createEnrollmentSchema.parse(payload);
 
+    // Logging detallado en API route
+    console.log('🎯 [API] Recibida solicitud de inscripción:', {
+      payload,
+      parsedInput: input,
+      timestamp: new Date().toISOString(),
+      timezoneOffset: new Date().getTimezoneOffset(),
+      localDate: new Date().toLocaleString('es-AR'),
+      headers: Object.fromEntries(request.headers.entries()),
+    });
+
     const enrollment = await createEnrollment(input);
+    
+    console.log('🎉 [API] Inscripción creada exitosamente:', {
+      enrollment,
+      timestamp: new Date().toISOString(),
+    });
+
     return jsonSuccess(enrollment, { status: 201 });
   } catch (error) {
+    console.error('💥 [API] Error en creación de inscripción:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     return handleApiError(error);
   }
 }

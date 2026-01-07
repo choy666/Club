@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 
-import { useDashboardSummary } from "@/hooks/use-dashboard-summary";
-import { formatCurrency } from "@/lib/number-format";
-
 const benefitBlocks = [
   {
     title: "Gestión total de socios",
@@ -175,26 +172,6 @@ const docsLinks = [
 ];
 
 export default function Home() {
-  const { data, isLoading, error } = useDashboardSummary();
-
-  const quickStats = [
-    {
-      label: "Socios activos",
-      value: data?.activeMembers?.toLocaleString("es-AR") ?? "—",
-    },
-    {
-      label: "Cuotas pendientes",
-      value:
-        data && typeof data.pendingDuesAmount === "number"
-          ? formatCurrency(data.pendingDuesAmount)
-          : "—",
-    },
-    {
-      label: "Inscripciones hoy",
-      value: data?.enrollmentsToday?.toLocaleString("es-AR") ?? "—",
-    },
-  ];
-
   return (
     <main className="min-h-screen bg-base-primary px-6 py-12 text-base-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-16">
@@ -413,23 +390,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Estadísticas rápidas del dashboard */}
-        <section className="glass-card space-y-6 p-8">
-          <h2 className="text-2xl font-semibold">Estado actual del sistema</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {quickStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="space-y-2 rounded-2xl border border-base-border/60 p-6"
-              >
-                <p className="text-xs uppercase tracking-[0.35em] text-base-muted">{stat.label}</p>
-                <p className="text-2xl font-semibold">{isLoading ? "…" : stat.value}</p>
-                {error ? <p className="text-xs text-accent-critical">No se pudo cargar.</p> : null}
               </div>
-            ))}
-          </div>
-        </section>
-      </div>
     </main>
   );
 }

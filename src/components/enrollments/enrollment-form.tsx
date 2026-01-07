@@ -14,11 +14,8 @@ import { useMembersOptions } from "@/hooks/use-enrollments";
 import { useEconomicConfig } from "@/hooks/use-economic-config";
 import type { EnrollmentDTO } from "@/types/enrollment";
 import { clientEnv } from "@/lib/client-env";
+import { getTodayLocal } from "@/lib/utils/date-utils";
 
-function getDateValue(value?: string | null) {
-  if (!value) return "";
-  return value.split("T")[0] ?? "";
-}
 
 interface EnrollmentCreateFormProps {
   onSubmit: (values: CreateEnrollmentInput) => Promise<void> | void;
@@ -35,11 +32,7 @@ export function EnrollmentCreateForm({
   const { data: economicConfig } = useEconomicConfig();
 
   const defaultValues = useMemo<CreateEnrollmentInput>(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const localDate = `${year}-${month}-${day}`;
+    const localDate = getTodayLocal();
     return {
       memberId: "",
       startDate: localDate,
@@ -86,7 +79,7 @@ export function EnrollmentCreateForm({
             type="date"
             {...register("startDate")}
             className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
-            defaultValue={getDateValue(defaultValues.startDate)}
+            defaultValue={defaultValues.startDate}
           />
           {errors.startDate && (
             <p className="text-sm text-accent-critical">{errors.startDate.message as string}</p>

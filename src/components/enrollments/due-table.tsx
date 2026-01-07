@@ -10,6 +10,7 @@ import { useDuesList } from "@/hooks/use-enrollments";
 import type { DueDTO } from "@/types/enrollment";
 import { Modal } from "@/components/ui/modal";
 import { useRecordPayment } from "@/hooks/use-payments";
+import { MemberProgressSummary } from "@/components/enrollments/member-progress-summary";
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
 
@@ -18,26 +19,8 @@ type Feedback = {
   message: string;
 };
 
-const DUE_STATUS_STYLES: Record<DueDTO["status"], { label: string; className: string }> = {
-  PENDING: {
-    label: "Pendiente",
-    className: "text-amber-500 bg-amber-500/10 border-amber-500/30",
-  },
-  PAID: {
-    label: "Pagada",
-    className: "text-state-active bg-state-active/10 border-state-active/30",
-  },
-  OVERDUE: {
-    label: "Vencida",
-    className: "text-accent-critical bg-accent-critical/10 border-accent-critical/30",
-  },
-  FROZEN: {
-    label: "Congelada",
-    className: "text-base-muted bg-base-muted/10 border-base-muted/30",
-  },
-};
 
-type MemberSummary = {
+export type MemberSummary = {
   member: DueDTO["member"];
   dues: DueDTO[];
   paidCount: number;
@@ -161,17 +144,6 @@ export function DueTable() {
   const hasData = memberSummaries.length > 0;
   const totalPages = data?.meta.totalPages ?? 1;
 
-  const openManualPayment = useCallback((due: DueDTO) => {
-    setManualPaymentDue(due);
-    setManualPaymentError(null);
-    setManualPaymentForm({
-      amount: String(due.amount),
-      method: due.status === "PAID" ? "Ajuste manual" : "Transferencia",
-      reference: "",
-      notes: "",
-      paidAt: toDateTimeLocalInput(due.paidAt ? new Date(due.paidAt) : new Date()),
-    });
-  }, []);
 
   const closeManualPayment = useCallback(() => {
     setManualPaymentDue(null);
@@ -584,60 +556,12 @@ export function DueTable() {
               ))}
             </div>
 
-            <div className="space-y-4">
-              <div className="neo-panel space-y-4 border border-base-border/70 px-5 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                      Cuotas pendientes
-                    </p>
-                    <p className="text-sm text-base-muted">
-                      Generadas dinámicamente con el valor actual de cada periodo.
-                    </p>
-                  </div>
-                </div>
-                {selectedSummary.dues.filter((due) => due.status !== "PAID").length === 0 && (
-                  <p className="text-sm text-base-muted">Este socio no tiene cuotas pendientes.</p>
-                )}
-                <div className="space-y-3">
-                  {selectedSummary.dues
-                    .filter((due) => due.status !== "PAID")
-                    .map((due) => (
-                      <div
-                        key={`pending-${due.id}`}
-                        className="rounded-2xl border border-base-border/60 bg-base-secondary/20 p-4"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                          <div className="space-y-1">
-                            <p className="font-semibold">
-                              Vence {new Date(due.dueDate).toLocaleDateString("es-AR")}
-                            </p>
-                            <p className="text-xs text-base-muted">
-                              ID inscripción: {due.enrollment.id}
-                            </p>
-                          </div>
-                          <p className="text-lg font-semibold">{formatCurrency(due.amount)}</p>
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 font-semibold uppercase tracking-widest ${DUE_STATUS_STYLES[due.status].className}`}
-                          >
-                            {DUE_STATUS_STYLES[due.status].label}
-                          </span>
-                          <button
-                            type="button"
-                            className="btn-primary text-[0.65rem] uppercase tracking-[0.3em]"
-                            onClick={() => openManualPayment(due)}
-                            disabled={recordPaymentMutation.isPending}
-                          >
-                            Registrar pago manual
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
+            {/* Progress bar circular y estadísticas */}
+            <div className="flex flex-col items-center space-y-4">
+              <MemberProgressSummary memberSummary={selectedSummary} />
+            </div>
 
+            <div className="space-y-4">
               <div className="neo-panel space-y-3 border border-base-border/70 px-5 py-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs uppercase tracking-[0.3em] text-base-muted">

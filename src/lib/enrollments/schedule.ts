@@ -1,6 +1,10 @@
 import { dues } from "@/db/schema";
-
-const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+import { 
+  toLocalDateOnly, 
+  fromLocalDateOnly, 
+  addMonthsLocal, 
+  DATE_ONLY_REGEX 
+} from "@/lib/utils/date-utils";
 
 export type BuildDueScheduleInput = {
   enrollmentId: string;
@@ -10,39 +14,38 @@ export type BuildDueScheduleInput = {
   monthlyAmount: number;
 };
 
-function toUTCDate(year: number, monthIndex: number, day: number) {
-  return new Date(Date.UTC(year, monthIndex, day));
-}
-
 function toDate(value: Date | string) {
+  // Usar las nuevas utilidades de fecha local
   if (value instanceof Date) {
-    return toUTCDate(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
+    return toLocalDateOnly(value);
   }
-
+  
   if (DATE_ONLY_REGEX.test(value)) {
-    const [year, month, day] = value.split("-").map(Number);
-    return toUTCDate(year, month - 1, day);
+    return value; // Ya está en formato correcto
   }
 
+  // Para otros formatos de string, convertir a fecha y luego a formato local
   const parsed = new Date(value);
-  return toUTCDate(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Fecha inválida");
+  }
+  return toLocalDateOnly(parsed);
 }
 
-export function addMonths(date: Date, months: number) {
-  return toUTCDate(date.getUTCFullYear(), date.getUTCMonth() + months, date.getUTCDate());
+export function addMonths(date: Date | string, months: number) {
+  const baseDate = typeof date === 'string' ? fromLocalDateOnly(date) : date;
+  return addMonthsLocal(baseDate, months);
 }
 
 export function formatDateOnly(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return toLocalDateOnly(date);
 }
 
 export function buildDueSchedule(input: BuildDueScheduleInput): (typeof dues.$inferInsert)[] {
   const baseDate = toDate(input.startDate);
 
-  if (Number.isNaN(baseDate.getTime())) {
+  // Validar que la fecha sea válida (baseDate ahora es string)
+  if (!baseDate || !DATE_ONLY_REGEX.test(baseDate)) {
     throw new Error("Fecha de inicio inválida para la generación de cuotas.");
   }
 
@@ -57,7 +60,7 @@ export function buildDueSchedule(input: BuildDueScheduleInput): (typeof dues.$in
     return {
       enrollmentId: input.enrollmentId,
       memberId: input.memberId,
-      dueDate: formatDateOnly(dueDate),
+      dueDate: toLocalDateOnly(dueDate),
       amount: input.monthlyAmount,
     };
   });

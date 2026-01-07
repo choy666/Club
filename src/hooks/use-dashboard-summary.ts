@@ -12,6 +12,7 @@ export function useDashboardSummary() {
       const response = await apiFetch<{ data: DashboardSummary }>("/api/dashboard/summary");
       return response.data;
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 5, // 5 minutos en lugar de 1 minuto
+    refetchInterval: 1000 * 60 * 5, // Refrescar cada 5 minutos en lugar de automáticamente
   });
 }

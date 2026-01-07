@@ -145,7 +145,11 @@ export function MemberCredentialCard({
                   <p>
                     Fecha de inscripción:{" "}
                     <span className="font-semibold">
-                      {new Date(credential.enrollment.startDate).toLocaleDateString("es-AR")}
+                      {(() => {
+                        const dateStr = credential.enrollment.startDate;
+                        const [year, month, day] = dateStr.split('-');
+                        return `${day}/${month}/${year}`;
+                      })()}
                     </span>
                   </p>
                   <p>

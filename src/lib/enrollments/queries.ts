@@ -2,6 +2,7 @@ import { db } from "@/db/client";
 import { dues, enrollments, members, users } from "@/db/schema";
 import type { DueDTO, EnrollmentDTO } from "@/types/enrollment";
 import { desc, eq, sql } from "drizzle-orm";
+import { toLocalDateOnly } from "@/lib/utils/date-utils";
 
 type EnrollmentRow = {
   enrollments: typeof enrollments.$inferSelect;
@@ -37,13 +38,13 @@ export function mapEnrollmentRow(row: EnrollmentRow): EnrollmentDTO {
   return {
     id: enrollment.id,
     memberId: enrollment.memberId,
-    startDate: toIsoDate(enrollment.startDate),
+    startDate: toLocalDateOnly(enrollment.startDate), // Mantener formato YYYY-MM-DD
     planName: enrollment.planName ?? null,
     monthlyAmount: enrollment.monthlyAmount,
     status: enrollment.status,
     notes: enrollment.notes ?? null,
-    createdAt: toIsoDate(enrollment.createdAt),
-    updatedAt: toIsoDate(enrollment.updatedAt),
+    createdAt: toIsoDate(enrollment.createdAt), // Mantener ISO para timestamps
+    updatedAt: toIsoDate(enrollment.updatedAt), // Mantener ISO para timestamps
     hasPaidDues: Boolean(row.hasPaidDues),
     member: {
       id: member.id,
@@ -65,12 +66,12 @@ export function mapDueRow(row: DueRow): DueDTO {
     id: due.id,
     enrollmentId: due.enrollmentId,
     memberId: due.memberId,
-    dueDate: toIsoDate(due.dueDate),
+    dueDate: toLocalDateOnly(due.dueDate), // Mantener formato YYYY-MM-DD
     amount: due.amount,
     status: due.status,
-    paidAt: due.paidAt ? toIsoDate(due.paidAt) : null,
-    createdAt: toIsoDate(due.createdAt),
-    updatedAt: toIsoDate(due.updatedAt),
+    paidAt: due.paidAt ? toIsoDate(due.paidAt) : null, // Mantener ISO para timestamps
+    createdAt: toIsoDate(due.createdAt), // Mantener ISO para timestamps
+    updatedAt: toIsoDate(due.updatedAt), // Mantener ISO para timestamps
     member: {
       id: member.id,
       name: user.name ?? null,

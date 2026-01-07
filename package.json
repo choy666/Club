@@ -21,6 +21,8 @@
     "cleanup:dues": "tsx scripts/cleanup-orphaned-dues.ts",
     "fix:member-ids": "tsx scripts/fix-member-id-inconsistencies.ts",
     "diagnose:dues": "tsx scripts/diagnose-dues-error.ts",
+    "debug:enrollment": "tsx scripts/debug-enrollment.ts",
+    "test:dues-logic": "tsx scripts/test-dues-logic.ts",
     "test": "vitest"
   },
   "dependencies": {

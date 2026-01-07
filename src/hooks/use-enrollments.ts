@@ -93,8 +93,10 @@ export function useCreateEnrollment() {
 
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
     },
     onError: (error) => {
@@ -126,6 +128,8 @@ export function useUpdateEnrollment() {
         queryKey: [ENROLLMENTS_KEY, variables.enrollmentId],
       });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
@@ -147,6 +151,7 @@ export function useDeleteEnrollment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
@@ -172,6 +177,7 @@ export function usePayMultipleDues() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
@@ -253,6 +259,7 @@ export function usePayDue() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
@@ -280,6 +287,7 @@ export function usePaySequentialDues() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [DUES_KEY] });
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });

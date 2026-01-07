@@ -14,10 +14,6 @@ interface DuePaymentPanelProps {
 
 export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaymentPanelProps) {
   const [selectedDues, setSelectedDues] = useState<string[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO">(
-    "EFECTIVO"
-  );
-  const [paymentNotes, setPaymentNotes] = useState("");
   const payMutation = usePayMultipleDues();
 
   // Filtrar cuotas pendientes
@@ -48,8 +44,6 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
       await payMutation.mutateAsync({
         memberId,
         dueIds: selectedDues,
-        paymentMethod,
-        paymentNotes: paymentNotes.trim() || undefined,
       });
 
       if (payMutation.data?.promotedToVitalicio) {
@@ -140,34 +134,6 @@ export function DuePaymentPanel({ memberId, memberName, dues, onClose }: DuePaym
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Método de pago */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Método de pago</label>
-        <select
-          value={paymentMethod}
-          onChange={(e) =>
-            setPaymentMethod(e.target.value as "EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO")
-          }
-          className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
-        >
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="TRANSFERENCIA">Transferencia bancaria</option>
-          <option value="MERCADO_PAGO">Mercado Pago</option>
-        </select>
-      </div>
-
-      {/* Notas */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Notas (opcional)</label>
-        <textarea
-          value={paymentNotes}
-          onChange={(e) => setPaymentNotes(e.target.value)}
-          placeholder="Notas sobre el pago..."
-          rows={3}
-          className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none resize-none"
-        />
       </div>
 
       {/* Botones de acción */}

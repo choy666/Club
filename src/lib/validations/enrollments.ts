@@ -73,8 +73,6 @@ export const dueIdSchema = z.object({
 export const payDuesSchema = z.object({
   memberId: z.string().uuid(),
   dueIds: z.array(z.string().uuid()).min(1),
-  paymentMethod: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADO_PAGO"]),
-  paymentNotes: z.string().optional(),
 });
 
 export const paySequentialDuesSchema = z.object({
@@ -85,8 +83,6 @@ export const paySequentialDuesSchema = z.object({
     .min(1)
     .max(60, "No se pueden pagar más de 60 cuotas en una sola operación."),
   dueAmount: z.coerce.number().min(1, "El monto de cuota debe ser mayor a 0"),
-  paymentMethod: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADO_PAGO"]),
-  paymentNotes: z.string().optional(),
 });
 
 export const payDueSchema = z.object({

@@ -428,7 +428,6 @@ export const payMultipleDues = withPerformanceMeasurement(
       `Processing multiple dues payment for member: ${input.memberId}`,
       {
         dueIdsCount: input.dueIds.length,
-        paymentMethod: input.paymentMethod,
       },
       input.memberId,
       "payment"
@@ -463,8 +462,6 @@ export const payMultipleDues = withPerformanceMeasurement(
           .set({
             status: "PAID",
             paidAmount: due.amount,
-            paymentMethod: input.paymentMethod,
-            paymentNotes: input.paymentNotes,
             statusChangedAt: sql`now()`,
             updatedAt: sql`now()`,
           })
@@ -500,7 +497,6 @@ export const paySequentialDues = withPerformanceMeasurement(
       {
         numberOfDues: input.numberOfDues,
         dueAmount: input.dueAmount,
-        paymentMethod: input.paymentMethod,
       },
       input.memberId,
       "sequential_payment"
@@ -537,8 +533,6 @@ export const paySequentialDues = withPerformanceMeasurement(
             status: "PAID",
             amount: input.dueAmount, // Actualizar el monto de la cuota
             paidAmount: input.dueAmount, // Usar el monto proporcionado
-            paymentMethod: input.paymentMethod,
-            paymentNotes: input.paymentNotes,
             statusChangedAt: sql`now()`,
             updatedAt: sql`now()`,
           })
@@ -654,9 +648,6 @@ export async function listDues(input: ListDuesInput): Promise<DueListResponse> {
 
 type PaymentMetadata = {
   amount?: number;
-  method?: string;
-  reference?: string | null;
-  notes?: string | null;
 };
 
 function mapPaymentRow(row: typeof payments.$inferSelect): PaymentDTO {
@@ -701,9 +692,9 @@ export async function recordPayment(
     memberId: existing.member.id,
     dueId,
     amount: metadata?.amount ?? existing.amount,
-    method: metadata?.method ?? "INTERNAL",
-    reference: metadata?.reference ?? null,
-    notes: metadata?.notes ?? null,
+    method: "INTERNAL",
+    reference: null,
+    notes: null,
     paidAt: paidAtDate,
   };
 
@@ -1016,6 +1007,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
         id: enrollments.id,
         planName: enrollments.planName,
         monthlyAmount: enrollments.monthlyAmount,
+        startDate: enrollments.startDate,
       },
     })
     .from(dues)
@@ -1038,6 +1030,12 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
           name: row.users.name,
           email: row.users.email,
           documentNumber: row.members.documentNumber,
+        },
+        enrollment: {
+          id: row.enrollments.id,
+          planName: row.enrollments.planName,
+          monthlyAmount: row.enrollments.monthlyAmount,
+          startDate: toLocalDateOnly(row.enrollments.startDate),
         },
         dues: [],
         paidCount: 0,
@@ -1069,6 +1067,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
         id: row.enrollments.id,
         planName: row.enrollments.planName,
         monthlyAmount: row.enrollments.monthlyAmount,
+        startDate: toLocalDateOnly(row.enrollments.startDate),
       },
     });
 

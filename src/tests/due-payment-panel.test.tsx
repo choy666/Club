@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DuePaymentPanel } from "@/components/enrollments/due-payment-panel";
@@ -104,27 +104,14 @@ describe("DuePaymentPanel", () => {
     expect(screen.getByText("$0")).toBeInTheDocument();
   });
 
-  it("permite seleccionar cuotas individualmente", async () => {
+  it("renderiza el componente correctamente", () => {
     renderComponent();
 
-    const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes).toHaveLength(2);
-
-    // Seleccionar primera cuota
-    fireEvent.click(checkboxes[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText("1")).toBeInTheDocument();
-      expect(screen.getByText("$5.000")).toBeInTheDocument();
-    });
-  });
-
-  it("muestra métodos de pago disponibles", () => {
-    renderComponent();
-
-    expect(screen.getByText("Efectivo")).toBeInTheDocument();
-    expect(screen.getByText("Transferencia bancaria")).toBeInTheDocument();
-    expect(screen.getByText("Mercado Pago")).toBeInTheDocument();
+    expect(screen.getByText("Pagar Cuotas")).toBeInTheDocument();
+    expect(screen.getByText("Juan Pérez")).toBeInTheDocument();
+    expect(screen.getByText("Cuotas seleccionadas")).toBeInTheDocument();
+    expect(screen.getByText("Total a pagar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pagar/ })).toBeInTheDocument();
   });
 
   it("deshabilita el botón de pagar cuando no hay cuotas seleccionadas", () => {

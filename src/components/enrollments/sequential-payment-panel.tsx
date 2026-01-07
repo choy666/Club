@@ -20,10 +20,6 @@ export function SequentialPaymentPanel({
 }: SequentialPaymentPanelProps) {
   const [numberOfDues, setNumberOfDues] = useState(1);
   const [dueAmount, setDueAmount] = useState(memberSummary.dues[0]?.amount || 200);
-  const [paymentMethod, setPaymentMethod] = useState<"EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO">(
-    "EFECTIVO"
-  );
-  const [paymentNotes, setPaymentNotes] = useState("");
   const payMutation = usePaySequentialDues();
 
   // Calcular estadísticas
@@ -35,20 +31,25 @@ export function SequentialPaymentPanel({
     // Máximo de cuotas que se pueden pagar (mínimo entre pendientes y 60)
     const maxPayableDues = Math.min(pendingDues, 60);
 
-    // Meses cubiertos después del pago
-    const monthsCoveredAfterPayment = paidDues + numberOfDues;
+    // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas)
+    const monthsCoveredAfterPayment = numberOfDues + 1;
 
     // Total a cobrar usando el monto definido en la modal
     const totalAmount = dueAmount * numberOfDues;
 
-    // Fecha de cobertura desde (primera cuota que estará pagada después del pago)
-    const coverageFromDate = paidDues > 0 ? memberSummary.dues[paidDues - 1]?.dueDate : null;
+    // Fecha de cobertura desde (fecha de inscripción)
+    const coverageFromDate = memberSummary.enrollment?.startDate || null;
 
-    // Fecha de cobertura hasta (última cuota que estará pagada después del pago)
-    const coverageUntilDate =
-      monthsCoveredAfterPayment > 0
-        ? memberSummary.dues[monthsCoveredAfterPayment - 1]?.dueDate
-        : null;
+    // Fecha de cobertura hasta (mes de inscripción + cantidad de cuotas seleccionadas)
+    const coverageUntilDate = coverageFromDate
+      ? (() => {
+          const enrollmentDate = new Date(coverageFromDate);
+          // Sumar la cantidad de cuotas seleccionadas más 1 mes (el mes de inscripción)
+          // Si se inscribe en enero (06/01) y paga 1 cuota, cubre hasta marzo (06/03)
+          enrollmentDate.setMonth(enrollmentDate.getMonth() + numberOfDues + 1);
+          return enrollmentDate.toISOString();
+        })()
+      : null;
 
     // Fecha del próximo vencimiento después del pago
     const nextDueDateAfterPayment =
@@ -78,8 +79,6 @@ export function SequentialPaymentPanel({
         memberId,
         numberOfDues,
         dueAmount,
-        paymentMethod,
-        paymentNotes: paymentNotes.trim() || undefined,
       });
 
       if (result.promotedToVitalicio) {
@@ -223,7 +222,9 @@ export function SequentialPaymentPanel({
               <p className="text-lg font-bold text-base-foreground">
                 {stats.coverageFromDate
                   ? formatDate(stats.coverageFromDate)
-                  : "Inicio de membresía"}
+                  : memberSummary.enrollment?.startDate
+                    ? formatDate(memberSummary.enrollment.startDate)
+                    : "Sin fecha de inscripción"}
               </p>
             </div>
             <div className="space-y-2">
@@ -256,45 +257,7 @@ export function SequentialPaymentPanel({
                 {formatCurrency(stats.totalAmount)}
               </p>
             </div>
-            <div className="text-right text-sm">
-              <p className="text-base-muted">
-                Por {numberOfDues} cuota(s) a {formatCurrency(dueAmount)} cada una
-              </p>
-              {stats.nextDueDateAfterPayment && (
-                <p className="text-base-muted">
-                  Próximo vencimiento: {formatDate(stats.nextDueDateAfterPayment)}
-                </p>
-              )}
-            </div>
           </div>
-        </div>
-
-        {/* Método de pago */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Método de pago</label>
-          <select
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(e.target.value as "EFECTIVO" | "TRANSFERENCIA" | "MERCADO_PAGO")
-            }
-            className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none"
-          >
-            <option value="EFECTIVO">Efectivo</option>
-            <option value="TRANSFERENCIA">Transferencia bancaria</option>
-            <option value="MERCADO_PAGO">Mercado Pago</option>
-          </select>
-        </div>
-
-        {/* Notas */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Notas (opcional)</label>
-          <textarea
-            value={paymentNotes}
-            onChange={(e) => setPaymentNotes(e.target.value)}
-            placeholder="Notas sobre el pago..."
-            rows={3}
-            className="w-full rounded-lg border border-base-border bg-transparent px-4 py-2 focus:border-accent-primary focus:outline-none resize-none"
-          />
         </div>
       </div>
 

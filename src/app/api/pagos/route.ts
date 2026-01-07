@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
 
     const paymentResult = await recordPayment(input.dueId, input.paidAt, {
       amount: input.amount,
-      method: input.method,
-      reference: input.reference,
-      notes: input.notes,
     });
 
     return jsonSuccess(paymentResult, { status: 201 });

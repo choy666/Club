@@ -81,6 +81,7 @@ export interface DueDTO {
     id: string;
     planName: string | null;
     monthlyAmount: number;
+    startDate?: string;
   };
 }
 

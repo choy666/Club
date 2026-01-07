@@ -20,6 +20,12 @@ type Feedback = {
 
 export type MemberSummary = {
   member: DueDTO["member"];
+  enrollment: {
+    id: string;
+    planName: string | null;
+    monthlyAmount: number;
+    startDate?: string;
+  } | null;
   dues: DueDTO[];
   paidCount: number;
   pendingCount: number;

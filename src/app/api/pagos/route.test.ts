@@ -35,15 +35,12 @@ describe("POST /api/pagos", () => {
     const payload = {
       dueId: "123e4567-e89b-12d3-a456-426614174000",
       amount: 42000,
-      method: "Transferencia",
-      reference: "TRX-994421",
-      notes: "Pago confirmado por tesorería",
       paidAt: "2025-02-01T15:30:00.000Z",
     };
 
     const paymentResult = {
       due: { id: payload.dueId, status: "PAID" },
-      payment: { id: "payment-1", method: payload.method },
+      payment: { id: "payment-1", method: "INTERNAL" },
     };
 
     mockRecordPayment.mockResolvedValueOnce(paymentResult);
@@ -55,16 +52,11 @@ describe("POST /api/pagos", () => {
     expect(json.data).toMatchObject(paymentResult);
     expect(mockRecordPayment).toHaveBeenCalledWith(payload.dueId, payload.paidAt, {
       amount: payload.amount,
-      method: payload.method,
-      reference: payload.reference,
-      notes: payload.notes,
     });
   });
 
   it("devuelve 422 cuando el payload es inválido", async () => {
-    const response = await createPaymentHandler(
-      buildRequest({ amount: 35000, method: "Efectivo" })
-    );
+    const response = await createPaymentHandler(buildRequest({ amount: 35000 }));
 
     expect(response.status).toBe(422);
     const json = (await response.json()) as Record<string, unknown>;

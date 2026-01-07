@@ -991,6 +991,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
         amount: dues.amount,
         status: dues.status,
         paidAt: dues.paidAt,
+        paidAmount: dues.paidAmount,
         createdAt: dues.createdAt,
         updatedAt: dues.updatedAt,
       },
@@ -1043,6 +1044,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
         overdueCount: 0,
         frozenCount: 0,
         amountDue: 0,
+        amountPaid: 0,
       });
     }
 
@@ -1055,6 +1057,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
       amount: row.dues.amount,
       status: row.dues.status,
       paidAt: row.dues.paidAt ? row.dues.paidAt.toISOString() : null,
+      paidAmount: row.dues.paidAmount,
       createdAt: row.dues.createdAt.toISOString(),
       updatedAt: row.dues.updatedAt.toISOString(),
       member: {
@@ -1075,6 +1078,8 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
     switch (row.dues.status) {
       case "PAID":
         summary.paidCount++;
+        // Sumar el monto realmente pagado (paidAmount si existe y no es null, sino el amount original)
+        summary.amountPaid += row.dues.paidAmount ?? row.dues.amount;
         break;
       case "PENDING":
         summary.pendingCount++;

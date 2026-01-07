@@ -69,6 +69,7 @@ export interface DueDTO {
   amount: number;
   status: DueStatus;
   paidAt: string | null;
+  paidAmount: number | null;
   createdAt: string;
   updatedAt: string;
   member: {

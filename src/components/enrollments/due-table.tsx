@@ -32,6 +32,7 @@ export type MemberSummary = {
   overdueCount: number;
   frozenCount: number;
   amountDue: number;
+  amountPaid: number;
 };
 
 const MEMBER_STATUS_STYLES = {
@@ -323,9 +324,9 @@ export function DueTable() {
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                      Monto adeudado
+                      Monto abonado
                     </p>
-                    <p className="text-lg font-semibold">{formatCurrency(summary.amountDue)}</p>
+                    <p className="text-lg font-semibold">{formatCurrency(summary.amountPaid)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -462,8 +463,8 @@ export function DueTable() {
                     selectedSummary.frozenCount,
                 },
                 {
-                  label: "Monto adeudado",
-                  value: formatCurrency(selectedSummary.amountDue),
+                  label: "Monto abonado",
+                  value: formatCurrency(selectedSummary.amountPaid),
                 },
               ].map((metric) => (
                 <div

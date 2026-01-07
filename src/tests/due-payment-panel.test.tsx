@@ -35,6 +35,7 @@ describe("DuePaymentPanel", () => {
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
         paidAt: null,
+        paidAmount: null,
         enrollmentId: "enrollment-1",
         memberId: "member-1",
         member: {
@@ -57,6 +58,7 @@ describe("DuePaymentPanel", () => {
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
         paidAt: null,
+        paidAmount: null,
         enrollmentId: "enrollment-1",
         memberId: "member-1",
         member: {

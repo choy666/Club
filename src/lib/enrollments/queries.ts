@@ -70,6 +70,7 @@ export function mapDueRow(row: DueRow): DueDTO {
     amount: due.amount,
     status: due.status,
     paidAt: due.paidAt ? toIsoDate(due.paidAt) : null, // Mantener ISO para timestamps
+    paidAmount: due.paidAmount,
     createdAt: toIsoDate(due.createdAt), // Mantener ISO para timestamps
     updatedAt: toIsoDate(due.updatedAt), // Mantener ISO para timestamps
     member: {

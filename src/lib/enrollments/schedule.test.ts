@@ -17,7 +17,7 @@ describe("enrollments schedule helpers", () => {
   it("adds months keeping day when possible", () => {
     const base = new Date("2025-01-15T03:00:00.000Z");
     const result = addMonths(base, 1);
-    expect(formatDateOnly(result)).toBe("2025-02-14"); // UTC: Feb 14 (no Feb 15 por timezone)
+    expect(formatDateOnly(result)).toBe("2025-02-15"); // Siguiente mes manteniendo el día
   });
 
   it("creates 360 dues schedule for full membership", () => {
@@ -33,11 +33,11 @@ describe("enrollments schedule helpers", () => {
     expect(dues[0]).toMatchObject({
       enrollmentId: "enroll-1",
       memberId: "member-1",
-      dueDate: "2025-02-28", // UTC: Feb 28 (no Mar 1 por timezone)
+      dueDate: "2025-03-01", // Siguiente mes de la inscripción
       amount: 5000,
     });
     // Verificar última cuota (30 años después)
-    expect(dues[359]?.dueDate).toBe("2055-01-31");
+    expect(dues[359]?.dueDate).toBe("2055-02-01");
   });
 
   it("creates due schedule starting next month with expected values", () => {
@@ -53,10 +53,10 @@ describe("enrollments schedule helpers", () => {
     expect(dues[0]).toMatchObject({
       enrollmentId: "enroll-1",
       memberId: "member-1",
-      dueDate: "2025-02-28", // UTC: Feb 28 (no Mar 1 por timezone)
+      dueDate: "2025-03-01", // Siguiente mes de la inscripción
       amount: 5000,
     });
-    expect(dues[2]?.dueDate).toBe("2025-04-30");
+    expect(dues[2]?.dueDate).toBe("2025-05-01");
   });
 
   it("handles Date objects as startDate", () => {
@@ -68,7 +68,7 @@ describe("enrollments schedule helpers", () => {
       monthlyAmount: 7000,
     });
 
-    expect(dues[0]?.dueDate).toBe("2025-04-09"); // UTC: Apr 9 (no Apr 10 por timezone)
+    expect(dues[0]?.dueDate).toBe("2025-04-10"); // Siguiente mes manteniendo el día
   });
 
   it("throws when start date is invalid", () => {
@@ -80,6 +80,6 @@ describe("enrollments schedule helpers", () => {
         monthsToGenerate: 2,
         monthlyAmount: 1000,
       })
-    ).toThrow("Fecha de inicio inválida");
+    ).toThrow("Fecha inválida");
   });
 });

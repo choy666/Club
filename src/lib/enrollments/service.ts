@@ -499,6 +499,7 @@ export const paySequentialDues = withPerformanceMeasurement(
       `Processing sequential dues payment for member: ${input.memberId}`,
       {
         numberOfDues: input.numberOfDues,
+        dueAmount: input.dueAmount,
         paymentMethod: input.paymentMethod,
       },
       input.memberId,
@@ -525,15 +526,17 @@ export const paySequentialDues = withPerformanceMeasurement(
         );
       }
 
-      const totalAmount = pendingDues.reduce((sum, due) => sum + due.amount, 0);
+      // Usar el monto proporcionado en lugar del monto original de las cuotas
+      const totalAmount = input.dueAmount * pendingDues.length;
 
-      // Actualizar cada cuota a pagada
+      // Actualizar cada cuota a pagada con el nuevo monto
       for (const due of pendingDues) {
         await db
           .update(dues)
           .set({
             status: "PAID",
-            paidAmount: due.amount,
+            amount: input.dueAmount, // Actualizar el monto de la cuota
+            paidAmount: input.dueAmount, // Usar el monto proporcionado
             paymentMethod: input.paymentMethod,
             paymentNotes: input.paymentNotes,
             statusChangedAt: sql`now()`,

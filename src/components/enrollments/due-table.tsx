@@ -151,7 +151,7 @@ export function DueTable() {
         <tbody>
           {Array.from({ length: 4 }).map((_, index) => (
             <tr key={`summary-skeleton-${index}`} className="border-b border-base-border/60">
-              <td colSpan={7} className="py-6 text-center text-base-muted animate-pulse">
+              <td colSpan={6} className="py-6 text-center text-base-muted animate-pulse">
                 Cargando seguimiento de socios...
               </td>
             </tr>
@@ -164,7 +164,7 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={7} className="py-6 text-center text-accent-critical">
+            <td colSpan={6} className="py-6 text-center text-accent-critical">
               No se pudieron cargar las cuotas.
             </td>
           </tr>
@@ -176,7 +176,7 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={7} className="py-6 text-center text-base-muted">
+            <td colSpan={6} className="py-6 text-center text-base-muted">
               No hay socios con cuotas para los filtros actuales.
             </td>
           </tr>
@@ -209,7 +209,6 @@ export function DueTable() {
                 <span className="font-semibold">{pendingTotal}</span>
                 <span className="text-xs text-base-muted"> cuotas</span>
               </td>
-              <td className="px-6 py-4 font-semibold">{formatCurrency(summary.amountDue)}</td>
               <td className="px-6 py-4">
                 <span
                   className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
@@ -413,9 +412,6 @@ export function DueTable() {
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Cuotas / Pendientes
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Monto adeudado
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Estado

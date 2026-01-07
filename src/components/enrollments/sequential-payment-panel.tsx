@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePaySequentialDues } from "@/hooks/use-enrollments";
 import type { MemberSummary } from "@/components/enrollments/due-table";
 
@@ -21,6 +22,7 @@ export function SequentialPaymentPanel({
   const [numberOfDues, setNumberOfDues] = useState(1);
   const [dueAmount, setDueAmount] = useState(memberSummary.dues[0]?.amount || 200);
   const payMutation = usePaySequentialDues();
+  const queryClient = useQueryClient();
 
   // Calcular estadísticas
   const stats = useMemo(() => {
@@ -31,8 +33,8 @@ export function SequentialPaymentPanel({
     // Máximo de cuotas que se pueden pagar (mínimo entre pendientes y 60)
     const maxPayableDues = Math.min(pendingDues, 60);
 
-    // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas)
-    const monthsCoveredAfterPayment = numberOfDues + 1;
+    // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas + cuotas a pagar)
+    const monthsCoveredAfterPayment = paidDues + numberOfDues + 1;
 
     // Total a cobrar usando el monto definido en la modal
     const totalAmount = dueAmount * numberOfDues;
@@ -40,13 +42,13 @@ export function SequentialPaymentPanel({
     // Fecha de cobertura desde (fecha de inscripción)
     const coverageFromDate = memberSummary.enrollment?.startDate || null;
 
-    // Fecha de cobertura hasta (mes de inscripción + cantidad de cuotas seleccionadas)
+    // Fecha de cobertura hasta (fecha de inscripción + cuotas pagadas + cuotas a pagar + 1 mes de inscripción)
     const coverageUntilDate = coverageFromDate
       ? (() => {
           const enrollmentDate = new Date(coverageFromDate);
-          // Sumar la cantidad de cuotas seleccionadas más 1 mes (el mes de inscripción)
-          // Si se inscribe en enero (06/01) y paga 1 cuota, cubre hasta marzo (06/03)
-          enrollmentDate.setMonth(enrollmentDate.getMonth() + numberOfDues + 1);
+          // Sumar cuotas pagadas + cuotas seleccionadas + 1 mes (el mes de inscripción)
+          // Ejemplo: 0 pagadas + 1 a pagar + 1 inscripción = 2 meses totales
+          enrollmentDate.setMonth(enrollmentDate.getMonth() + paidDues + numberOfDues + 1);
           return enrollmentDate.toISOString();
         })()
       : null;
@@ -84,6 +86,11 @@ export function SequentialPaymentPanel({
       if (result.promotedToVitalicio) {
         alert(`¡Felicidades! ${memberName} ha alcanzado el estatus VITALICIO.`);
       }
+
+      // Invalidar queries para recargar datos actualizados
+      queryClient.invalidateQueries({ queryKey: ["dues-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
 
       onClose();
     } catch (error) {
@@ -217,7 +224,7 @@ export function SequentialPaymentPanel({
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <p className="text-xs text-base-muted font-medium uppercase tracking-wider">
-                Cobertura desde
+                Fecha de inscripción
               </p>
               <p className="text-lg font-bold text-base-foreground">
                 {stats.coverageFromDate

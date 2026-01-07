@@ -24,7 +24,7 @@ export type MemberSummary = {
     id: string;
     planName: string | null;
     monthlyAmount: number;
-    startDate?: string;
+    startDate: string;
   } | null;
   dues: DueDTO[];
   paidCount: number;

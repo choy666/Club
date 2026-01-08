@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import { motion } from "framer-motion";
+import { useMemo } from "react";
 import { useMemberDuesStats } from "@/hooks/use-member-stats";
 
 import type { MemberCredentialDTO } from "@/types/enrollment";
@@ -11,27 +9,17 @@ interface MemberCredentialCardProps {
   credential?: MemberCredentialDTO | null;
   isLoading?: boolean;
   error?: string | null;
-  onRefresh?: () => void;
   title?: string;
   subtitle?: string;
-  compact?: boolean;
 }
 
 export function MemberCredentialCard({
   credential,
   isLoading,
   error,
-  onRefresh,
   title = "Credencial digital",
-  subtitle = "QR listo para control de acceso. Se genera automáticamente al inscribir al socio.",
-  compact,
+  subtitle = "Acceso a tu estado de socio y beneficios. Se activa automáticamente con tu inscripción.",
 }: MemberCredentialCardProps) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-
-  const code = credential?.credential?.code ?? null;
-  const qrPayload = credential?.credential?.qrPayload ?? null;
-
   // Obtener estadísticas de cuotas
   const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
 
@@ -42,33 +30,6 @@ export function MemberCredentialCard({
   console.log("💳 [CREDENTIAL] duesStats?.paidCount:", duesStats?.paidCount);
   console.log("💳 [CREDENTIAL] duesStats?.totalCount:", duesStats?.totalCount);
   console.log("💳 [CREDENTIAL] duesStats?.percentage:", duesStats?.percentage);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function generate() {
-      if (!qrPayload) {
-        setQrDataUrl(null);
-        return;
-      }
-      const { toDataURL } = await import("qrcode");
-      const dataUrl = await toDataURL(qrPayload, {
-        errorCorrectionLevel: "M",
-        margin: 1,
-        width: compact ? 180 : 220,
-        color: {
-          dark: "#111827",
-          light: "#ffffff00",
-        },
-      });
-      if (!cancelled) {
-        setQrDataUrl(dataUrl);
-      }
-    }
-    void generate();
-    return () => {
-      cancelled = true;
-    };
-  }, [qrPayload, compact]);
 
   const status = useMemo(() => {
     if (!credential) return { label: "Sin datos", tone: "neutral" };
@@ -82,17 +43,6 @@ export function MemberCredentialCard({
     return { label: "Credencial activa", tone: "success" };
   }, [credential]);
 
-  function handleCopy() {
-    if (!code) return;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      void navigator.clipboard.writeText(code);
-      setCopyFeedback("Código copiado");
-      setTimeout(() => setCopyFeedback(null), 2500);
-    } else if (typeof window !== "undefined") {
-      window.prompt("Copiá el código manualmente:", code);
-    }
-  }
-
   return (
     <div className="neo-panel space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -100,20 +50,6 @@ export function MemberCredentialCard({
           <p className="neo-chip">{status.label}</p>
           <h3 className="text-2xl font-semibold font-[var(--font-space)]">{title}</h3>
           <p className="text-sm text-base-muted">{subtitle}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {onRefresh && (
-            <motion.button
-              type="button"
-              className="btn-secondary text-xs uppercase tracking-[0.3em]"
-              onClick={() => onRefresh()}
-              whileTap={{ scale: 0.96 }}
-              whileHover={{ scale: 1.02 }}
-              disabled={isLoading}
-            >
-              Actualizar
-            </motion.button>
-          )}
         </div>
       </div>
 
@@ -130,126 +66,134 @@ export function MemberCredentialCard({
           Aún no hay datos de credencial para este socio.
         </div>
       ) : (
-        <div
-          className={`grid gap-6 ${compact ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_220px]"}`}
-        >
-          <div className="space-y-4">
-            <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Socio</p>
-              <p className="text-lg font-semibold">
-                {credential.member.name ?? credential.member.documentNumber}
-              </p>
-              <p className="text-sm text-base-muted">{credential.member.email}</p>
-            </div>
-
-            <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Inscripción</p>
-              {credential.enrollment ? (
-                <div className="mt-2 space-y-1 text-sm text-base-muted">
-                  <p>
-                    Plan:{" "}
-                    <span className="font-semibold">{credential.enrollment.planName ?? "—"}</span>
-                  </p>
-                  <p>
-                    Fecha de inscripción:{" "}
-                    <span className="font-semibold">
-                      {(() => {
-                        const dateStr = credential.enrollment.startDate;
-                        const [year, month, day] = dateStr.split("-");
-                        return `${day}/${month}/${year}`;
-                      })()}
+        <div className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
+            {/* Información principal del socio */}
+            <div className="space-y-4">
+              <div className="rounded-xl border border-base-border/60 bg-gradient-to-br from-base-secondary/30 to-base-secondary/10 px-5 py-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-accent-primary/10 flex items-center justify-center">
+                    <span className="text-accent-primary font-semibold text-lg">
+                      {credential?.member.name?.charAt(0).toUpperCase() || "S"}
                     </span>
-                  </p>
-                  <p>
-                    Monto:{" "}
-                    <span className="font-semibold">
-                      ${credential.enrollment.monthlyAmount.toLocaleString("es-AR")}
-                    </span>
-                  </p>
-                  <p>
-                    Estado: <span className="font-semibold">{credential.enrollment.status}</span>
-                  </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Socio</p>
+                    <p className="text-lg font-semibold">
+                      {credential?.member.name ?? credential?.member.documentNumber}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <p className="mt-2 text-sm text-base-muted">
-                  Todavía no tiene una inscripción asociada.
-                </p>
-              )}
-            </div>
+                <p className="text-sm text-base-muted">{credential?.member.email}</p>
+              </div>
 
-            {/* Estado Crediticio */}
-            <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                Estado Crediticio
-              </p>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-base-muted">Cuotas pagadas</span>
-                  <span className="font-semibold">{duesStats?.paidCount || 0}/360</span>
-                </div>
-                {/* Barra de progreso */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${duesStats?.percentage || 0}%` }}
-                  />
-                </div>
-                <p className="text-xs text-base-muted text-center">
-                  {duesStats?.percentage || 0}% hacia socio vitalicio
-                </p>
+              <div className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-5 py-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Inscripción</p>
+                {credential?.enrollment ? (
+                  <div className="mt-2 space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-muted">Plan:</span>
+                      <span className="font-semibold">{credential.enrollment.planName ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-muted">Fecha:</span>
+                      <span className="font-semibold">
+                        {(() => {
+                          const dateStr = credential.enrollment.startDate;
+                          const [year, month, day] = dateStr.split("-");
+                          return `${day}/${month}/${year}`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-muted">Monto:</span>
+                      <span className="font-semibold text-accent-primary">
+                        ${credential.enrollment.monthlyAmount.toLocaleString("es-AR")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-muted">Estado:</span>
+                      <span
+                        className={`font-semibold ${
+                          credential.enrollment.status === "ACTIVE"
+                            ? "text-state-active"
+                            : "text-accent-warning"
+                        }`}
+                      >
+                        {credential.enrollment.status === "ACTIVE" ? "Activa" : "Pendiente"}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-base-muted">
+                    Todavía no tiene una inscripción asociada.
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="rounded-xl border border-base-border/60 bg-base-secondary/30 px-5 py-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Código</p>
-              {code ? (
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <code className="rounded bg-base-primary/10 px-2 py-1 text-sm font-mono tracking-widest">
-                    {code}
-                  </code>
-                  <button
-                    type="button"
-                    className="text-xs text-accent-primary underline-offset-2 hover:underline"
-                    onClick={handleCopy}
-                  >
-                    Copiar
-                  </button>
-                  {copyFeedback && (
-                    <span className="text-xs uppercase tracking-widest text-state-active">
-                      {copyFeedback}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <p className="mt-2 text-sm text-base-muted">
-                  Activá la inscripción para generar el código único.
+            {/* Estado y progreso - centrado verticalmente */}
+            <div className="flex justify-center">
+              <div className="rounded-xl border border-base-border/60 bg-gradient-to-br from-blue-500/5 to-blue-600/10 px-5 py-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-base-muted mb-3">
+                  Estado Crediticio
                 </p>
-              )}
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-accent-primary">
+                      {duesStats?.paidCount || 0}
+                    </p>
+                    <p className="text-sm text-base-muted">cuotas pagadas</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-base-muted">Progreso vitalicio:</span>
+                      <span className="font-semibold">{duesStats?.percentage || 0}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${duesStats?.percentage || 0}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-base-muted text-center">
+                      {360 - (duesStats?.paidCount || 0)} cuotas restantes para socio vitalicio
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-base-border/60 bg-white/5 px-4 py-6 text-center">
-            {qrDataUrl ? (
-              <>
-                <Image
-                  src={qrDataUrl}
-                  alt="QR credencial"
-                  width={192}
-                  height={192}
-                  className="h-48 w-48 rounded-lg border border-white/20 bg-white/80 p-3 shadow-lg"
-                  unoptimized
-                />
-                <p className="text-xs text-base-muted">
-                  Mostrá este QR en el control de ingreso. Es único e intransferible.
-                </p>
-              </>
-            ) : (
-              <div className="text-sm text-base-muted">
-                {credential.isReady
-                  ? "QR generado y listo para usar"
-                  : "QR disponible una vez que la inscripción esté activa."}
-              </div>
-            )}
+          {/* Banner de estado */}
+          <div
+            className={`rounded-xl border px-5 py-4 text-center ${
+              status.tone === "success"
+                ? "border-state-active/30 bg-state-active/5 text-state-active"
+                : status.tone === "warning"
+                  ? "border-accent-warning/30 bg-accent-warning/5 text-accent-warning"
+                  : "border-base-border/30 bg-base-secondary/10 text-base-muted"
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  status.tone === "success"
+                    ? "bg-state-active"
+                    : status.tone === "warning"
+                      ? "bg-accent-warning"
+                      : "bg-base-border"
+                }`}
+              />
+              <span className="font-semibold">{status.label}</span>
+            </div>
+            <p className="text-sm mt-1 opacity-80">
+              {status.tone === "success"
+                ? "Tu credencial está activa y lista para usar"
+                : status.tone === "warning"
+                  ? "Completá los pasos necesarios para activar tu credencial"
+                  : "Esperando datos para generar tu credencial"}
+            </p>
           </div>
         </div>
       )}

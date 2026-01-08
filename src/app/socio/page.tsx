@@ -78,10 +78,8 @@ export default function SocioPage() {
               credential={credentialQuery.data}
               isLoading={credentialQuery.isLoading || credentialQuery.isRefetching}
               error={credentialQuery.error instanceof Error ? credentialQuery.error.message : null}
-              onRefresh={() => credentialQuery.refetch()}
               title="Tu credencial de socio"
               subtitle="Necesitás una inscripción activa y el primer pago registrado. El código se actualiza de forma automática."
-              compact
             />
           </>
         )}

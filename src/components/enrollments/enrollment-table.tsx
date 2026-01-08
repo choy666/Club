@@ -505,7 +505,6 @@ export function EnrollmentTable() {
             credential={credentialQuery.data}
             isLoading={credentialQuery.isLoading || credentialQuery.isFetching}
             error={credentialQuery.error instanceof Error ? credentialQuery.error.message : null}
-            onRefresh={() => credentialQuery.refetch()}
             subtitle={`Socio ${credentialTarget.member.documentNumber}`}
           />
         )}

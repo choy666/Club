@@ -410,10 +410,17 @@ h4 {
 
 .neo-modal-content {
   padding: 1.5rem 2rem 2rem 2rem;
-  max-height: calc(90vh - 6rem);
+  max-height: calc(85vh - 6rem);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.neo-modal-content.scrolling {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 .neo-modal-content::-webkit-scrollbar {
@@ -427,9 +434,14 @@ h4 {
 .neo-modal-content::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
+  transition: background 0.2s ease;
 }
 
 .neo-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.neo-modal-content.scrolling::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 }
 
@@ -439,6 +451,8 @@ h4 {
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 1.25rem 1.5rem;
   margin: 0;
+  transform: translateZ(0);
+  will-change: auto;
 }
 
 .neo-modal-glass .grid {
@@ -451,6 +465,18 @@ h4 {
 
 .neo-modal-glass .space-y-6 > * + * {
   margin-top: 1.5rem;
+}
+
+/* Optimización de rendimiento para elementos animados */
+.neo-modal-glass * {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Contenedor principal optimizado */
+.neo-modal-glass {
+  transform: translateZ(0);
+  contain: layout style paint;
 }
 
 /* Mejoras para formularios en modales */
@@ -466,23 +492,103 @@ h4 {
   box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
 }
 
-/* Mejoras para botones en modales */
-.neo-modal-glass .btn-primary,
-.neo-modal-glass .btn-secondary {
-  padding: 0.75rem 1.75rem;
+/* Componentes optimizados para modales */
+.optimized-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  transform: translateZ(0);
+}
+
+.optimized-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.optimized-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.optimized-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.optimized-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.optimized-scroll-area.scrolling::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.modal-section {
+  contain: layout style paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.modal-section-header {
+  margin-bottom: 1rem;
+}
+
+.modal-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--base-foreground);
+  margin: 0 0 0.5rem 0;
+}
+
+.modal-section-description {
   font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: all 0.2s ease;
+  color: var(--base-muted);
+  margin: 0;
 }
 
-.neo-modal-glass .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(248, 113, 113, 0.3);
+.modal-section-content {
+  transform: translateZ(0);
 }
 
-.neo-modal-glass .btn-secondary:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent-primary);
-  background: rgba(248, 113, 113, 0.08);
+.modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.modal-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top: 2px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.modal-loading-text {
+  font-size: 0.875rem;
+  color: var(--base-muted);
+}
+
+/* Optimización de rendimiento para animaciones */
+@media (prefers-reduced-motion: reduce) {
+  .modal-loading-spinner {
+    animation: none;
+  }
+  
+  .optimized-scroll-area {
+    scroll-behavior: auto;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

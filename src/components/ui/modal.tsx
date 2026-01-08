@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -22,48 +22,97 @@ const maxWidthClasses = {
 
 export function Modal({ title, open, onClose, children, maxWidth = "xl" }: ModalProps) {
   const [mounted] = useState(() => typeof window !== "undefined");
+  const modalRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleBackdropClick = useCallback((event: React.MouseEvent) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleScroll = useCallback(() => {
+    setIsScrolling(true);
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
+    
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+    const contentElement = contentRef.current;
+    if (contentElement) {
+      contentElement.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (contentElement) {
+        contentElement.removeEventListener("scroll", handleScroll);
+      }
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [open, handleKeyDown, handleScroll]);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   if (!mounted || !open) {
     return null;
   }
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop con animación */}
+        {/* Backdrop optimizado */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          onClick={onClose}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+          onClick={handleBackdropClick}
+          style={{ willChange: "opacity" }}
         />
 
-        {/* Modal Container */}
+        {/* Modal Container optimizado */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
+          ref={modalRef}
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 20 }}
+          exit={{ opacity: 0, scale: 0.98, y: 10 }}
           transition={{
-            duration: 0.3,
-            ease: [0.25, 0.46, 0.45, 0.94],
-            scale: { type: "spring", stiffness: 300, damping: 25 },
+            duration: 0.2,
+            ease: "easeOut",
           }}
-          className={`relative w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] overflow-hidden`}
+          className={`relative w-full ${maxWidthClasses[maxWidth]} max-h-[85vh] overflow-hidden`}
+          style={{ willChange: "transform, opacity" }}
         >
-          {/* Glass Card con efectos mejorados */}
+          {/* Glass Card optimizado */}
           <div className="neo-modal-glass">
             {/* Header optimizado */}
             <header className="neo-modal-header">
@@ -71,7 +120,12 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
                 <div className="w-1 h-6 rounded-full bg-gradient-to-b from-accent-primary to-accent-primary/60" />
                 <h3 className="neo-modal-title">{title}</h3>
               </div>
-              <button onClick={onClose} aria-label="Cerrar modal" className="neo-modal-close">
+              <button 
+                onClick={onClose} 
+                aria-label="Cerrar modal" 
+                className="neo-modal-close"
+                type="button"
+              >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path
                     strokeLinecap="round"
@@ -84,12 +138,21 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
             </header>
 
             {/* Content con scroll optimizado */}
-            <div className="neo-modal-content">{children}</div>
+            <div 
+              ref={contentRef}
+              className={`neo-modal-content ${isScrolling ? 'scrolling' : ''}`}
+              style={{ 
+                scrollBehavior: 'smooth',
+                overflowY: 'auto',
+                overscrollBehavior: 'contain'
+              }}
+            >
+              {children}
+            </div>
           </div>
 
-          {/* Efectos decorativos */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/5 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+          {/* Efectos decorativos optimizados */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/3 via-transparent to-transparent pointer-events-none" />
         </motion.div>
       </div>
     </AnimatePresence>,

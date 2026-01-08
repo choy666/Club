@@ -35,38 +35,6 @@ export type MemberSummary = {
   amountPaid: number;
 };
 
-const MEMBER_STATUS_STYLES = {
-  healthy: {
-    label: "Al día",
-    className: "text-state-active bg-state-active/10 border-state-active/40",
-  },
-  warning: {
-    label: "Con pendientes",
-    className: "text-amber-500 bg-amber-500/10 border-amber-500/40",
-  },
-  frozen: {
-    label: "Congelado",
-    className: "text-base-muted bg-base-muted/10 border-base-muted/40",
-  },
-  critical: {
-    label: "En mora",
-    className: "text-accent-critical bg-accent-critical/10 border-accent-critical/40",
-  },
-};
-
-function getMemberFinancialStatus(summary: MemberSummary) {
-  if (summary.overdueCount > 0) {
-    return MEMBER_STATUS_STYLES.critical;
-  }
-  if (summary.pendingCount > 0) {
-    return MEMBER_STATUS_STYLES.warning;
-  }
-  if (summary.frozenCount > 0) {
-    return MEMBER_STATUS_STYLES.frozen;
-  }
-  return MEMBER_STATUS_STYLES.healthy;
-}
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -161,7 +129,7 @@ export function DueTable() {
         <tbody>
           {Array.from({ length: 4 }).map((_, index) => (
             <tr key={`summary-skeleton-${index}`} className="border-b border-base-border/60">
-              <td colSpan={6} className="py-6 text-center text-base-muted animate-pulse">
+              <td colSpan={5} className="py-6 text-center text-base-muted animate-pulse">
                 Cargando seguimiento de socios...
               </td>
             </tr>
@@ -174,7 +142,7 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={6} className="py-6 text-center text-accent-critical">
+            <td colSpan={5} className="py-6 text-center text-accent-critical">
               No se pudieron cargar las cuotas.
             </td>
           </tr>
@@ -186,7 +154,7 @@ export function DueTable() {
       return (
         <tbody>
           <tr>
-            <td colSpan={6} className="py-6 text-center text-base-muted">
+            <td colSpan={5} className="py-6 text-center text-base-muted">
               No hay socios con cuotas para los filtros actuales.
             </td>
           </tr>
@@ -197,7 +165,6 @@ export function DueTable() {
     return (
       <tbody>
         {memberSummaries.map((summary) => {
-          const statusConfig = getMemberFinancialStatus(summary);
           const pendingTotal = summary.pendingCount + summary.overdueCount + summary.frozenCount;
           return (
             <tr
@@ -218,13 +185,6 @@ export function DueTable() {
               <td className="px-6 py-4 text-sm">
                 <span className="font-semibold">{pendingTotal}</span>
                 <span className="text-xs text-base-muted"> cuotas</span>
-              </td>
-              <td className="px-6 py-4">
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
-                >
-                  {statusConfig.label}
-                </span>
               </td>
               <td className="px-6 py-4">
                 <div className="flex gap-2">
@@ -294,7 +254,6 @@ export function DueTable() {
     return (
       <div className="space-y-4">
         {memberSummaries.map((summary) => {
-          const statusConfig = getMemberFinancialStatus(summary);
           const pendingTotal = summary.pendingCount + summary.overdueCount + summary.frozenCount;
           return (
             <div
@@ -331,13 +290,6 @@ export function DueTable() {
                     </p>
                     <p className="text-lg font-semibold">{formatCurrency(summary.amountPaid)}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest ${statusConfig.className}`}
-                  >
-                    {statusConfig.label}
-                  </span>
                 </div>
                 <button
                   type="button"
@@ -424,9 +376,6 @@ export function DueTable() {
                   Cuotas / Pendientes
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
-                  Estado
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest text-base-muted">
                   Acciones
                 </th>
               </tr>
@@ -494,9 +443,22 @@ export function DueTable() {
                   <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
                     Historial de pagos
                   </p>
-                  <span className="text-xs text-base-muted">
-                    {paymentsData?.data?.length || 0} registro(s)
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-base-muted">
+                      {paymentsData?.data?.length || 0} registro(s)
+                    </span>
+                    {paymentsData?.data && paymentsData.data.length > 1 && (
+                      <button
+                        onClick={() => {
+                          // Navegar a página completa de historial
+                          window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
+                        }}
+                        className="text-xs text-accent-primary hover:underline font-medium"
+                      >
+                        Ver todos →
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Debug console logs */}
@@ -518,31 +480,16 @@ export function DueTable() {
                 ) : !paymentsData?.data || paymentsData.data.length === 0 ? (
                   <p className="text-sm text-base-muted">Sin pagos registrados todavía.</p>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {paymentsData.data.map(
-                      (
-                        transaction: {
-                          transactionId: string;
-                          paidAt: string;
-                          totalAmount: number;
-                          duesCount: number;
-                          method: string;
-                          reference: string | null;
-                          notes: string | null;
-                          dues: Array<{
-                            dueId: string;
-                            dueAmount: number;
-                            dueDate: string;
-                            dueStatus: string;
-                          }>;
-                        },
-                        index: number
-                      ) => (
+                  <div className="space-y-3">
+                    {/* Mostrar solo el último pago */}
+                    {(() => {
+                      const lastPayment = paymentsData.data[0]; // El más reciente está primero
+                      return (
                         <motion.div
-                          key={`transaction-${transaction.transactionId}-${index}`}
+                          key={`last-payment-${lastPayment.transactionId}`}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          transition={{ duration: 0.3 }}
                           className="rounded-xl border border-base-border/60 bg-gradient-to-r from-base-secondary/20 to-base-secondary/10 p-4"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -550,7 +497,7 @@ export function DueTable() {
                               <div className="flex items-center gap-2 mb-2">
                                 <div className="h-2 w-2 rounded-full bg-accent-primary"></div>
                                 <p className="font-semibold text-base-foreground">
-                                  {new Date(transaction.paidAt).toLocaleDateString("es-AR", {
+                                  {new Date(lastPayment.paidAt).toLocaleDateString("es-AR", {
                                     day: "2-digit",
                                     month: "2-digit",
                                     year: "numeric",
@@ -558,6 +505,9 @@ export function DueTable() {
                                     minute: "2-digit",
                                   })}
                                 </p>
+                                <span className="text-xs text-accent-primary font-medium">
+                                  Último pago
+                                </span>
                               </div>
                               <div className="space-y-1">
                                 <div className="flex items-center gap-4">
@@ -565,8 +515,8 @@ export function DueTable() {
                                     Cuotas pagadas:
                                   </span>
                                   <span className="text-sm font-medium text-base-foreground">
-                                    {transaction.duesCount} cuota
-                                    {transaction.duesCount !== 1 ? "s" : ""}
+                                    {lastPayment.duesCount} cuota
+                                    {lastPayment.duesCount !== 1 ? "s" : ""}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -574,7 +524,7 @@ export function DueTable() {
                                     Período:
                                   </span>
                                   <span className="text-sm font-medium text-base-foreground">
-                                    {new Date(transaction.dues[0]?.dueDate).toLocaleDateString(
+                                    {new Date(lastPayment.dues[0]?.dueDate).toLocaleDateString(
                                       "es-AR",
                                       {
                                         day: "2-digit",
@@ -584,7 +534,7 @@ export function DueTable() {
                                     )}{" "}
                                     -{" "}
                                     {new Date(
-                                      transaction.dues[transaction.dues.length - 1]?.dueDate
+                                      lastPayment.dues[lastPayment.dues.length - 1]?.dueDate
                                     ).toLocaleDateString("es-AR", {
                                       day: "2-digit",
                                       month: "2-digit",
@@ -592,13 +542,13 @@ export function DueTable() {
                                     })}
                                   </span>
                                 </div>
-                                {transaction.reference && (
+                                {lastPayment.reference && (
                                   <div className="flex items-center gap-4">
                                     <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
                                       Referencia:
                                     </span>
                                     <span className="text-sm text-base-foreground">
-                                      {transaction.reference}
+                                      {lastPayment.reference}
                                     </span>
                                   </div>
                                 )}
@@ -610,26 +560,40 @@ export function DueTable() {
                                   Importe total
                                 </p>
                                 <p className="text-xl font-bold text-accent-primary">
-                                  {formatCurrency(transaction.totalAmount)}
+                                  {formatCurrency(lastPayment.totalAmount)}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
                                 <span className="text-xs font-medium text-accent-primary">
-                                  {transaction.duesCount} cuota
-                                  {transaction.duesCount !== 1 ? "s" : ""}
+                                  {lastPayment.duesCount} cuota
+                                  {lastPayment.duesCount !== 1 ? "s" : ""}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          {transaction.notes && (
+                          {lastPayment.notes && (
                             <div className="mt-3 pt-3 border-t border-base-border/30">
                               <p className="text-xs text-base-muted">
-                                <span className="font-medium">Nota:</span> {transaction.notes}
+                                <span className="font-medium">Nota:</span> {lastPayment.notes}
                               </p>
                             </div>
                           )}
                         </motion.div>
-                      )
+                      );
+                    })()}
+                    
+                    {/* Indicador de pagos adicionales */}
+                    {paymentsData.data.length > 1 && (
+                      <div className="text-center py-3">
+                        <button
+                          onClick={() => {
+                            window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
+                          }}
+                          className="text-sm text-accent-primary hover:underline font-medium"
+                        >
+                          Ver {paymentsData.data.length - 1} pago{paymentsData.data.length - 1 !== 1 ? "s" : ""} anterior{paymentsData.data.length - 1 !== 1 ? "es" : ""} →
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

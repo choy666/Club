@@ -17,11 +17,11 @@ export const OptimizedScrollArea = forwardRef<HTMLDivElement, OptimizedScrollAre
 
     const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
       setIsScrolling(true);
-      
+
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      
+
       scrollTimeoutRef.current = setTimeout(() => {
         setIsScrolling(false);
       }, 150);
@@ -42,14 +42,14 @@ export const OptimizedScrollArea = forwardRef<HTMLDivElement, OptimizedScrollAre
     return (
       <div
         ref={scrollRef}
-        className={`optimized-scroll-area ${isScrolling ? 'scrolling' : ''} ${className}`}
+        className={`optimized-scroll-area ${isScrolling ? "scrolling" : ""} ${className}`}
         onScroll={handleScroll}
         style={{
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          overscrollBehavior: 'contain',
-          scrollBehavior: 'smooth',
-          WebkitOverflowScrolling: 'touch',
+          overflowY: "auto",
+          overflowX: "hidden",
+          overscrollBehavior: "contain",
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
         }}
         {...props}
       >

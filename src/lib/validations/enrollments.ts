@@ -81,7 +81,7 @@ export const paySequentialDuesSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(60, "No se pueden pagar más de 60 cuotas en una sola operación."),
+    .max(360, "No se pueden pagar más de 360 cuotas en total."),
   dueAmount: z.coerce.number().min(1, "El monto de cuota debe ser mayor a 0"),
 });
 

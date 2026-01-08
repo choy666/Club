@@ -33,11 +33,17 @@ export default function AdminMembersPage() {
     const active = summary?.activeMembers ?? 0;
     const inactive = summary?.inactiveMembers ?? 0;
     const pending = summary?.pendingMembers ?? 0;
+    const vitalicio = summary?.vitalicioMembers ?? 0;
     return [
       {
         label: "Socios activos",
         value: active,
         helper: active ? "Con acceso al club" : "Sin actividad",
+      },
+      {
+        label: "Socios vitalicios",
+        value: vitalicio,
+        helper: vitalicio ? "Cuotas completadas" : "Sin vitalicios",
       },
       {
         label: "Socios inactivos",
@@ -50,7 +56,12 @@ export default function AdminMembersPage() {
         helper: "Faltan inscribir",
       },
     ];
-  }, [summary?.activeMembers, summary?.inactiveMembers, summary?.pendingMembers]);
+  }, [
+    summary?.activeMembers,
+    summary?.inactiveMembers,
+    summary?.pendingMembers,
+    summary?.vitalicioMembers,
+  ]);
 
   function closeModal() {
     setModalMode(null);
@@ -140,7 +151,7 @@ export default function AdminMembersPage() {
                 </button>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {summaryMetrics.map((metric) => (
                 <div
                   key={metric.label}

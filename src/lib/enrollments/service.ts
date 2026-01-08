@@ -529,6 +529,32 @@ export const paySequentialDues = withPerformanceMeasurement(
       console.log("💳 [SERVICE] Iniciando paySequentialDues");
       console.log("📊 [SERVICE] input:", input);
 
+      // Validar límite de 360 cuotas totales para el socio
+      const currentPaidDues = await db
+        .select({ count: count() })
+        .from(dues)
+        .where(and(eq(dues.memberId, input.memberId), eq(dues.status, "PAID")));
+
+      const totalDuesAfterPayment = currentPaidDues[0].count + input.numberOfDues;
+      if (totalDuesAfterPayment > 360) {
+        throw new AppError(
+          `No se pueden superar las 360 cuotas totales. El socio tiene ${currentPaidDues[0].count} cuotas pagadas y está intentando pagar ${input.numberOfDues} más. Total sería ${totalDuesAfterPayment}.`
+        );
+      }
+
+      // Validar que el socio tenga una inscripción activa
+      const activeEnrollment = await db
+        .select()
+        .from(enrollments)
+        .where(and(eq(enrollments.memberId, input.memberId), eq(enrollments.status, "ACTIVE")))
+        .limit(1);
+
+      if (activeEnrollment.length === 0) {
+        throw new AppError(
+          "No se pueden cobrar cuotas porque la inscripción del socio está cancelada. Para poder cobrar cuotas, debe activar al socio previamente."
+        );
+      }
+
       // Obtener las cuotas pendientes ordenadas por fecha (ascendente)
       const pendingDues = await db
         .select()
@@ -557,35 +583,32 @@ export const paySequentialDues = withPerformanceMeasurement(
       console.log("💰 [SERVICE] Monto total del pago:", totalAmount);
       console.log("🔄 [SERVICE] Actualizando cuotas a pagadas...");
 
-      // Actualizar cada cuota a pagada con el nuevo monto y crear registro de pago
-      for (const due of pendingDues) {
-        console.log("🔄 [SERVICE] Actualizando cuota y creando pago:", due.id);
-
-        // Actualizar estado de la cuota
-        await db
-          .update(dues)
-          .set({
-            status: "PAID",
-            amount: input.dueAmount, // Actualizar el monto de la cuota
-            paidAmount: input.dueAmount, // Usar el monto proporcionado
-            statusChangedAt: sql`now()`,
-            updatedAt: sql`now()`,
-          })
-          .where(eq(dues.id, due.id));
-
-        // Crear registro de pago
-        const paymentValues = {
-          memberId: input.memberId,
-          dueId: due.id,
+      // Implementar batch processing para optimizar rendimiento (sin transacciones para Neon HTTP)
+      // Actualizar todas las cuotas en una sola operación
+      const dueIds = pendingDues.map((due) => due.id);
+      await db
+        .update(dues)
+        .set({
+          status: "PAID",
           amount: input.dueAmount,
-          method: "INTERNAL",
-          reference: null,
-          notes: `Pago de ${pendingDues.length} cuota(s)`,
-          paidAt: new Date(),
-        };
+          paidAmount: input.dueAmount,
+          statusChangedAt: sql`now()`,
+          updatedAt: sql`now()`,
+        })
+        .where(inArray(dues.id, dueIds));
 
-        await db.insert(payments).values(paymentValues);
-      }
+      // Insertar todos los pagos en una sola operación
+      const paymentRecords = pendingDues.map((due) => ({
+        memberId: input.memberId,
+        dueId: due.id,
+        amount: input.dueAmount,
+        method: "INTERNAL",
+        reference: null,
+        notes: `Pago de ${pendingDues.length} cuota(s)`,
+        paidAt: new Date(),
+      }));
+
+      await db.insert(payments).values(paymentRecords);
 
       console.log("✅ [SERVICE] Cuotas y pagos creados correctamente");
       console.log("🔍 [SERVICE] Verificando pagos creados...");

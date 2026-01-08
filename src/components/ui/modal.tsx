@@ -27,17 +27,23 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      onClose();
-    }
-  }, [onClose]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
-  const handleBackdropClick = useCallback((event: React.MouseEvent) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  }, [onClose]);
+  const handleBackdropClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (event.target === event.currentTarget) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
   const handleScroll = useCallback(() => {
     setIsScrolling(true);
@@ -51,13 +57,13 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
 
   useEffect(() => {
     if (!open) return;
-    
+
     window.addEventListener("keydown", handleKeyDown);
     const contentElement = contentRef.current;
     if (contentElement) {
       contentElement.addEventListener("scroll", handleScroll, { passive: true });
     }
-    
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       if (contentElement) {
@@ -75,7 +81,7 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
     } else {
       document.body.style.overflow = "";
     }
-    
+
     return () => {
       document.body.style.overflow = "";
     };
@@ -120,9 +126,9 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
                 <div className="w-1 h-6 rounded-full bg-gradient-to-b from-accent-primary to-accent-primary/60" />
                 <h3 className="neo-modal-title">{title}</h3>
               </div>
-              <button 
-                onClick={onClose} 
-                aria-label="Cerrar modal" 
+              <button
+                onClick={onClose}
+                aria-label="Cerrar modal"
                 className="neo-modal-close"
                 type="button"
               >
@@ -138,13 +144,13 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
             </header>
 
             {/* Content con scroll optimizado */}
-            <div 
+            <div
               ref={contentRef}
-              className={`neo-modal-content ${isScrolling ? 'scrolling' : ''}`}
-              style={{ 
-                scrollBehavior: 'smooth',
-                overflowY: 'auto',
-                overscrollBehavior: 'contain'
+              className={`neo-modal-content ${isScrolling ? "scrolling" : ""}`}
+              style={{
+                scrollBehavior: "smooth",
+                overflowY: "auto",
+                overscrollBehavior: "contain",
               }}
             >
               {children}

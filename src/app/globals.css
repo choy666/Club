@@ -567,8 +567,12 @@ h4 {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .modal-loading-text {
@@ -581,11 +585,11 @@ h4 {
   .modal-loading-spinner {
     animation: none;
   }
-  
+
   .optimized-scroll-area {
     scroll-behavior: auto;
   }
-  
+
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

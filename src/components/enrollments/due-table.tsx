@@ -581,7 +581,7 @@ export function DueTable() {
                         </motion.div>
                       );
                     })()}
-                    
+
                     {/* Indicador de pagos adicionales */}
                     {paymentsData.data.length > 1 && (
                       <div className="text-center py-3">
@@ -591,7 +591,9 @@ export function DueTable() {
                           }}
                           className="text-sm text-accent-primary hover:underline font-medium"
                         >
-                          Ver {paymentsData.data.length - 1} pago{paymentsData.data.length - 1 !== 1 ? "s" : ""} anterior{paymentsData.data.length - 1 !== 1 ? "es" : ""} →
+                          Ver {paymentsData.data.length - 1} pago
+                          {paymentsData.data.length - 1 !== 1 ? "s" : ""} anterior
+                          {paymentsData.data.length - 1 !== 1 ? "es" : ""} →
                         </button>
                       </div>
                     )}

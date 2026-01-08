@@ -8,11 +8,12 @@ import { formatDateOnly } from "@/lib/enrollments/schedule";
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const today = formatDateOnly(new Date());
 
-  const [activeRow, inactiveRow, pendingRow, pendingDuesRow, enrollmentsTodayRow] =
+  const [activeRow, inactiveRow, pendingRow, vitalicioRow, pendingDuesRow, enrollmentsTodayRow] =
     await Promise.all([
       db.select({ value: count() }).from(members).where(eq(members.status, "ACTIVE")),
       db.select({ value: count() }).from(members).where(eq(members.status, "INACTIVE")),
       db.select({ value: count() }).from(members).where(eq(members.status, "PENDING")),
+      db.select({ value: count() }).from(members).where(eq(members.status, "VITALICIO")),
       db
         .select({ value: sql<number>`coalesce(sum(${dues.amount}), 0)` })
         .from(dues)
@@ -24,6 +25,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     activeMembers: Number(activeRow[0]?.value ?? 0),
     inactiveMembers: Number(inactiveRow[0]?.value ?? 0),
     pendingMembers: Number(pendingRow[0]?.value ?? 0),
+    vitalicioMembers: Number(vitalicioRow[0]?.value ?? 0),
     pendingDuesAmount: Number(pendingDuesRow[0]?.value ?? 0),
     enrollmentsToday: Number(enrollmentsTodayRow[0]?.value ?? 0),
   };

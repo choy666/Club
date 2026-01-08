@@ -157,7 +157,9 @@ export function MemberCredentialCard({
                       />
                     </div>
                     <p className="text-xs text-base-muted text-center">
-                      {360 - (duesStats?.paidCount || 0)} cuotas restantes para socio vitalicio
+                      {(duesStats?.paidCount || 0) >= 360
+                        ? "Socio Vitalicio 🥇"
+                        : `${360 - (duesStats?.paidCount || 0)} cuotas restantes para socio vitalicio`}
                     </p>
                   </div>
                 </div>

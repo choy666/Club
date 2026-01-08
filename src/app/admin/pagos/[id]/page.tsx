@@ -34,14 +34,16 @@ export default function PaymentHistoryPage() {
 
   const memberInfo = useMemo(() => {
     if (!memberSummaries || !memberId) return null;
-    
-    const member = memberSummaries.find((summary: { member: { id: string } }) => summary.member.id === memberId);
+
+    const member = memberSummaries.find(
+      (summary: { member: { id: string } }) => summary.member.id === memberId
+    );
     if (!member) return null;
-    
+
     return {
       name: member.member.name || "Sin nombre",
       documentNumber: member.member.documentNumber,
-      email: member.member.email || "Sin email"
+      email: member.member.email || "Sin email",
     };
   }, [memberSummaries, memberId]);
 
@@ -87,7 +89,7 @@ export default function PaymentHistoryPage() {
           >
             ← Volver al seguimiento
           </button>
-          
+
           <div className="neo-panel p-6">
             <h1 className="text-3xl font-bold text-base-foreground mb-2">
               Historial Completo de Pagos
@@ -112,15 +114,16 @@ export default function PaymentHistoryPage() {
             </p>
           </div>
           <div className="neo-panel p-6 text-center">
-            <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">
-              Total abonado
-            </p>
+            <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">Total abonado</p>
             <p className="text-3xl font-bold text-accent-primary">
               {new Intl.NumberFormat("es-AR", {
                 style: "currency",
-                currency: "ARS"
+                currency: "ARS",
               }).format(
-                paymentsData?.data?.reduce((sum: number, payment: PaymentTransaction) => sum + payment.totalAmount, 0) || 0
+                paymentsData?.data?.reduce(
+                  (sum: number, payment: PaymentTransaction) => sum + payment.totalAmount,
+                  0
+                ) || 0
               )}
             </p>
           </div>
@@ -129,7 +132,10 @@ export default function PaymentHistoryPage() {
               Cuotas pagadas
             </p>
             <p className="text-3xl font-bold text-base-foreground">
-              {paymentsData?.data?.reduce((sum, payment: PaymentTransaction) => sum + payment.duesCount, 0) || 0}
+              {paymentsData?.data?.reduce(
+                (sum, payment: PaymentTransaction) => sum + payment.duesCount,
+                0
+              ) || 0}
             </p>
           </div>
         </div>
@@ -171,7 +177,7 @@ export default function PaymentHistoryPage() {
                               </span>
                             </span>
                           </div>
-                          
+
                           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="flex items-center gap-2">
                               <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
@@ -210,7 +216,9 @@ export default function PaymentHistoryPage() {
                                 day: "2-digit",
                                 month: "2-digit",
                                 year: "numeric",
-                              })} - {new Date(
+                              })}{" "}
+                              -{" "}
+                              {new Date(
                                 payment.dues[payment.dues.length - 1]?.dueDate
                               ).toLocaleDateString("es-AR", {
                                 day: "2-digit",
@@ -228,7 +236,7 @@ export default function PaymentHistoryPage() {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="flex flex-col items-end gap-3">
                           <div className="text-right">
                             <p className="text-xs uppercase tracking-[0.2em] text-base-muted mb-1">
@@ -237,7 +245,7 @@ export default function PaymentHistoryPage() {
                             <p className="text-2xl font-bold text-accent-primary">
                               {new Intl.NumberFormat("es-AR", {
                                 style: "currency",
-                                currency: "ARS"
+                                currency: "ARS",
                               }).format(payment.totalAmount)}
                             </p>
                           </div>

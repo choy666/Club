@@ -30,8 +30,8 @@ export function SequentialPaymentPanel({
     const paidDues = memberSummary.paidCount;
     const pendingDues = memberSummary.pendingCount + memberSummary.overdueCount;
 
-    // Máximo de cuotas que se pueden pagar (mínimo entre pendientes y 60)
-    const maxPayableDues = Math.min(pendingDues, 60);
+    // Máximo de cuotas que se pueden pagar (basado en 360 cuotas totales)
+    const maxPayableDues = Math.min(pendingDues, 360 - paidDues);
 
     // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas + cuotas a pagar)
     const monthsCoveredAfterPayment = paidDues + numberOfDues + 1;
@@ -111,6 +111,13 @@ export function SequentialPaymentPanel({
       onClose();
     } catch (error) {
       console.error("❌ [PAGO] Error al pagar cuotas:", error);
+
+      // Mostrar mensaje de error específico al usuario
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Error desconocido al procesar el pago. Por favor, intente nuevamente.");
+      }
     }
   };
 
@@ -197,6 +204,12 @@ export function SequentialPaymentPanel({
                 />
               </svg>
               Máximo disponible: {stats.maxPayableDues} cuotas
+              {stats.maxPayableDues < 5 && (
+                <span className="text-amber-500 font-medium">
+                  (Quedan {360 - memberSummary.paidCount - stats.maxPayableDues} cuotas disponibles
+                  totales)
+                </span>
+              )}
             </p>
           </div>
 

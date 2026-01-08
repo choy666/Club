@@ -299,13 +299,16 @@ export function SequentialPaymentPanel({
         <motion.button
           type="button"
           onClick={handlePay}
-          className="flex-1 px-6 py-3 rounded-lg bg-gradient-to-r from-accent-primary to-accent-primary/90 text-white font-medium shadow-lg shadow-accent-primary/25 hover:shadow-xl hover:shadow-accent-primary/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg relative overflow-hidden"
+          className="group flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 text-white font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg relative overflow-hidden border border-emerald-400/20"
           disabled={
             numberOfDues <= 0 || numberOfDues > stats.maxPayableDues || payMutation.isPending
           }
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: 1.02 }}
         >
+          {/* Efecto de brillo sutil */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+
           {payMutation.isPending ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -331,11 +334,11 @@ export function SequentialPaymentPanel({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
                 ></path>
               </svg>
-              Pagar {formatCurrency(stats.totalAmount)}
+              <span className="font-bold">Pagar {formatCurrency(stats.totalAmount)}</span>
             </span>
           )}
         </motion.button>

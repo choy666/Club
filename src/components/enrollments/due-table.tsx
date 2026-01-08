@@ -441,6 +441,7 @@ export function DueTable() {
         title="Seguimiento de socio"
         open={Boolean(selectedSummary)}
         onClose={() => setSelectedSummary(null)}
+        maxWidth="2xl"
       >
         {selectedSummary && (
           <div className="space-y-6">
@@ -638,7 +639,12 @@ export function DueTable() {
         )}
       </Modal>
 
-      <Modal title="Pago manual" open={Boolean(manualPaymentDue)} onClose={closeManualPayment}>
+      <Modal
+        title="Pago manual"
+        open={Boolean(manualPaymentDue)}
+        onClose={closeManualPayment}
+        maxWidth="lg"
+      >
         {manualPaymentDue && (
           <div className="space-y-6">
             <div className="neo-panel border border-base-border/70 px-5 py-4 text-sm">
@@ -778,6 +784,7 @@ export function DueTable() {
           open={!!paymentPanelMember}
           onClose={() => setPaymentPanelMember(null)}
           title="Pago de Cuotas"
+          maxWidth="2xl"
         >
           <SequentialPaymentPanel
             memberId={paymentPanelMember.id}

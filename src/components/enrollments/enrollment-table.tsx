@@ -476,6 +476,7 @@ export function EnrollmentTable() {
         title={modalMode === "create" ? "Nueva inscripción" : "Editar inscripción"}
         open={modalMode !== null}
         onClose={closeModal}
+        maxWidth="2xl"
       >
         {modalMode === "create" && (
           <EnrollmentCreateForm
@@ -497,6 +498,7 @@ export function EnrollmentTable() {
         title="Credencial digital"
         open={credentialTarget !== null}
         onClose={closeCredentialModal}
+        maxWidth="lg"
       >
         {credentialTarget && (
           <MemberCredentialCard

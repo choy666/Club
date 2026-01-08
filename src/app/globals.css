@@ -354,3 +354,135 @@ h4 {
   border: 1px solid var(--base-border);
   color: var(--base-foreground);
 }
+
+/* Estilos para Modal unificado */
+.neo-modal-glass {
+  position: relative;
+  background: linear-gradient(145deg, rgba(15, 17, 23, 0.95), rgba(7, 8, 12, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+  overflow: hidden;
+}
+
+.neo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+}
+
+.neo-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: var(--font-space), "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--base-foreground);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.neo-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--base-muted);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.neo-modal-close:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.2);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.neo-modal-content {
+  padding: 1.5rem 2rem 2rem 2rem;
+  max-height: calc(90vh - 6rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.neo-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.neo-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.neo-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.neo-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Optimizaciones para contenido dentro de modales */
+.neo-modal-glass .neo-panel {
+  background: rgba(14, 16, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.25rem 1.5rem;
+  margin: 0;
+}
+
+.neo-modal-glass .grid {
+  gap: 1rem;
+}
+
+.neo-modal-glass .space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.neo-modal-glass .space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Mejoras para formularios en modales */
+.neo-modal-glass .input-minimal {
+  background: rgba(10, 12, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.875rem 1.125rem;
+  font-size: 0.9rem;
+}
+
+.neo-modal-glass .input-minimal:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
+}
+
+/* Mejoras para botones en modales */
+.neo-modal-glass .btn-primary,
+.neo-modal-glass .btn-secondary {
+  padding: 0.75rem 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.neo-modal-glass .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(248, 113, 113, 0.3);
+}
+
+.neo-modal-glass .btn-secondary:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-primary);
+  background: rgba(248, 113, 113, 0.08);
+}

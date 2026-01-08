@@ -30,7 +30,7 @@ export function MemberProgressSummary({ memberSummary }: MemberProgressSummaryPr
     <div className="flex flex-col items-center space-y-4">
       <DuesProgress paid={paidDues} total={totalDues} size={140} />
       <div className="text-center">
-        <p className="text-sm text-gray-600">{percentage}% hacia estatus vitalicio</p>
+        <p className="text-sm text-gray-600">{percentage}% hacia socio vitalicio</p>
       </div>
     </div>
   );

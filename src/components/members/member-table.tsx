@@ -22,13 +22,28 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
 
   const handleDelete = useCallback(
     (memberId: string) => {
-      const confirmed = window.confirm(
-        "¿Seguro que deseas eliminar este socio? Esta acción no se puede deshacer."
-      );
+      const member = data?.data?.find((m) => m.id === memberId);
+
+      // Construir mensaje de advertencia
+      let message = "¿Estás seguro que querés eliminar este socio?\n\n";
+      message += "Se eliminarán:\n";
+      message += "• Todos los datos del socio\n";
+      message += "• Todas sus inscripciones\n";
+      message += "• Todas las cuotas (pagadas y pendientes)\n";
+      message += "• Todos los registros de pagos\n\n";
+      message += "Esta acción no se puede deshacer.\n\n";
+
+      if (member && member.status !== "PENDING") {
+        message += "⚠️ ADVERTENCIA: Este socio tiene inscripciones activas.\n\n";
+      }
+
+      message += "¿Confirmás que querés eliminar al socio permanentemente?";
+
+      const confirmed = window.confirm(message);
       if (!confirmed) return;
       deleteMutation.mutate(memberId);
     },
-    [deleteMutation]
+    [deleteMutation, data]
   );
 
   const tableContent = useMemo(() => {

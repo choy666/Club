@@ -1,7 +1,7 @@
-import { count, eq, ilike, and, or, sql } from "drizzle-orm";
+import { count, eq, ilike, and, or, inArray } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { dues, enrollments, members, users } from "@/db/schema";
+import { dues, enrollments, members, users, payments } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import type {
   CreateMemberInput,
@@ -12,6 +12,7 @@ import { AppError } from "@/lib/errors";
 import type { MemberDTO, MembersListResponse } from "@/types/member";
 import { findMemberById, findMemberByUserId, isDocumentNumberTaken, mapMemberRow } from "./queries";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
+import { logger } from "@/lib/monitoring/logger";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -240,29 +241,58 @@ export async function deleteMember(memberId: string) {
     throw new AppError("Socio no encontrado.", 404);
   }
 
-  // Verificar si tiene cuotas pagadas
+  // Verificar si tiene cuotas pagadas para advertencia (no bloquear)
   const paidDues = await db
     .select()
     .from(dues)
     .where(and(eq(dues.memberId, memberId), eq(dues.status, "PAID")));
 
-  if (paidDues.length > 0) {
-    throw new AppError("No se puede eliminar un socio con cuotas pagadas");
+  const hasPaidDues = paidDues.length > 0;
+
+  try {
+    // Eliminar pagos asociados a las cuotas del miembro
+    const memberDues = await db.select().from(dues).where(eq(dues.memberId, memberId));
+
+    const dueIds = memberDues.map((due) => due.id);
+    if (dueIds.length > 0) {
+      await db.delete(payments).where(inArray(payments.dueId, dueIds));
+    }
+
+    // Eliminar todas las cuotas del miembro
+    await db.delete(dues).where(eq(dues.memberId, memberId));
+
+    // Eliminar inscripciones del miembro
+    await db.delete(enrollments).where(eq(enrollments.memberId, memberId));
+
+    // Eliminar el miembro y su usuario
+    await db.delete(members).where(eq(members.id, memberId));
+    await db.delete(users).where(eq(users.id, existing.userId));
+
+    // Log informativo sobre la eliminación
+    if (hasPaidDues) {
+      logger.info(
+        `Member deleted with paid dues`,
+        {
+          memberId,
+          paidDuesCount: paidDues.length,
+          totalDuesCount: memberDues.length,
+        },
+        memberId,
+        "member_deletion"
+      );
+    }
+
+    return {
+      success: true,
+      deletionInfo: {
+        hasPaidDues,
+        paidDuesCount: paidDues.length,
+        totalDuesCount: memberDues.length,
+      },
+    };
+  } catch (error) {
+    throw new AppError(`Error al eliminar socio: ${(error as Error).message}`, 500);
   }
-
-  // Congelar cuotas pendientes
-  await db
-    .update(dues)
-    .set({
-      status: "FROZEN",
-      statusChangedAt: sql`now()`,
-    })
-    .where(and(eq(dues.memberId, memberId), eq(dues.status, "PENDING")));
-
-  await db.delete(members).where(eq(members.id, memberId));
-  await db.delete(users).where(eq(users.id, existing.userId));
-
-  return { success: true };
 }
 
 export async function getMemberById(memberId: string) {

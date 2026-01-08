@@ -292,6 +292,7 @@ export function usePaySequentialDues() {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["member-payments"] });
     },
   });
 }
@@ -311,5 +312,68 @@ export function useMembersOptions() {
       return response.data;
     },
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useMemberPayments(memberId: string) {
+  return useQuery({
+    queryKey: ["member-payments", memberId],
+    queryFn: async () => {
+      console.log("🔍 [HOOK] Ejecutando query de pagos para memberId:", memberId);
+      try {
+        const response = await apiFetch<{
+          data: Array<{
+            date: string;
+            totalAmount: number;
+            duesCount: number;
+            method: string;
+            reference: string | null;
+            notes: string | null;
+          }>;
+        }>(`/api/socios/${memberId}/payments`);
+        console.log("📥 [HOOK] Respuesta del API:", response);
+        console.log("✅ [HOOK] Query de pagos exitosa");
+        return response;
+      } catch (error) {
+        console.error("❌ [HOOK] Error en query de pagos:", error);
+        throw error;
+      }
+    },
+    enabled: !!memberId,
+  });
+}
+
+export function useMemberPaymentsIndividual(memberId: string) {
+  return useQuery({
+    queryKey: ["member-payments-individual", memberId],
+    queryFn: async () => {
+      console.log("🔍 [HOOK] Ejecutando query de transacciones para memberId:", memberId);
+      try {
+        const response = await apiFetch<{
+          data: Array<{
+            transactionId: string;
+            paidAt: string;
+            totalAmount: number;
+            duesCount: number;
+            method: string;
+            reference: string | null;
+            notes: string | null;
+            dues: Array<{
+              dueId: string;
+              dueAmount: number;
+              dueDate: string;
+              dueStatus: string;
+            }>;
+          }>;
+        }>(`/api/socios/${memberId}/payments/individual`);
+        console.log("📥 [HOOK] Respuesta del API de transacciones:", response);
+        console.log("✅ [HOOK] Query de transacciones exitosa");
+        return response;
+      } catch (error) {
+        console.error("❌ [HOOK] Error en query de transacciones:", error);
+        throw error;
+      }
+    },
+    enabled: !!memberId,
   });
 }

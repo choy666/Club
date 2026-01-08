@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dues, enrollments, members, payments, users } from "@/db/schema";
@@ -27,17 +27,17 @@ import {
 } from "@/lib/enrollments/queries";
 import { formatDateOnly, buildDueSchedule } from "@/lib/enrollments/schedule";
 import { toLocalDateOnly } from "@/lib/utils/date-utils";
-import type { MemberSummary } from "@/components/enrollments/due-table";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
-import type {
+import type { MemberSummary } from "@/components/enrollments/due-table";
+import {
   DueDTO,
   DueListResponse,
   EnrollmentDTO,
   EnrollmentListResponse,
   EnrollmentStatus,
   MemberCredentialDTO,
+  PaymentDTO,
 } from "@/types/enrollment";
-import type { PaymentDTO } from "@/types/payment";
 import type { MemberFinancialSnapshot, MemberStatus } from "@/types/member";
 
 const MEMBER_STATUS_BY_ENROLLMENT: Record<EnrollmentStatus, MemberStatus> = {
@@ -339,11 +339,19 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
     throw new AppError("Inscripción no encontrada.", 404);
   }
 
-  if (existing.hasPaidDues) {
-    throw new AppError("No se puede eliminar una inscripción que tiene cuotas pagadas.", 409);
-  }
+  // Obtener cuotas para contar las pagadas
+  const enrollmentDues = await db.select().from(dues).where(eq(dues.enrollmentId, enrollmentId));
+
+  const paidDuesCount = enrollmentDues.filter((due) => due.status === "PAID").length;
+  const hasPaidDues = paidDuesCount > 0;
 
   try {
+    // Eliminar pagos asociados a las cuotas de esta inscripción
+    const dueIds = enrollmentDues.map((due) => due.id);
+    if (dueIds.length > 0) {
+      await db.delete(payments).where(inArray(payments.dueId, dueIds));
+    }
+
     // Eliminar cuotas asociadas
     await db.delete(dues).where(eq(dues.enrollmentId, enrollmentId));
 
@@ -358,6 +366,21 @@ export async function deleteEnrollment(enrollmentId: string): Promise<Enrollment
         updatedAt: sql`now()`,
       })
       .where(eq(members.id, existing.member.id));
+
+    // Log informativo sobre la eliminación
+    if (hasPaidDues) {
+      logger.info(
+        `Enrollment deleted with paid dues`,
+        {
+          enrollmentId,
+          memberId: existing.member.id,
+          paidDuesCount,
+          totalDuesCount: enrollmentDues.length,
+        },
+        existing.member.id,
+        "enrollment_deletion"
+      );
+    }
 
     return existing;
   } catch (error) {
@@ -503,6 +526,9 @@ export const paySequentialDues = withPerformanceMeasurement(
     );
 
     try {
+      console.log("💳 [SERVICE] Iniciando paySequentialDues");
+      console.log("📊 [SERVICE] input:", input);
+
       // Obtener las cuotas pendientes ordenadas por fecha (ascendente)
       const pendingDues = await db
         .select()
@@ -510,6 +536,9 @@ export const paySequentialDues = withPerformanceMeasurement(
         .where(and(eq(dues.memberId, input.memberId), eq(dues.status, "PENDING")))
         .orderBy(asc(dues.dueDate))
         .limit(input.numberOfDues);
+
+      console.log("📥 [SERVICE] Cuotas pendientes encontradas:", pendingDues.length);
+      console.log("📊 [SERVICE] pendingDues:", pendingDues);
 
       if (pendingDues.length === 0) {
         throw new AppError("No hay cuotas pendientes para pagar");
@@ -525,8 +554,14 @@ export const paySequentialDues = withPerformanceMeasurement(
       // Usar el monto proporcionado en lugar del monto original de las cuotas
       const totalAmount = input.dueAmount * pendingDues.length;
 
-      // Actualizar cada cuota a pagada con el nuevo monto
+      console.log("💰 [SERVICE] Monto total del pago:", totalAmount);
+      console.log("🔄 [SERVICE] Actualizando cuotas a pagadas...");
+
+      // Actualizar cada cuota a pagada con el nuevo monto y crear registro de pago
       for (const due of pendingDues) {
+        console.log("🔄 [SERVICE] Actualizando cuota y creando pago:", due.id);
+
+        // Actualizar estado de la cuota
         await db
           .update(dues)
           .set({
@@ -537,7 +572,34 @@ export const paySequentialDues = withPerformanceMeasurement(
             updatedAt: sql`now()`,
           })
           .where(eq(dues.id, due.id));
+
+        // Crear registro de pago
+        const paymentValues = {
+          memberId: input.memberId,
+          dueId: due.id,
+          amount: input.dueAmount,
+          method: "INTERNAL",
+          reference: null,
+          notes: `Pago de ${pendingDues.length} cuota(s)`,
+          paidAt: new Date(),
+        };
+
+        await db.insert(payments).values(paymentValues);
       }
+
+      console.log("✅ [SERVICE] Cuotas y pagos creados correctamente");
+      console.log("🔍 [SERVICE] Verificando pagos creados...");
+
+      // Verificar si se crearon pagos para este miembro
+      const paymentsAfter = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.memberId, input.memberId))
+        .orderBy(desc(payments.createdAt))
+        .limit(pendingDues.length);
+
+      console.log("📥 [SERVICE] Pagos creados después del pago:", paymentsAfter.length);
+      console.log("📊 [SERVICE] paymentsAfter:", paymentsAfter);
 
       // Verificar si alcanza estado vitalicio
       const promotedToVitalicio = await checkAndPromoteToVitalicio(input.memberId);
@@ -650,21 +712,6 @@ type PaymentMetadata = {
   amount?: number;
 };
 
-function mapPaymentRow(row: typeof payments.$inferSelect): PaymentDTO {
-  return {
-    id: row.id,
-    memberId: row.memberId,
-    dueId: row.dueId,
-    amount: row.amount,
-    method: row.method,
-    reference: row.reference ?? null,
-    notes: row.notes ?? null,
-    paidAt: row.paidAt?.toISOString() ?? new Date().toISOString(),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
 export async function recordPayment(
   dueId: string,
   paidAt?: string,
@@ -742,7 +789,30 @@ export async function recordPayment(
 
   const result = {
     due: dueUpdated,
-    payment: mapPaymentRow(paymentRow),
+    payment: {
+      id: paymentRow.id,
+      memberId: paymentRow.memberId,
+      dueId: paymentRow.dueId,
+      amount: paymentRow.amount,
+      method: paymentRow.method,
+      reference: paymentRow.reference ?? null,
+      notes: paymentRow.notes ?? null,
+      paidAt: paymentRow.paidAt?.toISOString() ?? new Date().toISOString(),
+      createdAt: paymentRow.createdAt.toISOString(),
+      updatedAt: paymentRow.updatedAt.toISOString(),
+      member: {
+        id: existing.member.id,
+        name: existing.member.name,
+        email: existing.member.email,
+        documentNumber: existing.member.documentNumber,
+      },
+      due: {
+        id: existing.id,
+        dueDate: existing.dueDate,
+        amount: existing.amount,
+        status: existing.status,
+      },
+    },
   };
 
   if (options?.syncStatus !== false) {
@@ -1103,4 +1173,254 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
 
   console.log(`✅ [SERVICE] Resúmenes generados: ${summaries.length} socios`);
   return summaries;
+}
+
+export async function getMemberPaymentsGrouped(memberId: string): Promise<
+  Array<{
+    date: string;
+    totalAmount: number;
+    duesCount: number;
+    method: string;
+    reference: string | null;
+    notes: string | null;
+  }>
+> {
+  console.log("🔍 [SERVICE] getMemberPaymentsGrouped llamado con memberId:", memberId);
+
+  const allPayments = await db
+    .select({
+      id: payments.id,
+      amount: payments.amount,
+      method: payments.method,
+      reference: payments.reference,
+      notes: payments.notes,
+      paidAt: payments.paidAt,
+      dueId: payments.dueId,
+      dueAmount: dues.amount,
+      dueDate: dues.dueDate,
+      dueStatus: dues.status,
+    })
+    .from(payments)
+    .innerJoin(dues, eq(payments.dueId, dues.id))
+    .where(eq(payments.memberId, memberId))
+    .orderBy(desc(payments.paidAt));
+
+  console.log("📥 [SERVICE] Pagos encontrados en DB:", allPayments.length);
+  console.log("📊 [SERVICE] Primer pago:", allPayments[0]);
+
+  // Agrupar pagos por fecha (mismo día = mismo pago)
+  const groupedPayments = new Map<
+    string,
+    {
+      totalAmount: number;
+      duesCount: number;
+      method: string;
+      reference: string | null;
+      notes: string | null;
+      paidAt: Date;
+    }
+  >();
+
+  for (const payment of allPayments) {
+    const dateKey = payment.paidAt.toISOString().split("T")[0]; // YYYY-MM-DD
+
+    if (!groupedPayments.has(dateKey)) {
+      groupedPayments.set(dateKey, {
+        totalAmount: 0,
+        duesCount: 0,
+        method: payment.method,
+        reference: payment.reference,
+        notes: payment.notes,
+        paidAt: payment.paidAt,
+      });
+    }
+
+    const group = groupedPayments.get(dateKey)!;
+    group.totalAmount += payment.amount;
+    group.duesCount += 1;
+  }
+
+  // Convertir a array y ordenar por fecha descendente
+  const result = Array.from(groupedPayments.entries())
+    .map(([date, data]) => ({
+      date,
+      totalAmount: data.totalAmount,
+      duesCount: data.duesCount,
+      method: data.method,
+      reference: data.reference,
+      notes: data.notes,
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  console.log("✅ [SERVICE] Pagos agrupados finales:", result);
+  console.log("📊 [SERVICE] Cantidad de grupos:", result.length);
+
+  return result;
+}
+
+// Nueva función para obtener pagos individuales sin agrupar
+export async function getMemberPaymentsIndividual(memberId: string): Promise<
+  Array<{
+    id: string;
+    amount: number;
+    method: string;
+    reference: string | null;
+    notes: string | null;
+    paidAt: string;
+    dueId: string;
+    dueAmount: number;
+    dueDate: string;
+    dueStatus: string;
+  }>
+> {
+  console.log("🔍 [SERVICE] getMemberPaymentsIndividual llamado con memberId:", memberId);
+
+  const allPayments = await db
+    .select({
+      id: payments.id,
+      amount: payments.amount,
+      method: payments.method,
+      reference: payments.reference,
+      notes: payments.notes,
+      paidAt: payments.paidAt,
+      dueId: payments.dueId,
+      dueAmount: dues.amount,
+      dueDate: dues.dueDate,
+      dueStatus: dues.status,
+    })
+    .from(payments)
+    .innerJoin(dues, eq(payments.dueId, dues.id))
+    .where(eq(payments.memberId, memberId))
+    .orderBy(desc(payments.paidAt));
+
+  console.log("📥 [SERVICE] Pagos individuales encontrados en DB:", allPayments.length);
+
+  // Convertir a formato esperado por el frontend
+  const result = allPayments.map((payment) => ({
+    id: payment.id,
+    amount: payment.amount,
+    method: payment.method,
+    reference: payment.reference,
+    notes: payment.notes,
+    paidAt: payment.paidAt.toISOString(),
+    dueId: payment.dueId,
+    dueAmount: payment.dueAmount,
+    dueDate: payment.dueDate,
+    dueStatus: payment.dueStatus,
+  }));
+
+  console.log("✅ [SERVICE] Pagos individuales formateados:", result.length);
+
+  return result;
+}
+
+// Nueva función para agrupar pagos por transacción real
+export async function getMemberPaymentsByTransaction(memberId: string): Promise<
+  Array<{
+    transactionId: string;
+    paidAt: string;
+    totalAmount: number;
+    duesCount: number;
+    method: string;
+    reference: string | null;
+    notes: string | null;
+    dues: Array<{
+      dueId: string;
+      dueAmount: number;
+      dueDate: string;
+      dueStatus: string;
+    }>;
+  }>
+> {
+  console.log("🔍 [SERVICE] getMemberPaymentsByTransaction llamado con memberId:", memberId);
+
+  const allPayments = await db
+    .select({
+      id: payments.id,
+      amount: payments.amount,
+      method: payments.method,
+      reference: payments.reference,
+      notes: payments.notes,
+      paidAt: payments.paidAt,
+      dueId: payments.dueId,
+      dueAmount: dues.amount,
+      dueDate: dues.dueDate,
+      dueStatus: dues.status,
+    })
+    .from(payments)
+    .innerJoin(dues, eq(payments.dueId, dues.id))
+    .where(eq(payments.memberId, memberId))
+    .orderBy(desc(payments.paidAt));
+
+  console.log("📥 [SERVICE] Pagos encontrados en DB:", allPayments.length);
+
+  // Agrupar por transacción (pagos con misma fecha/hora y método)
+  const transactionGroups = new Map<
+    string,
+    {
+      paidAt: Date;
+      method: string;
+      reference: string | null;
+      notes: string | null;
+      totalAmount: number;
+      dues: Array<{
+        dueId: string;
+        dueAmount: number;
+        dueDate: string;
+        dueStatus: string;
+      }>;
+    }
+  >();
+
+  for (const payment of allPayments) {
+    // Crear clave de transacción: fecha + hora (minutos) + método
+    const paymentTime = new Date(payment.paidAt);
+    const transactionKey = `${paymentTime.getFullYear()}-${paymentTime.getMonth()}-${paymentTime.getDate()}-${paymentTime.getHours()}-${Math.floor(paymentTime.getMinutes() / 5)}-${payment.method}`;
+
+    if (!transactionGroups.has(transactionKey)) {
+      transactionGroups.set(transactionKey, {
+        paidAt: paymentTime,
+        method: payment.method,
+        reference: payment.reference,
+        notes: payment.notes,
+        totalAmount: 0,
+        dues: [],
+      });
+    }
+
+    const group = transactionGroups.get(transactionKey)!;
+    group.totalAmount += payment.amount;
+    group.dues.push({
+      dueId: payment.dueId,
+      dueAmount: payment.dueAmount,
+      dueDate: payment.dueDate,
+      dueStatus: payment.dueStatus,
+    });
+  }
+
+  // Convertir a array y ordenar por fecha descendente
+  const result = Array.from(transactionGroups.entries())
+    .map(([key, data]) => ({
+      transactionId: key,
+      paidAt: data.paidAt.toISOString(),
+      totalAmount: data.totalAmount,
+      duesCount: data.dues.length,
+      method: data.method,
+      reference: data.reference,
+      notes: data.notes,
+      dues: data.dues.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+    }))
+    .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+
+  console.log("✅ [SERVICE] Transacciones agrupadas:", result.length);
+  console.log(
+    "📊 [SERVICE] Detalle:",
+    result.map((t) => ({
+      fecha: new Date(t.paidAt).toLocaleString(),
+      cuotas: t.duesCount,
+      monto: t.totalAmount,
+    }))
+  );
+
+  return result;
 }

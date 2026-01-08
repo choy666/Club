@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 import { DueFilters } from "./due-filters";
 import { SequentialPaymentPanel } from "./sequential-payment-panel";
-import { useMemberSummaries } from "@/hooks/use-enrollments";
+import { useMemberSummaries, useMemberPaymentsIndividual } from "@/hooks/use-enrollments";
 import type { DueDTO } from "@/types/enrollment";
 import { Modal } from "@/components/ui/modal";
 import { useRecordPayment } from "@/hooks/use-payments";
@@ -82,6 +82,9 @@ export function DueTable() {
   const [manualPaymentDue, setManualPaymentDue] = useState<DueDTO | null>(null);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<MemberSummary | null>(null);
+  const { data: paymentsData, isLoading: isLoadingPayments } = useMemberPaymentsIndividual(
+    selectedSummary?.member.id ?? ""
+  );
   const [paymentPanelMember, setPaymentPanelMember] = useState<{ id: string; name: string } | null>(
     null
   );
@@ -491,37 +494,144 @@ export function DueTable() {
                     Historial de pagos
                   </p>
                   <span className="text-xs text-base-muted">
-                    {selectedSummary.paidCount} registro(s)
+                    {paymentsData?.data?.length || 0} registro(s)
                   </span>
                 </div>
-                {selectedSummary.dues.filter((due) => due.status === "PAID").length === 0 && (
+
+                {/* Debug console logs */}
+                {(() => {
+                  console.log("🔍 [MODAL] Modal 'Seguimiento de socio' abierta");
+                  console.log("📊 [MODAL] selectedSummary:", selectedSummary);
+                  console.log("📊 [MODAL] selectedSummary.memberId:", selectedSummary?.member?.id);
+                  console.log("💳 [MODAL] paymentsData:", paymentsData);
+                  console.log("💳 [MODAL] paymentsData.data:", paymentsData?.data);
+                  console.log("💳 [MODAL] isLoadingPayments:", isLoadingPayments);
+                  console.log("💳 [MODAL] paymentsData?.data?.length:", paymentsData?.data?.length);
+                  return null;
+                })()}
+
+                {isLoadingPayments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-primary"></div>
+                  </div>
+                ) : !paymentsData?.data || paymentsData.data.length === 0 ? (
                   <p className="text-sm text-base-muted">Sin pagos registrados todavía.</p>
-                )}
-                <div className="space-y-2">
-                  {selectedSummary.dues
-                    .filter((due) => due.status === "PAID")
-                    .map((due) => (
-                      <div
-                        key={`paid-${due.id}`}
-                        className="flex flex-wrap items-center justify-between rounded-xl border border-base-border/60 bg-base-secondary/10 px-4 py-2 text-sm"
-                      >
-                        <div>
-                          <p className="font-semibold">
-                            {formatCurrency(due.amount)} ·{" "}
-                            {new Date(due.dueDate).toLocaleDateString("es-AR")}
-                          </p>
-                          {due.paidAt && (
-                            <p className="text-xs text-base-muted">
-                              Pagada {new Date(due.paidAt).toLocaleDateString("es-AR")}
-                            </p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {paymentsData.data.map(
+                      (
+                        transaction: {
+                          transactionId: string;
+                          paidAt: string;
+                          totalAmount: number;
+                          duesCount: number;
+                          method: string;
+                          reference: string | null;
+                          notes: string | null;
+                          dues: Array<{
+                            dueId: string;
+                            dueAmount: number;
+                            dueDate: string;
+                            dueStatus: string;
+                          }>;
+                        },
+                        index: number
+                      ) => (
+                        <motion.div
+                          key={`transaction-${transaction.transactionId}-${index}`}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="rounded-xl border border-base-border/60 bg-gradient-to-r from-base-secondary/20 to-base-secondary/10 p-4"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-2 w-2 rounded-full bg-accent-primary"></div>
+                                <p className="font-semibold text-base-foreground">
+                                  {new Date(transaction.paidAt).toLocaleDateString("es-AR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-4">
+                                  <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                    Cuotas pagadas:
+                                  </span>
+                                  <span className="text-sm font-medium text-base-foreground">
+                                    {transaction.duesCount} cuota
+                                    {transaction.duesCount !== 1 ? "s" : ""}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                    Período:
+                                  </span>
+                                  <span className="text-sm font-medium text-base-foreground">
+                                    {new Date(transaction.dues[0]?.dueDate).toLocaleDateString(
+                                      "es-AR",
+                                      {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      }
+                                    )}{" "}
+                                    -{" "}
+                                    {new Date(
+                                      transaction.dues[transaction.dues.length - 1]?.dueDate
+                                    ).toLocaleDateString("es-AR", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                                {transaction.reference && (
+                                  <div className="flex items-center gap-4">
+                                    <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                      Referencia:
+                                    </span>
+                                    <span className="text-sm text-base-foreground">
+                                      {transaction.reference}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="text-right">
+                                <p className="text-xs uppercase tracking-[0.2em] text-base-muted mb-1">
+                                  Importe total
+                                </p>
+                                <p className="text-xl font-bold text-accent-primary">
+                                  {formatCurrency(transaction.totalAmount)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+                                <span className="text-xs font-medium text-accent-primary">
+                                  {transaction.duesCount} cuota
+                                  {transaction.duesCount !== 1 ? "s" : ""}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {transaction.notes && (
+                            <div className="mt-3 pt-3 border-t border-base-border/30">
+                              <p className="text-xs text-base-muted">
+                                <span className="font-medium">Nota:</span> {transaction.notes}
+                              </p>
+                            </div>
                           )}
-                        </div>
-                        <span className="text-xs uppercase tracking-[0.3em] text-state-active">
-                          Pagada
-                        </span>
-                      </div>
-                    ))}
-                </div>
+                        </motion.div>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

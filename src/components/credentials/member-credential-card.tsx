@@ -35,6 +35,14 @@ export function MemberCredentialCard({
   // Obtener estadísticas de cuotas
   const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
 
+  // Debug logs para estadísticas
+  console.log("🔍 [CREDENTIAL] Componente de credencial renderizado");
+  console.log("📊 [CREDENTIAL] credential?.member.id:", credential?.member.id);
+  console.log("💳 [CREDENTIAL] duesStats:", duesStats);
+  console.log("💳 [CREDENTIAL] duesStats?.paidCount:", duesStats?.paidCount);
+  console.log("💳 [CREDENTIAL] duesStats?.totalCount:", duesStats?.totalCount);
+  console.log("💳 [CREDENTIAL] duesStats?.percentage:", duesStats?.percentage);
+
   useEffect(() => {
     let cancelled = false;
     async function generate() {
@@ -187,7 +195,7 @@ export function MemberCredentialCard({
                   />
                 </div>
                 <p className="text-xs text-base-muted text-center">
-                  {duesStats?.percentage || 0}% hacia estatus vitalicio
+                  {duesStats?.percentage || 0}% hacia socio vitalicio
                 </p>
               </div>
             </div>

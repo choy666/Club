@@ -76,25 +76,41 @@ export function SequentialPaymentPanel({
   const handlePay = async () => {
     if (numberOfDues <= 0 || numberOfDues > stats.maxPayableDues) return;
 
+    console.log("💳 [PAGO] Iniciando proceso de pago");
+    console.log("📊 [PAGO] memberId:", memberId);
+    console.log("📊 [PAGO] numberOfDues:", numberOfDues);
+    console.log("📊 [PAGO] dueAmount:", dueAmount);
+    console.log("📊 [PAGO] totalAmount:", numberOfDues * dueAmount);
+
     try {
+      console.log("🔄 [PAGO] Enviando mutación de pago...");
       const result = await payMutation.mutateAsync({
         memberId,
         numberOfDues,
         dueAmount,
       });
 
+      console.log("✅ [PAGO] Pago completado exitosamente");
+      console.log("📊 [PAGO] Resultado del pago:", result);
+      console.log("📊 [PAGO] paidDues:", result.paidDues);
+      console.log("📊 [PAGO] totalAmount:", result.totalAmount);
+      console.log("📊 [PAGO] promotedToVitalicio:", result.promotedToVitalicio);
+
       if (result.promotedToVitalicio) {
         alert(`¡Felicidades! ${memberName} ha alcanzado el estatus VITALICIO.`);
       }
 
       // Invalidar queries para recargar datos actualizados
+      console.log("🔄 [PAGO] Invalidando queries...");
       queryClient.invalidateQueries({ queryKey: ["dues-summary"] });
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["member-payments"] });
 
+      console.log("✅ [PAGO] Proceso de pago finalizado");
       onClose();
     } catch (error) {
-      console.error("Error al pagar cuotas:", error);
+      console.error("❌ [PAGO] Error al pagar cuotas:", error);
     }
   };
 

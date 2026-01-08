@@ -31,6 +31,7 @@ export function useRecordPayment() {
       void queryClient.invalidateQueries({ queryKey: [ENROLLMENTS_KEY] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: ["member"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-payments"] });
 
       // Forzar refresco inmediato de las queries activas
       void queryClient.refetchQueries({ queryKey: [DUES_KEY] });

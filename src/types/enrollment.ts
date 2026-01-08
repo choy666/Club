@@ -86,6 +86,31 @@ export interface DueDTO {
   };
 }
 
+export interface PaymentDTO {
+  id: string;
+  memberId: string;
+  dueId: string;
+  amount: number;
+  method: string;
+  reference: string | null;
+  notes: string | null;
+  paidAt: string;
+  createdAt: string;
+  updatedAt: string;
+  member: {
+    id: string;
+    name: string | null;
+    email: string;
+    documentNumber: string;
+  };
+  due: {
+    id: string;
+    dueDate: string;
+    amount: number;
+    status: DueStatus;
+  };
+}
+
 export interface DueListResponse {
   data: DueDTO[];
   meta: {

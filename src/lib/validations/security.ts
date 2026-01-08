@@ -65,16 +65,16 @@ export function validateVitalicioPromotion(paidDuesCount: number, currentStatus:
 // Función de validación para eliminación de socios
 export function validateMemberDeletion(paidDuesCount: number) {
   const rules = memberDeletionSchema.parse({
-    allowDeletionWithPaidDues: false,
-    maxPaidDuesForDeletion: 0,
+    allowDeletionWithPaidDues: true, // Permitir eliminación con cuotas pagadas
+    maxPaidDuesForDeletion: Infinity, // Sin límite de cuotas pagadas
   });
 
-  if (!rules.allowDeletionWithPaidDues && paidDuesCount > rules.maxPaidDuesForDeletion) {
-    return {
-      canDelete: false,
-      reason: "No se puede eliminar un socio con cuotas pagadas",
-    };
-  }
-
-  return { canDelete: true, rules };
+  // Siempre permitir eliminación, pero devolver información para advertencia
+  return {
+    canDelete: true,
+    rules,
+    hasPaidDues: paidDuesCount > 0,
+    paidDuesCount,
+    requiresWarning: paidDuesCount > 0,
+  };
 }

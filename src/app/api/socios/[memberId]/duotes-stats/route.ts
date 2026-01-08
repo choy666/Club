@@ -13,6 +13,9 @@ export async function GET(
     await requireAdminSession();
     const { memberId } = await params;
 
+    console.log("🔍 [API] Endpoint GET /api/socios/[memberId]/duotes-stats llamado");
+    console.log("📊 [API] memberId:", memberId);
+
     // Obtener estadísticas de cuotas del socio
     const [paidCount, totalCount] = await Promise.all([
       db
@@ -26,12 +29,18 @@ export async function GET(
     const total = totalCount[0]?.count || 0;
     const percentage = total > 0 ? Math.round((paid / total) * 100) : 0;
 
+    console.log("📥 [API] Estadísticas calculadas:");
+    console.log("  - Cuotas pagadas:", paid);
+    console.log("  - Cuotas totales:", total);
+    console.log("  - Porcentaje:", percentage);
+
     return jsonSuccess({
       paidCount: paid,
       totalCount: total,
       percentage,
     });
   } catch (error) {
+    console.error("❌ [API] Error en endpoint de estadísticas:", error);
     return handleApiError(error);
   }
 }

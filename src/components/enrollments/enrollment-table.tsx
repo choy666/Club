@@ -74,19 +74,26 @@ export function EnrollmentTable() {
 
   const handleDelete = useCallback(
     async (enrollment: EnrollmentDTO) => {
+      // Construir mensaje de advertencia detallado
+      let message = "¿Estás seguro que querés eliminar esta inscripción?\n\n";
+
       if (enrollment.hasPaidDues) {
-        if (typeof window !== "undefined") {
-          window.alert("No se puede eliminar una inscripción con cuotas pagadas.");
-        }
-        return;
+        message += "⚠️ ADVERTENCIA: Esta inscripción tiene cuotas pagadas.\n\n";
+        message += "Se eliminarán:\n";
+        message += "• Todas las cuotas (pagadas y pendientes)\n";
+        message += "• Todos los registros de pagos asociados\n";
+        message += "• La inscripción completa\n\n";
+        message += "Esta acción no se puede deshacer.\n\n";
+        message += "¿Confirmás que querés continuar con la eliminación?";
+      } else {
+        message += "Se eliminarán:\n";
+        message += "• Todas las cuotas pendientes\n";
+        message += "• La inscripción completa\n\n";
+        message += "El socio volverá a estado PENDING.\n\n";
+        message += "¿Confirmás que querés eliminar la inscripción?";
       }
 
-      const confirmed =
-        typeof window === "undefined"
-          ? false
-          : window.confirm(
-              "¿Eliminar la inscripción? Se borrarán las cuotas pendientes y el socio volverá a estado PENDING."
-            );
+      const confirmed = typeof window === "undefined" ? false : window.confirm(message);
 
       if (!confirmed) {
         return;
@@ -94,19 +101,16 @@ export function EnrollmentTable() {
 
       try {
         await deleteMutation.mutateAsync(enrollment.id);
-        setFeedback({ type: "success", message: "Inscripción eliminada." });
+        const successMessage = enrollment.hasPaidDues
+          ? "Inscripción eliminada con cuotas pagadas. Todos los registros han sido limpiados."
+          : "Inscripción eliminada.";
+        setFeedback({ type: "success", message: successMessage });
       } catch (mutationError: unknown) {
         const errorMessage = getErrorMessage(mutationError, "No se pudo eliminar la inscripción.");
-        setFeedback({
-          type: "error",
-          message: errorMessage,
-        });
-        if (typeof window !== "undefined") {
-          window.alert(errorMessage);
-        }
+        setFeedback({ type: "error", message: errorMessage });
       }
     },
-    [deleteMutation]
+    [deleteMutation, setFeedback]
   );
 
   function closeModal() {
@@ -218,7 +222,7 @@ export function EnrollmentTable() {
       <tbody>
         {data?.data.map((enrollment) => {
           const statusConfig = STATUS_STYLES[enrollment.status];
-          const deleteDisabled = enrollment.hasPaidDues || isDeleting;
+          const deleteDisabled = isDeleting;
 
           return (
             <tr
@@ -297,7 +301,7 @@ export function EnrollmentTable() {
       <div className="space-y-4">
         {data?.data.map((enrollment) => {
           const statusConfig = STATUS_STYLES[enrollment.status];
-          const deleteDisabled = enrollment.hasPaidDues || isDeleting;
+          const deleteDisabled = isDeleting;
           return (
             <div
               key={`enrollment-card-${enrollment.id}`}

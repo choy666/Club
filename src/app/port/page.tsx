@@ -45,7 +45,7 @@ export default function PortPage() {
         <div className="max-w-6xl mx-auto">
           {/* Navigation Tabs */}
           <motion.div className="flex justify-center mb-12" {...fadeInUp}>
-            <div className="bg-gray-900/50 backdrop-blur-lg rounded-full p-1 flex gap-2 border border-gray-800">
+            <div className="bg-gray-900/50 backdrop-blur-lg rounded-full p-1 flex flex-wrap justify-center gap-2 border border-gray-800 max-w-sm mx-auto">
               {[
                 { id: "tech" as TabType, label: "Tecnologías" },
                 { id: "features" as TabType, label: "Características" },
@@ -54,7 +54,7 @@ export default function PortPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-6 py-3 rounded-full transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap ${
                     activeTab === tab.id
                       ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
                       : "text-gray-400 hover:text-white"

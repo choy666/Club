@@ -32,10 +32,16 @@ export function useRecordPayment() {
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: ["member"] });
       void queryClient.invalidateQueries({ queryKey: ["member-payments"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-payments-individual"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-summaries"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-dues-stats"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-current-dues"] });
 
       // Forzar refresco inmediato de las queries activas
       void queryClient.refetchQueries({ queryKey: [DUES_KEY] });
       void queryClient.refetchQueries({ queryKey: [ENROLLMENTS_KEY] });
+      void queryClient.refetchQueries({ queryKey: ["member-payments-individual"] });
+      void queryClient.refetchQueries({ queryKey: ["member-summaries"] });
     },
   });
 }

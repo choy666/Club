@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { useMemberDuesStats } from "@/hooks/use-member-stats";
+import { useMemberCurrentDues } from "@/hooks/use-member-current-dues";
+import { getCredentialStatus } from "@/lib/utils/member-status-utils";
 
 import type { MemberCredentialDTO } from "@/types/enrollment";
 
@@ -22,45 +24,23 @@ export function MemberCredentialCard({
 }: MemberCredentialCardProps) {
   // Obtener estadísticas de cuotas
   const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
+  
+  // Obtener cuotas del mes actual
+  const { data: currentDuesData } = useMemberCurrentDues(credential?.member.id || "");
 
   // Debug logs para estadísticas
   console.log("🔍 [CREDENTIAL] Componente de credencial renderizado");
   console.log("📊 [CREDENTIAL] credential?.member.id:", credential?.member.id);
   console.log("💳 [CREDENTIAL] duesStats:", duesStats);
-  console.log("💳 [CREDENTIAL] duesStats?.paidCount:", duesStats?.paidCount);
-  console.log("💳 [CREDENTIAL] duesStats?.totalCount:", duesStats?.totalCount);
-  console.log("💳 [CREDENTIAL] duesStats?.percentage:", duesStats?.percentage);
+  console.log("💳 [CREDENTIAL] currentDuesData:", currentDuesData);
 
   const status = useMemo(() => {
-    if (!credential) return { label: "Sin datos", tone: "neutral" };
-    if (!credential.enrollment) return { label: "Sin inscripción", tone: "neutral" };
-    if (!credential.isReady) {
-      if (credential.enrollment.status !== "ACTIVE") {
-        return { label: "Inscripción pendiente", tone: "warning" };
-      }
-      return { label: "Credencial en proceso", tone: "warning" };
-    }
-
-    // Lógica corregida: El estado depende del estado del miembro, no solo de la inscripción
-    // Un socio vitalicio puede estar activo o inactivo según el estado del miembro
-    const isVitalicio = (duesStats?.paidCount || 0) >= 360;
-    const memberStatus = credential.member.status;
-
-    if (memberStatus === "ACTIVE") {
-      if (isVitalicio) {
-        return { label: "Socio Vitalicio Activo", tone: "success" };
-      }
-      return { label: "Socio Activo", tone: "success" };
-    } else if (memberStatus === "INACTIVE") {
-      if (isVitalicio) {
-        return { label: "Socio Vitalicio Inactivo", tone: "warning" };
-      }
-      return { label: "Socio Inactivo", tone: "warning" };
-    } else {
-      // PENDING u otros estados
-      return { label: "Socio Pendiente", tone: "warning" };
-    }
-  }, [credential, duesStats]);
+    return getCredentialStatus(
+      credential || null,
+      duesStats || null,
+      currentDuesData?.dues || []
+    );
+  }, [credential, duesStats, currentDuesData]);
 
   return (
     <div className="neo-panel space-y-5">
@@ -197,17 +177,7 @@ export function MemberCredentialCard({
               <span className="font-semibold">{status.label}</span>
             </div>
             <p className="text-sm mt-1 opacity-80">
-              {status.tone === "success"
-                ? status.label.includes("Vitalicio")
-                  ? "Tu credencial vitalicia está activa y lista para usar"
-                  : "Tu credencial está activa y lista para usar"
-                : status.tone === "warning"
-                  ? status.label.includes("Vitalicio")
-                    ? "Tu credencial vitalicia está inactiva. Contacta al administrador."
-                    : status.label.includes("Inactivo")
-                      ? "Tu credencial está inactiva. Contacta al administrador."
-                      : "Completá los pasos necesarios para activar tu credencial"
-                  : "Esperando datos para generar tu credencial"}
+              {status.message || "Esperando datos para generar tu credencial"}
             </p>
           </div>
         </div>

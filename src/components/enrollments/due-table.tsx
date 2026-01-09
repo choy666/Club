@@ -444,13 +444,17 @@ export function DueTable() {
                     Historial de pagos
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-base-muted">
+                    <button
+                      onClick={() => {
+                        window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
+                      }}
+                      className="text-xs text-accent-primary hover:underline font-medium"
+                    >
                       {paymentsData?.data?.length || 0} registro(s)
-                    </span>
+                    </button>
                     {paymentsData?.data && paymentsData.data.length > 1 && (
                       <button
                         onClick={() => {
-                          // Navegar a página completa de historial
                           window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
                         }}
                         className="text-xs text-accent-primary hover:underline font-medium"

@@ -29,7 +29,7 @@ export default function PaymentHistoryPage() {
   const router = useRouter();
   const memberId = params.id as string;
 
-  const { data: memberSummaries } = useMemberSummaries();
+  const { data: memberSummaries, isLoading: isLoadingMembers } = useMemberSummaries();
   const { data: paymentsData, isLoading, error } = useMemberPaymentsIndividual(memberId);
 
   const memberInfo = useMemo(() => {
@@ -51,7 +51,8 @@ export default function PaymentHistoryPage() {
     router.back();
   };
 
-  if (isLoading) {
+  // Mostrar carga mientras se cargan los datos del miembro o los pagos
+  if (isLoading || isLoadingMembers) {
     return (
       <div className="min-h-screen bg-base-primary flex items-center justify-center">
         <div className="text-center">
@@ -66,7 +67,9 @@ export default function PaymentHistoryPage() {
     return (
       <div className="min-h-screen bg-base-primary flex items-center justify-center">
         <div className="text-center">
-          <p className="text-accent-critical mb-4">Error al cargar los datos del socio</p>
+          <p className="text-accent-critical mb-4">
+            {error ? "Error al cargar los pagos del socio" : "No se encontró información del socio"}
+          </p>
           <button
             onClick={handleBack}
             className="px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
@@ -77,6 +80,9 @@ export default function PaymentHistoryPage() {
       </div>
     );
   }
+
+  // Manejo seguro de datos de pagos
+  const payments = paymentsData?.data || [];
 
   return (
     <div className="min-h-screen bg-base-primary">
@@ -110,7 +116,7 @@ export default function PaymentHistoryPage() {
               Total de pagos
             </p>
             <p className="text-3xl font-bold text-base-foreground">
-              {paymentsData?.data?.length || 0}
+              {payments.length || 0}
             </p>
           </div>
           <div className="neo-panel p-6 text-center">
@@ -120,7 +126,7 @@ export default function PaymentHistoryPage() {
                 style: "currency",
                 currency: "ARS",
               }).format(
-                paymentsData?.data?.reduce(
+                payments.reduce(
                   (sum: number, payment: PaymentTransaction) => sum + payment.totalAmount,
                   0
                 ) || 0
@@ -132,7 +138,7 @@ export default function PaymentHistoryPage() {
               Cuotas pagadas
             </p>
             <p className="text-3xl font-bold text-base-foreground">
-              {paymentsData?.data?.reduce(
+              {payments.reduce(
                 (sum, payment: PaymentTransaction) => sum + payment.duesCount,
                 0
               ) || 0}
@@ -143,14 +149,14 @@ export default function PaymentHistoryPage() {
         {/* Lista de pagos */}
         <div className="neo-panel">
           <ModalSection title="Todos los pagos registrados">
-            {!paymentsData?.data || paymentsData.data.length === 0 ? (
+            {!payments || payments.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-base-muted">No hay pagos registrados para este socio.</p>
               </div>
             ) : (
               <OptimizedScrollArea className="max-h-[600px]">
                 <div className="space-y-4">
-                  {paymentsData.data.map((payment: PaymentTransaction, index: number) => (
+                  {payments.map((payment: PaymentTransaction, index: number) => (
                     <motion.div
                       key={payment.transactionId}
                       initial={{ opacity: 0, y: 20 }}
@@ -187,24 +193,6 @@ export default function PaymentHistoryPage() {
                                 {payment.duesCount} cuota{payment.duesCount !== 1 ? "s" : ""}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                Método:
-                              </span>
-                              <span className="text-sm font-medium text-base-foreground">
-                                {payment.method || "No especificado"}
-                              </span>
-                            </div>
-                            {payment.reference && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                  Referencia:
-                                </span>
-                                <span className="text-sm font-medium text-base-foreground">
-                                  {payment.reference}
-                                </span>
-                              </div>
-                            )}
                           </div>
 
                           <div className="mt-3">

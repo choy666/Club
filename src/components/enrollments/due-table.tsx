@@ -390,10 +390,10 @@ export function DueTable() {
         title="Seguimiento de socio"
         open={Boolean(selectedSummary)}
         onClose={() => setSelectedSummary(null)}
-        maxWidth="2xl"
+        maxWidth="3xl"
       >
         {selectedSummary && (
-          <div className="space-y-6">
+          <div className="space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="neo-panel border border-base-border/60 px-5 py-4 text-sm">
               <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Datos del socio</p>
               <p className="text-lg font-semibold">
@@ -402,7 +402,7 @@ export function DueTable() {
               </p>
               <p className="text-sm text-base-muted">{selectedSummary.member.email}</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {[
                 {
                   label: "Cuotas pagadas",
@@ -422,188 +422,169 @@ export function DueTable() {
               ].map((metric) => (
                 <div
                   key={metric.label}
-                  className="rounded-2xl border border-base-border/60 bg-base-secondary/20 px-4 py-3 text-center"
+                  className="rounded-xl border border-base-border/60 bg-base-secondary/20 px-3 py-2 text-center"
                 >
                   <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
                     {metric.label}
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">{metric.value}</p>
+                  <p className="mt-1 text-lg font-semibold">{metric.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Progress bar circular y estadísticas */}
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex justify-center">
               <MemberProgressSummary memberSummary={selectedSummary} />
             </div>
 
-            <div className="space-y-4">
-              <div className="neo-panel space-y-3 border border-base-border/70 px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                    Historial de pagos
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
-                      }}
-                      className="text-xs text-accent-primary hover:underline font-medium"
-                    >
-                      {paymentsData?.data?.length || 0} registro(s)
-                    </button>
-                    {paymentsData?.data && paymentsData.data.length > 1 && (
+            <div className="neo-panel space-y-3 border border-base-border/70 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
+                  Historial de pagos
+                </p>
+                <div className="flex items-center gap-2">
+                  {paymentsData?.data && paymentsData.data.length > 0 && (
+                    <>
+                      <span className="text-xs text-base-muted">
+                        {paymentsData.data.length} pago{paymentsData.data.length !== 1 ? "s" : ""}
+                      </span>
+                      {paymentsData.data.length > 1 && (
+                        <button
+                          onClick={() => {
+                            window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
+                          }}
+                          className="text-xs text-accent-primary hover:underline font-medium flex items-center gap-1"
+                        >
+                          Ver todos →
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {isLoadingPayments ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-accent-primary"></div>
+                </div>
+              ) : !paymentsData?.data || paymentsData.data.length === 0 ? (
+                <p className="text-sm text-base-muted text-center py-4">
+                  Sin pagos registrados todavía.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {/* Mostrar solo el último pago */}
+                  {(() => {
+                    const lastPayment = paymentsData.data[0];
+                    return (
+                      <motion.div
+                        key={`last-payment-${lastPayment.transactionId}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="rounded-lg border border-base-border/60 bg-gradient-to-r from-base-secondary/20 to-base-secondary/10 p-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="h-2 w-2 rounded-full bg-accent-primary"></div>
+                              <p className="font-semibold text-sm text-base-foreground">
+                                {new Date(lastPayment.paidAt).toLocaleDateString("es-AR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              <span className="text-xs text-accent-primary font-medium">
+                                Último pago
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                  Cuotas:
+                                </span>
+                                <span className="text-sm font-medium text-base-foreground">
+                                  {lastPayment.duesCount} cuota
+                                  {lastPayment.duesCount !== 1 ? "s" : ""}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                  Período:
+                                </span>
+                                <span className="text-sm font-medium text-base-foreground">
+                                  {new Date(lastPayment.dues[0]?.dueDate).toLocaleDateString(
+                                    "es-AR",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    }
+                                  )}{" "}
+                                  -{" "}
+                                  {new Date(
+                                    lastPayment.dues[lastPayment.dues.length - 1]?.dueDate
+                                  ).toLocaleDateString("es-AR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                              {lastPayment.reference && (
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
+                                    Ref:
+                                  </span>
+                                  <span className="text-sm text-base-foreground">
+                                    {lastPayment.reference}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="text-right">
+                              <p className="text-xs uppercase tracking-[0.2em] text-base-muted mb-1">
+                                Total
+                              </p>
+                              <p className="text-lg font-bold text-accent-primary">
+                                {formatCurrency(lastPayment.totalAmount)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {lastPayment.notes && (
+                          <div className="mt-2 pt-2 border-t border-base-border/30">
+                            <p className="text-xs text-base-muted">
+                              <span className="font-medium">Nota:</span> {lastPayment.notes}
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })()}
+
+                  {/* Enlace a todos los pagos */}
+                  {paymentsData.data.length > 1 && (
+                    <div className="text-center py-2">
                       <button
                         onClick={() => {
                           window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
                         }}
                         className="text-xs text-accent-primary hover:underline font-medium"
                       >
-                        Ver todos →
+                        Ver {paymentsData.data.length - 1} pago
+                        {paymentsData.data.length - 1 !== 1 ? "s" : ""} anterior
+                        {paymentsData.data.length - 1 !== 1 ? "es" : ""} →
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Debug console logs */}
-                {(() => {
-                  console.log("🔍 [MODAL] Modal 'Seguimiento de socio' abierta");
-                  console.log("📊 [MODAL] selectedSummary:", selectedSummary);
-                  console.log("📊 [MODAL] selectedSummary.memberId:", selectedSummary?.member?.id);
-                  console.log("💳 [MODAL] paymentsData:", paymentsData);
-                  console.log("💳 [MODAL] paymentsData.data:", paymentsData?.data);
-                  console.log("💳 [MODAL] isLoadingPayments:", isLoadingPayments);
-                  console.log("💳 [MODAL] paymentsData?.data?.length:", paymentsData?.data?.length);
-                  return null;
-                })()}
-
-                {isLoadingPayments ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-primary"></div>
-                  </div>
-                ) : !paymentsData?.data || paymentsData.data.length === 0 ? (
-                  <p className="text-sm text-base-muted">Sin pagos registrados todavía.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Mostrar solo el último pago */}
-                    {(() => {
-                      const lastPayment = paymentsData.data[0]; // El más reciente está primero
-                      return (
-                        <motion.div
-                          key={`last-payment-${lastPayment.transactionId}`}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="rounded-xl border border-base-border/60 bg-gradient-to-r from-base-secondary/20 to-base-secondary/10 p-4"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="h-2 w-2 rounded-full bg-accent-primary"></div>
-                                <p className="font-semibold text-base-foreground">
-                                  {new Date(lastPayment.paidAt).toLocaleDateString("es-AR", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                                <span className="text-xs text-accent-primary font-medium">
-                                  Último pago
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-4">
-                                  <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                    Cuotas pagadas:
-                                  </span>
-                                  <span className="text-sm font-medium text-base-foreground">
-                                    {lastPayment.duesCount} cuota
-                                    {lastPayment.duesCount !== 1 ? "s" : ""}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                    Período:
-                                  </span>
-                                  <span className="text-sm font-medium text-base-foreground">
-                                    {new Date(lastPayment.dues[0]?.dueDate).toLocaleDateString(
-                                      "es-AR",
-                                      {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                      }
-                                    )}{" "}
-                                    -{" "}
-                                    {new Date(
-                                      lastPayment.dues[lastPayment.dues.length - 1]?.dueDate
-                                    ).toLocaleDateString("es-AR", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })}
-                                  </span>
-                                </div>
-                                {lastPayment.reference && (
-                                  <div className="flex items-center gap-4">
-                                    <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                      Referencia:
-                                    </span>
-                                    <span className="text-sm text-base-foreground">
-                                      {lastPayment.reference}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <div className="text-right">
-                                <p className="text-xs uppercase tracking-[0.2em] text-base-muted mb-1">
-                                  Importe total
-                                </p>
-                                <p className="text-xl font-bold text-accent-primary">
-                                  {formatCurrency(lastPayment.totalAmount)}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                                <span className="text-xs font-medium text-accent-primary">
-                                  {lastPayment.duesCount} cuota
-                                  {lastPayment.duesCount !== 1 ? "s" : ""}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          {lastPayment.notes && (
-                            <div className="mt-3 pt-3 border-t border-base-border/30">
-                              <p className="text-xs text-base-muted">
-                                <span className="font-medium">Nota:</span> {lastPayment.notes}
-                              </p>
-                            </div>
-                          )}
-                        </motion.div>
-                      );
-                    })()}
-
-                    {/* Indicador de pagos adicionales */}
-                    {paymentsData.data.length > 1 && (
-                      <div className="text-center py-3">
-                        <button
-                          onClick={() => {
-                            window.location.href = `/admin/pagos/${selectedSummary.member.id}`;
-                          }}
-                          className="text-sm text-accent-primary hover:underline font-medium"
-                        >
-                          Ver {paymentsData.data.length - 1} pago
-                          {paymentsData.data.length - 1 !== 1 ? "s" : ""} anterior
-                          {paymentsData.data.length - 1 !== 1 ? "es" : ""} →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

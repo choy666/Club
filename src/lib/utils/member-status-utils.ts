@@ -116,8 +116,7 @@ export function getCredentialStatus(
       return {
         label: "Socio Vitalicio Inactivo",
         tone: "warning",
-        message:
-          "Tu credencial vitalicia está inactiva. Socio inactivo. Pago 360 cuotas, pero en app/admin figura como inactivo",
+        message: "Pago 360 cuotas, pero esta inactivo como socio",
       };
     }
   }
@@ -138,15 +137,13 @@ export function getCredentialStatus(
       return {
         label: "Socio Regular Activo",
         tone: "success",
-        message:
-          "Tu credencial vitalicia está activada. Socio activo. La cuota del mes actual está pagada y en app/admin figura como activo.",
+        message: "Credencial activa, La cuota del mes actual está pagada.",
       };
     } else {
       return {
         label: "Socio Regular Inactivo",
         tone: "warning",
-        message:
-          "Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo.",
+        message: "Tu credencial está inactiva. La cuota del mes actual está pendiente.",
       };
     }
   } else {
@@ -162,8 +159,7 @@ export function getCredentialStatus(
       return {
         label: "Socio Regular Inactivo",
         tone: "warning",
-        message:
-          "Tu credencial está inactiva. Contactar con el administrador. La cuota del mes actual está pendiente y en app/admin figura como inactivo.",
+        message: "Contactar con el administrador. Socio inactivo.",
       };
     }
   }

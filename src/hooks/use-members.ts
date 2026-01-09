@@ -29,6 +29,7 @@ const MEMBER_CREDENTIAL_KEY = (memberId: string | null) => [
   memberId ?? "unknown",
 ];
 const MEMBER_SELF_CREDENTIAL_KEY = ["member", "me", "credential"];
+export { MEMBER_SELF_CREDENTIAL_KEY };
 
 export function useMembersList() {
   const filters = useMemberFiltersStore();
@@ -125,7 +126,7 @@ export function useMemberCredential(memberId?: string, options?: { enabled?: boo
       );
       return response.data;
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 30,
   });
 }
 
@@ -138,7 +139,7 @@ export function useMyCredential(options?: { enabled?: boolean }) {
       const response = await apiFetch<MemberCredentialResponse>("/api/socios/me/credential");
       return response.data;
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 30,
   });
 }
 

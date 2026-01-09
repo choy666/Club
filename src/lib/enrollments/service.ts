@@ -1396,9 +1396,20 @@ export async function getMemberPaymentsByTransaction(memberId: string): Promise<
   >();
 
   for (const payment of allPayments) {
-    // Crear clave de transacción: fecha + hora (minutos) + método
+    // Crear clave de transacción agrupando pagos múltiples por fecha exacta, método y notas
     const paymentTime = new Date(payment.paidAt);
-    const transactionKey = `${paymentTime.getFullYear()}-${paymentTime.getMonth()}-${paymentTime.getDate()}-${paymentTime.getHours()}-${Math.floor(paymentTime.getMinutes() / 5)}-${payment.method}`;
+
+    let transactionKey: string;
+
+    // Si es un pago de múltiples cuotas (detectado por las notas), agrupar por fecha exacta y método
+    if (payment.notes?.includes("cuota(s)")) {
+      // Agrupar por fecha exacta (misma hora, minuto, segundo) y método
+      const exactTimeKey = `${paymentTime.getFullYear()}-${paymentTime.getMonth()}-${paymentTime.getDate()}-${paymentTime.getHours()}-${paymentTime.getMinutes()}-${paymentTime.getSeconds()}-${payment.method}`;
+      transactionKey = `multiple-${exactTimeKey}`;
+    } else {
+      // Para pagos individuales, usar el ID único del pago
+      transactionKey = `payment-${payment.id}`;
+    }
 
     if (!transactionGroups.has(transactionKey)) {
       transactionGroups.set(transactionKey, {

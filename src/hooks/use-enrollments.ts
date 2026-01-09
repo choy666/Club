@@ -19,6 +19,7 @@ import type { MembersListResponse } from "@/types/member";
 import type { MemberSummary } from "@/components/enrollments/due-table";
 import { DASHBOARD_SUMMARY_KEY } from "@/hooks/use-dashboard-summary";
 import { REPORTS_KEY } from "@/hooks/use-reports";
+import { MEMBER_SELF_CREDENTIAL_KEY } from "@/hooks/use-members";
 
 export const ENROLLMENTS_KEY = ["enrollments"] as const;
 export const DUES_KEY = ["dues"] as const;
@@ -98,6 +99,7 @@ export function useCreateEnrollment() {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBER_SELF_CREDENTIAL_KEY });
     },
     onError: (error) => {
       console.error("❌ [HOOK] Error al crear inscripción:", {
@@ -156,6 +158,7 @@ export function useDeleteEnrollment() {
       void queryClient.invalidateQueries({ queryKey: MEMBERS_OPTIONS_KEY });
       void queryClient.invalidateQueries({ queryKey: DASHBOARD_SUMMARY_KEY });
       void queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: MEMBER_SELF_CREDENTIAL_KEY });
     },
   });
 }

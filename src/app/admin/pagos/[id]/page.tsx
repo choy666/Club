@@ -2,11 +2,8 @@
 
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { useMemberPaymentsIndividual } from "@/hooks/use-enrollments";
 import { useMemberSummaries } from "@/hooks/use-enrollments";
-import { OptimizedScrollArea } from "@/components/ui/optimized-scroll-area";
-import { ModalSection } from "@/components/ui/modal-components";
 
 interface PaymentTransaction {
   transactionId: string;
@@ -56,7 +53,7 @@ export default function PaymentHistoryPage() {
     return (
       <div className="min-h-screen bg-base-primary flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
+          <div className="modal-loading-spinner mx-auto mb-4"></div>
           <p className="text-base-muted">Cargando historial de pagos...</p>
         </div>
       </div>
@@ -70,10 +67,7 @@ export default function PaymentHistoryPage() {
           <p className="text-accent-critical mb-4">
             {error ? "Error al cargar los pagos del socio" : "No se encontró información del socio"}
           </p>
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-hover transition-colors"
-          >
+          <button onClick={handleBack} className="btn-primary">
             Volver
           </button>
         </div>
@@ -85,23 +79,23 @@ export default function PaymentHistoryPage() {
   const payments = paymentsData?.data || [];
 
   return (
-    <div className="min-h-screen bg-base-primary">
-      <div className="page-shell py-8">
+    <div className="min-h-screen bg-base-primary rounded-lg">
+      <div className="page-shell py-8 px-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-10">
           <button
             onClick={handleBack}
-            className="mb-4 text-accent-primary hover:underline text-sm font-medium"
+            className="mb-6 text-accent-primary hover:text-accent-hover text-sm font-medium transition-colors"
           >
-            ← Volver al seguimiento
+            ← Volver
           </button>
 
-          <div className="neo-panel p-6">
-            <h1 className="text-3xl font-bold text-base-foreground mb-2">
-              Historial Completo de Pagos
+          <div className="neo-panel p-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-base-foreground mb-4">
+              Historial de Pagos
             </h1>
-            <div className="text-base-muted">
-              <p className="text-lg font-medium text-base-foreground">
+            <div className="text-base-muted space-y-2">
+              <p className="text-base font-medium text-base-foreground">
                 {memberInfo.name} · {memberInfo.documentNumber}
               </p>
               <p className="text-sm">{memberInfo.email}</p>
@@ -110,16 +104,14 @@ export default function PaymentHistoryPage() {
         </div>
 
         {/* Estadísticas */}
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <div className="neo-panel p-6 text-center">
-            <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">
-              Total de pagos
-            </p>
-            <p className="text-3xl font-bold text-base-foreground">{payments.length || 0}</p>
+        <div className="grid gap-6 sm:grid-cols-3 mb-10">
+          <div className="neo-panel p-8 text-center">
+            <p className="text-sm font-medium text-base-muted mb-3">Pagos</p>
+            <p className="text-2xl font-bold text-base-foreground">{payments.length || 0}</p>
           </div>
-          <div className="neo-panel p-6 text-center">
-            <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">Total abonado</p>
-            <p className="text-3xl font-bold text-accent-primary">
+          <div className="neo-panel p-8 text-center">
+            <p className="text-sm font-medium text-base-muted mb-3">Total abonado</p>
+            <p className="text-2xl font-bold text-accent-primary">
               {new Intl.NumberFormat("es-AR", {
                 style: "currency",
                 currency: "ARS",
@@ -131,11 +123,9 @@ export default function PaymentHistoryPage() {
               )}
             </p>
           </div>
-          <div className="neo-panel p-6 text-center">
-            <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">
-              Cuotas pagadas
-            </p>
-            <p className="text-3xl font-bold text-base-foreground">
+          <div className="neo-panel p-8 text-center">
+            <p className="text-sm font-medium text-base-muted mb-3">Cuotas pagadas</p>
+            <p className="text-2xl font-bold text-base-foreground">
               {payments.reduce((sum, payment: PaymentTransaction) => sum + payment.duesCount, 0) ||
                 0}
             </p>
@@ -144,58 +134,49 @@ export default function PaymentHistoryPage() {
 
         {/* Lista de pagos */}
         <div className="neo-panel">
-          <ModalSection title="Todos los pagos registrados">
-            {!payments || payments.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-base-muted">No hay pagos registrados para este socio.</p>
-              </div>
-            ) : (
-              <OptimizedScrollArea className="max-h-[600px]">
-                <div className="space-y-4">
-                  {payments.map((payment: PaymentTransaction, index: number) => (
-                    <motion.div
-                      key={payment.transactionId}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="rounded-xl border border-base-border/60 bg-gradient-to-r from-base-secondary/20 to-base-secondary/10 p-6"
-                    >
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="h-3 w-3 rounded-full bg-accent-primary"></div>
-                            <p className="font-semibold text-base-foreground text-lg">
-                              {new Date(payment.paidAt).toLocaleDateString("es-AR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                            <span className="px-2 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                              <span className="text-xs font-medium text-accent-primary">
-                                #{index + 1}
-                              </span>
+          <div className="p-8 border-b border-base-border">
+            <h2 className="text-lg font-semibold text-base-foreground">Pagos registrados</h2>
+          </div>
+          {!payments || payments.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-base-muted">No hay pagos registrados para este socio.</p>
+            </div>
+          ) : (
+            <div className="max-h-[600px] overflow-y-auto optimized-scroll-area">
+              <div className="divide-y divide-base-division">
+                {payments.map((payment: PaymentTransaction, index: number) => (
+                  <div
+                    key={payment.transactionId}
+                    className="p-8 hover:bg-base-secondary/20 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="h-2 w-2 rounded-full bg-state-active"></div>
+                          <p className="font-semibold text-base-foreground">
+                            {new Date(payment.paidAt).toLocaleDateString("es-AR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          <span className="px-3 py-1 rounded bg-accent-primary/10 border border-accent-primary/20 text-xs font-medium text-accent-primary">
+                            #{index + 1}
+                          </span>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <span className="text-xs text-base-muted">Cuotas: </span>
+                            <span className="text-sm font-medium text-base-foreground">
+                              {payment.duesCount} cuota{payment.duesCount !== 1 ? "s" : ""}
                             </span>
                           </div>
-
-                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                                Cuotas:
-                              </span>
-                              <span className="text-sm font-medium text-base-foreground">
-                                {payment.duesCount} cuota{payment.duesCount !== 1 ? "s" : ""}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="mt-3">
-                            <span className="text-xs uppercase tracking-[0.2em] text-base-muted">
-                              Período:
-                            </span>
-                            <span className="text-sm font-medium text-base-foreground ml-2">
+                          <div>
+                            <span className="text-xs text-base-muted">Período: </span>
+                            <span className="text-sm font-medium text-base-foreground">
                               {new Date(payment.dues[0]?.dueDate).toLocaleDateString("es-AR", {
                                 day: "2-digit",
                                 month: "2-digit",
@@ -211,41 +192,34 @@ export default function PaymentHistoryPage() {
                               })}
                             </span>
                           </div>
-
-                          {payment.notes && (
-                            <div className="mt-3 pt-3 border-t border-base-border/30">
-                              <p className="text-sm text-base-muted">
-                                <span className="font-medium">Nota:</span> {payment.notes}
-                              </p>
-                            </div>
-                          )}
                         </div>
 
-                        <div className="flex flex-col items-end gap-3">
-                          <div className="text-right">
-                            <p className="text-xs uppercase tracking-[0.2em] text-base-muted mb-1">
-                              Importe total
-                            </p>
-                            <p className="text-2xl font-bold text-accent-primary">
-                              {new Intl.NumberFormat("es-AR", {
-                                style: "currency",
-                                currency: "ARS",
-                              }).format(payment.totalAmount)}
+                        {payment.notes && (
+                          <div className="mt-4 pt-4 border-t border-base-border">
+                            <p className="text-sm text-base-muted">
+                              <span className="font-medium">Nota:</span> {payment.notes}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                            <span className="text-sm font-medium text-accent-primary">
-                              {payment.duesCount} cuota{payment.duesCount !== 1 ? "s" : ""}
-                            </span>
-                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end gap-3">
+                        <div className="text-right">
+                          <p className="text-xs text-base-muted mb-2">Importe total</p>
+                          <p className="text-xl font-bold text-accent-primary">
+                            {new Intl.NumberFormat("es-AR", {
+                              style: "currency",
+                              currency: "ARS",
+                            }).format(payment.totalAmount)}
+                          </p>
                         </div>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </OptimizedScrollArea>
-            )}
-          </ModalSection>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

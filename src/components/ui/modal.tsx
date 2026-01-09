@@ -115,7 +115,7 @@ export function Modal({ title, open, onClose, children, maxWidth = "xl" }: Modal
             duration: 0.2,
             ease: "easeOut",
           }}
-          className={`relative w-full ${maxWidthClasses[maxWidth]} max-h-[85vh] overflow-hidden`}
+          className={`relative w-full ${maxWidthClasses[maxWidth]} max-h-[95vh] overflow-hidden`}
           style={{ willChange: "transform, opacity" }}
         >
           {/* Glass Card optimizado */}

@@ -106,7 +106,7 @@ export function getCredentialStatus(
 
   // Socio Vitalicio
   if (isVitalicio) {
-    if (memberStatus === "ACTIVE") {
+    if (memberStatus === "ACTIVE" || memberStatus === "VITALICIO") {
       return {
         label: "Socio Vitalicio Activo",
         tone: "success",

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   useCreateEnrollment,
@@ -59,6 +60,7 @@ export function EnrollmentTable() {
   const createMutation = useCreateEnrollment();
   const updateMutation = useUpdateEnrollment();
   const deleteMutation = useDeleteEnrollment();
+  const queryClient = useQueryClient();
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [selected, setSelected] = useState<EnrollmentDTO | null>(null);
   const [credentialTarget, setCredentialTarget] = useState<EnrollmentDTO | null>(null);
@@ -105,12 +107,16 @@ export function EnrollmentTable() {
           ? "Inscripción eliminada con cuotas pagadas. Todos los registros han sido limpiados."
           : "Inscripción eliminada.";
         setFeedback({ type: "success", message: successMessage });
+
+        // Invalidar queries para actualizar contadores del dashboard
+        queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+        queryClient.invalidateQueries({ queryKey: ["members"] });
       } catch (mutationError: unknown) {
         const errorMessage = getErrorMessage(mutationError, "No se pudo eliminar la inscripción.");
         setFeedback({ type: "error", message: errorMessage });
       }
     },
-    [deleteMutation, setFeedback]
+    [deleteMutation, setFeedback, queryClient]
   );
 
   function closeModal() {
@@ -132,6 +138,11 @@ export function EnrollmentTable() {
           type: "success",
           message: "Inscripción creada correctamente.",
         });
+
+        // Invalidar queries para actualizar contadores del dashboard
+        queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+        queryClient.invalidateQueries({ queryKey: ["members"] });
+
         closeModal();
       } catch (mutationError) {
         clientLogger.error("Error al crear inscripción", mutationError);
@@ -149,7 +160,7 @@ export function EnrollmentTable() {
         }
       }
     },
-    [createMutation]
+    [createMutation, queryClient]
   );
 
   const handleEdit = useCallback(
@@ -162,6 +173,11 @@ export function EnrollmentTable() {
           input: values,
         });
         setFeedback({ type: "success", message: "Inscripción actualizada." });
+
+        // Invalidar queries para actualizar contadores del dashboard
+        queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+        queryClient.invalidateQueries({ queryKey: ["members"] });
+
         closeModal();
       } catch (mutationError) {
         console.error(mutationError);
@@ -176,7 +192,7 @@ export function EnrollmentTable() {
         setFormError(errorMessage);
       }
     },
-    [selected, updateMutation]
+    [selected, updateMutation, queryClient]
   );
 
   const renderTableContent = () => {

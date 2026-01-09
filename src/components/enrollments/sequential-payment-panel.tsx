@@ -106,6 +106,7 @@ export function SequentialPaymentPanel({
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["member-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
 
       console.log("✅ [PAGO] Proceso de pago finalizado");
       onClose();

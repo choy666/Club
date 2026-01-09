@@ -40,8 +40,27 @@ export function MemberCredentialCard({
       }
       return { label: "Credencial en proceso", tone: "warning" };
     }
-    return { label: "Credencial activa", tone: "success" };
-  }, [credential]);
+
+    // Lógica corregida: El estado depende del estado del miembro, no solo de la inscripción
+    // Un socio vitalicio puede estar activo o inactivo según el estado del miembro
+    const isVitalicio = (duesStats?.paidCount || 0) >= 360;
+    const memberStatus = credential.member.status;
+
+    if (memberStatus === "ACTIVE") {
+      if (isVitalicio) {
+        return { label: "Socio Vitalicio Activo", tone: "success" };
+      }
+      return { label: "Socio Activo", tone: "success" };
+    } else if (memberStatus === "INACTIVE") {
+      if (isVitalicio) {
+        return { label: "Socio Vitalicio Inactivo", tone: "warning" };
+      }
+      return { label: "Socio Inactivo", tone: "warning" };
+    } else {
+      // PENDING u otros estados
+      return { label: "Socio Pendiente", tone: "warning" };
+    }
+  }, [credential, duesStats]);
 
   return (
     <div className="neo-panel space-y-5">
@@ -109,18 +128,6 @@ export function MemberCredentialCard({
                       <span className="text-base-muted">Monto:</span>
                       <span className="font-semibold text-accent-primary">
                         ${credential.enrollment.monthlyAmount.toLocaleString("es-AR")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-base-muted">Estado:</span>
-                      <span
-                        className={`font-semibold ${
-                          credential.enrollment.status === "ACTIVE"
-                            ? "text-state-active"
-                            : "text-accent-warning"
-                        }`}
-                      >
-                        {credential.enrollment.status === "ACTIVE" ? "Activa" : "Pendiente"}
                       </span>
                     </div>
                   </div>
@@ -191,9 +198,15 @@ export function MemberCredentialCard({
             </div>
             <p className="text-sm mt-1 opacity-80">
               {status.tone === "success"
-                ? "Tu credencial está activa y lista para usar"
+                ? status.label.includes("Vitalicio")
+                  ? "Tu credencial vitalicia está activa y lista para usar"
+                  : "Tu credencial está activa y lista para usar"
                 : status.tone === "warning"
-                  ? "Completá los pasos necesarios para activar tu credencial"
+                  ? status.label.includes("Vitalicio")
+                    ? "Tu credencial vitalicia está inactiva. Contacta al administrador."
+                    : status.label.includes("Inactivo")
+                      ? "Tu credencial está inactiva. Contacta al administrador."
+                      : "Completá los pasos necesarios para activar tu credencial"
                   : "Esperando datos para generar tu credencial"}
             </p>
           </div>

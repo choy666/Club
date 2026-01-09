@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useMembersList, useDeleteMember } from "@/hooks/use-members";
 import { useMemberFiltersStore } from "@/store/members-filters-store";
@@ -17,6 +18,7 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
   const filters = useMemberFiltersStore();
   const { data, isLoading, error } = useMembersList();
   const deleteMutation = useDeleteMember();
+  const queryClient = useQueryClient();
 
   const hasData = Boolean(data?.data?.length);
 
@@ -41,9 +43,16 @@ export function MemberTable({ onCreate, onEdit }: MemberTableProps) {
 
       const confirmed = window.confirm(message);
       if (!confirmed) return;
-      deleteMutation.mutate(memberId);
+
+      deleteMutation.mutate(memberId, {
+        onSuccess: () => {
+          // Invalidar queries para actualizar contadores del dashboard
+          queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+          queryClient.invalidateQueries({ queryKey: ["members"] });
+        },
+      });
     },
-    [deleteMutation, data]
+    [deleteMutation, data, queryClient]
   );
 
   const tableContent = useMemo(() => {

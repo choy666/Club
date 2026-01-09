@@ -24,7 +24,7 @@ export function MemberCredentialCard({
 }: MemberCredentialCardProps) {
   // Obtener estadísticas de cuotas
   const { data: duesStats } = useMemberDuesStats(credential?.member.id || "");
-  
+
   // Obtener cuotas del mes actual
   const { data: currentDuesData } = useMemberCurrentDues(credential?.member.id || "");
 
@@ -35,11 +35,7 @@ export function MemberCredentialCard({
   console.log("💳 [CREDENTIAL] currentDuesData:", currentDuesData);
 
   const status = useMemo(() => {
-    return getCredentialStatus(
-      credential || null,
-      duesStats || null,
-      currentDuesData?.dues || []
-    );
+    return getCredentialStatus(credential || null, duesStats || null, currentDuesData?.dues || []);
   }, [credential, duesStats, currentDuesData]);
 
   return (

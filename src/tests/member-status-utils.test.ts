@@ -30,8 +30,8 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
   describe("Cobertura de primer mes (recién inscripto)", () => {
     it("debe mostrar cobertura activa si se inscribió hoy mismo", () => {
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      
+      const todayStr = today.toISOString().split("T")[0];
+
       const newCredential: MemberCredentialDTO = {
         ...mockCredential,
         enrollment: {
@@ -43,20 +43,26 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           updatedAt: todayStr,
         },
       };
-      
-      const result = getCredentialStatus(newCredential, { paidCount: 0, totalCount: 0, percentage: 0 }, []);
-      
+
+      const result = getCredentialStatus(
+        newCredential,
+        { paidCount: 0, totalCount: 0, percentage: 0 },
+        []
+      );
+
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
-      expect(result.message).toBe("¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción.");
+      expect(result.message).toBe(
+        "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción."
+      );
     });
 
     it("debe mostrar cobertura activa si está en el mismo mes de inscripción", () => {
       const today = new Date();
       // Usar una fecha dentro del mes actual para asegurar que esté en el mismo mes
       const enrollmentDate = new Date(today.getFullYear(), today.getMonth(), 5); // Día 5 del mes actual
-      const enrollmentDateStr = enrollmentDate.toISOString().split('T')[0];
-      
+      const enrollmentDateStr = enrollmentDate.toISOString().split("T")[0];
+
       const newCredential: MemberCredentialDTO = {
         ...mockCredential,
         enrollment: {
@@ -68,12 +74,18 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           updatedAt: enrollmentDateStr,
         },
       };
-      
-      const result = getCredentialStatus(newCredential, { paidCount: 0, totalCount: 0, percentage: 0 }, []);
-      
+
+      const result = getCredentialStatus(
+        newCredential,
+        { paidCount: 0, totalCount: 0, percentage: 0 },
+        []
+      );
+
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
-      expect(result.message).toBe("¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción.");
+      expect(result.message).toBe(
+        "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción."
+      );
     });
   });
 
@@ -82,42 +94,56 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PAID" },
-      ];
-      
-      const result = getCredentialStatus(mockCredential, { paidCount: 5, totalCount: 360, percentage: 1 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
+
+      const result = getCredentialStatus(
+        mockCredential,
+        { paidCount: 5, totalCount: 360, percentage: 1 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
-      expect(result.message).toBe("Tu credencial vitalicia está activada. Socio activo. La cuota del mes actual está pagada y en app/admin figura como activo.");
+      expect(result.message).toBe(
+        "Tu credencial vitalicia está activada. Socio activo. La cuota del mes actual está pagada y en app/admin figura como activo."
+      );
     });
 
     it("debe detectar cuota pendiente del mes actual", () => {
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PENDING" },
-      ];
-      
-      const result = getCredentialStatus(mockCredential, { paidCount: 5, totalCount: 360, percentage: 1 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
+
+      const result = getCredentialStatus(
+        mockCredential,
+        { paidCount: 5, totalCount: 360, percentage: 1 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo.");
+      expect(result.message).toBe(
+        "Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo."
+      );
     });
 
     it("debe detectar cuando no hay cuota generada para el mes actual", () => {
-      const result = getCredentialStatus(mockCredential, { paidCount: 5, totalCount: 360, percentage: 1 }, []);
-      
+      const result = getCredentialStatus(
+        mockCredential,
+        { paidCount: 5, totalCount: 360, percentage: 1 },
+        []
+      );
+
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo.");
+      expect(result.message).toBe(
+        "Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo."
+      );
     });
   });
 
@@ -130,21 +156,25 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           status: "INACTIVE",
         },
       };
-      
+
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PAID" },
-      ];
-      
-      const result = getCredentialStatus(inactiveCredential, { paidCount: 5, totalCount: 360, percentage: 1 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
+
+      const result = getCredentialStatus(
+        inactiveCredential,
+        { paidCount: 5, totalCount: 360, percentage: 1 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial está inactiva. Contactar con el administrador. La cuota del mes actual está pendiente y en app/admin figura como inactivo.");
+      expect(result.message).toBe(
+        "Tu credencial está inactiva. Contactar con el administrador. La cuota del mes actual está pendiente y en app/admin figura como inactivo."
+      );
     });
 
     it("debe mostrar inactivo con cuota pendiente", () => {
@@ -155,28 +185,36 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           status: "INACTIVE",
         },
       };
-      
+
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PENDING" },
-      ];
-      
-      const result = getCredentialStatus(inactiveCredential, { paidCount: 5, totalCount: 360, percentage: 1 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
+
+      const result = getCredentialStatus(
+        inactiveCredential,
+        { paidCount: 5, totalCount: 360, percentage: 1 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial está inactiva. Contactar con el administrador. La cuota del mes actual está pendiente y en app/admin figura como inactivo.");
+      expect(result.message).toBe(
+        "Tu credencial está inactiva. Contactar con el administrador. La cuota del mes actual está pendiente y en app/admin figura como inactivo."
+      );
     });
   });
 
   describe("Socio vitalicio", () => {
     it("debe mostrar vitalicio activo con 360+ cuotas pagadas", () => {
-      const result = getCredentialStatus(mockCredential, { paidCount: 360, totalCount: 360, percentage: 100 }, []);
-      
+      const result = getCredentialStatus(
+        mockCredential,
+        { paidCount: 360, totalCount: 360, percentage: 100 },
+        []
+      );
+
       expect(result.label).toBe("Socio Vitalicio Activo");
       expect(result.tone).toBe("success");
       expect(result.message).toBe("Tu credencial vitalicia está activada. Socio activo.");
@@ -190,17 +228,27 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           status: "INACTIVE",
         },
       };
-      
-      const result = getCredentialStatus(inactiveVitalicioCredential, { paidCount: 360, totalCount: 360, percentage: 100 }, []);
-      
+
+      const result = getCredentialStatus(
+        inactiveVitalicioCredential,
+        { paidCount: 360, totalCount: 360, percentage: 100 },
+        []
+      );
+
       expect(result.label).toBe("Socio Vitalicio Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial vitalicia está inactiva. Socio inactivo. Pago 360 cuotas, pero en app/admin figura como inactivo");
+      expect(result.message).toBe(
+        "Tu credencial vitalicia está inactiva. Socio inactivo. Pago 360 cuotas, pero en app/admin figura como inactivo"
+      );
     });
 
     it("debe mostrar vitalicio activo con más de 360 cuotas pagadas", () => {
-      const result = getCredentialStatus(mockCredential, { paidCount: 361, totalCount: 361, percentage: 100 }, []);
-      
+      const result = getCredentialStatus(
+        mockCredential,
+        { paidCount: 361, totalCount: 361, percentage: 100 },
+        []
+      );
+
       expect(result.label).toBe("Socio Vitalicio Activo");
       expect(result.tone).toBe("success");
       expect(result.message).toBe("Tu credencial vitalicia está activada. Socio activo.");
@@ -211,8 +259,8 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
     it("debe cambiar de cobertura a inactivo cuando pasa el mes sin pagar", () => {
       const lastMonth = new Date();
       lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const lastMonthStr = lastMonth.toISOString().split('T')[0];
-      
+      const lastMonthStr = lastMonth.toISOString().split("T")[0];
+
       const pastCredential: MemberCredentialDTO = {
         ...mockCredential,
         enrollment: {
@@ -224,28 +272,32 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           updatedAt: lastMonthStr,
         },
       };
-      
+
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PENDING" },
-      ];
-      
-      const result = getCredentialStatus(pastCredential, { paidCount: 0, totalCount: 1, percentage: 0 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
+
+      const result = getCredentialStatus(
+        pastCredential,
+        { paidCount: 0, totalCount: 1, percentage: 0 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
-      expect(result.message).toBe("Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo.");
+      expect(result.message).toBe(
+        "Tu credencial está inactiva. Debe el mes actual. La cuota del mes actual está pendiente y en app/admin figura como activo."
+      );
     });
 
     it("debe cambiar de cobertura a activo cuando pasa el mes y paga", () => {
       const lastMonth = new Date();
       lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const lastMonthStr = lastMonth.toISOString().split('T')[0];
-      
+      const lastMonthStr = lastMonth.toISOString().split("T")[0];
+
       const pastCredential: MemberCredentialDTO = {
         ...mockCredential,
         enrollment: {
@@ -257,21 +309,25 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
           updatedAt: lastMonthStr,
         },
       };
-      
+
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-      
-      const currentDues = [
-        { dueDate: currentDueDate, status: "PAID" },
-      ];
-      
-      const result = getCredentialStatus(pastCredential, { paidCount: 1, totalCount: 1, percentage: 100 }, currentDues);
-      
+      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
+
+      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
+
+      const result = getCredentialStatus(
+        pastCredential,
+        { paidCount: 1, totalCount: 1, percentage: 100 },
+        currentDues
+      );
+
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
-      expect(result.message).toBe("Tu credencial vitalicia está activada. Socio activo. La cuota del mes actual está pagada y en app/admin figura como activo.");
+      expect(result.message).toBe(
+        "Tu credencial vitalicia está activada. Socio activo. La cuota del mes actual está pagada y en app/admin figura como activo."
+      );
     });
   });
 });

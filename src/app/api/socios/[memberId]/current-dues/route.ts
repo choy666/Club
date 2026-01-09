@@ -22,13 +22,13 @@ export async function GET(
     const today = fromLocalDateOnly(todayStr);
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
-    
+
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0); // Último día del mes
 
     // Convertir fechas a formato YYYY-MM-DD para la consulta
-    const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
-    const lastDayStr = lastDayOfMonth.toISOString().split('T')[0];
+    const firstDayStr = firstDayOfMonth.toISOString().split("T")[0];
+    const lastDayStr = lastDayOfMonth.toISOString().split("T")[0];
 
     // Obtener cuotas del mes actual
     const currentMonthDues = await db
@@ -52,13 +52,13 @@ export async function GET(
 
     return jsonSuccess({
       dues: currentMonthDues,
-      isCurrentMonthPaid: currentMonthDues.some(due => due.status === "PAID"),
+      isCurrentMonthPaid: currentMonthDues.some((due) => due.status === "PAID"),
       currentMonth: {
         year: currentYear,
-        month: currentMonth + 1, 
+        month: currentMonth + 1,
         firstDay: firstDayStr,
         lastDay: lastDayStr,
-      }
+      },
     });
   } catch (error) {
     console.error(" [API] Error en endpoint de cuotas actuales:", error);

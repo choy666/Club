@@ -296,7 +296,7 @@ export function usePaySequentialDues() {
       void queryClient.invalidateQueries({ queryKey: ["member-payments-individual"] });
       void queryClient.invalidateQueries({ queryKey: ["member-dues-stats"] });
       void queryClient.invalidateQueries({ queryKey: ["member-current-dues"] });
-      
+
       // Forzar refresco inmediato
       void queryClient.refetchQueries({ queryKey: ["member-payments-individual"] });
       void queryClient.refetchQueries({ queryKey: ["member-summaries"] });

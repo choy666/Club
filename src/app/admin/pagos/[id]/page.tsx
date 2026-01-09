@@ -115,9 +115,7 @@ export default function PaymentHistoryPage() {
             <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">
               Total de pagos
             </p>
-            <p className="text-3xl font-bold text-base-foreground">
-              {payments.length || 0}
-            </p>
+            <p className="text-3xl font-bold text-base-foreground">{payments.length || 0}</p>
           </div>
           <div className="neo-panel p-6 text-center">
             <p className="text-sm uppercase tracking-[0.3em] text-base-muted mb-2">Total abonado</p>
@@ -138,10 +136,8 @@ export default function PaymentHistoryPage() {
               Cuotas pagadas
             </p>
             <p className="text-3xl font-bold text-base-foreground">
-              {payments.reduce(
-                (sum, payment: PaymentTransaction) => sum + payment.duesCount,
-                0
-              ) || 0}
+              {payments.reduce((sum, payment: PaymentTransaction) => sum + payment.duesCount, 0) ||
+                0}
             </p>
           </div>
         </div>

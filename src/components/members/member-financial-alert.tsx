@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { MemberFinancialSnapshot } from "@/types/member";
+import { formatDateForDisplay } from "@/lib/utils/date-utils";
 
 type Tone = "critical" | "warning" | "success" | "neutral";
 
@@ -47,17 +48,6 @@ function resolveTone(snapshot?: MemberFinancialSnapshot | null): Tone {
   if (snapshot.totals.overdue > 0) return "critical";
   if (snapshot.totals.pending > 0) return "warning";
   return "success";
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 export function MemberFinancialAlert({
@@ -108,7 +98,9 @@ export function MemberFinancialAlert({
               <p className="text-xs uppercase tracking-widest text-base-muted">
                 Próximo vencimiento
               </p>
-              <p className="mt-1 text-2xl font-semibold">{formatDate(snapshot.nextDueDate)}</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {formatDateForDisplay(snapshot.nextDueDate || "")}
+              </p>
               <span className="text-xs text-base-muted">Total abonado: {snapshot.totals.paid}</span>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/3 px-4 py-3 text-sm">

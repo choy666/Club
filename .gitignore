@@ -44,3 +44,9 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Debug and test files
+debug-*.js
+test-*.js
+response*.json
+check-*.js

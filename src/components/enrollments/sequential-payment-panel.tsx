@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePaySequentialDues } from "@/hooks/use-enrollments";
 import type { MemberSummary } from "@/components/enrollments/due-table";
+import { formatCurrency } from "@/lib/number-format";
 
 interface SequentialPaymentPanelProps {
   memberId: string;
@@ -120,14 +121,6 @@ export function SequentialPaymentPanel({
         alert("Error desconocido al procesar el pago. Por favor, intente nuevamente.");
       }
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-    }).format(value);
   };
 
   const formatDate = (dateString: string) => {

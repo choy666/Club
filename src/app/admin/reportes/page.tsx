@@ -1,408 +1,337 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { useReports } from "@/hooks/use-reports";
-import type { ReportFiltersInput } from "@/types/report";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { useMembersStats } from "@/hooks/use-members-stats";
+import { apiFetch } from "@/lib/api-client";
 
-function createDefaultFilters(): ReportFiltersInput {
-  const now = new Date();
-  const dateTo = now.toISOString();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 30);
+interface Member {
+  id: number;
+  nombre: string;
+  dni: string;
+  email: string;
+  telefono: string;
+  estado: "activo" | "inactivo" | "pendiente" | "vitalicio";
+  estadoCompleto:
+    | "Vitalicio Activo"
+    | "Vitalicio Inactivo"
+    | "Regular Activo"
+    | "Regular Inactivo"
+    | "Pendiente"
+    | "Inactivo";
+  estadoCuota: "al_dia" | "deudor";
+  fechaIngreso: string;
+  plan: "mensual" | "anual" | "vitalicio";
+  ultimaCuota: string | null;
+}
 
-  return {
-    dateFrom: thirtyDaysAgo.toISOString(),
-    dateTo,
-    granularity: "weekly",
-    planId: undefined,
-    currency: "ARS",
+interface MembersResponse {
+  data: Member[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
 
-const MotionCard = motion.article;
-const MotionSection = motion.section;
-const MotionDiv = motion.div;
+export default function AdminReportesPage() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [debtFilter, setDebtFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(false);
 
-export default function AdminReportsPage() {
-  const [filters, setFilters] = useState<ReportFiltersInput>(() => createDefaultFilters());
-  const [formState, setFormState] = useState<ReportFiltersInput>(filters);
+  const { data: stats, isLoading: statsLoading } = useMembersStats();
 
-  const reportsQuery = useReports(filters);
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "10",
+        ...(search && { search }),
+        ...(statusFilter && { status: statusFilter }),
+        ...(debtFilter && { debtStatus: debtFilter }),
+      });
 
-  function handleFormChange<K extends keyof ReportFiltersInput>(
-    key: K,
-    value: ReportFiltersInput[K]
-  ) {
-    setFormState((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
+      const response = await apiFetch<MembersResponse>(`/api/socios/list?${params}`);
+      setMembers(response.data);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error("Error al cargar socios:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, search, statusFilter, debtFilter]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFilters(formState);
-  }
+  // Cargar socios al montar y cuando cambian los filtros
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
-  function handleReset() {
-    const defaults = createDefaultFilters();
-    setFormState(defaults);
-    setFilters(defaults);
-  }
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchMembers();
+  };
 
-  const hasData = (reportsQuery.data?.data?.length ?? 0) > 0;
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-  const portfolioBlock = useMemo(
-    () => reportsQuery.data?.data.find((block) => block.kpiId === "portfolio-health"),
-    [reportsQuery.data]
-  );
-
-  const portfolioChartData = useMemo(() => {
-    return (
-      portfolioBlock?.breakdown?.map((item) => ({
-        ...item,
-        fill:
-          item.label === "Pagadas"
-            ? "#2dd4bf"
-            : item.label === "Pendientes"
-              ? "#fbbf24"
-              : "#f87171",
-        value: Number(item.value ?? 0),
-      })) ?? []
-    );
-  }, [portfolioBlock]);
+  const MotionCard = motion.div;
 
   return (
-    <div className="space-y-10">
-      <motion.header
-        className="neo-panel flex flex-col gap-4 p-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="space-y-3">
-          <span className="neo-chip">Panel administrativo</span>
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-4xl font-semibold font-[var(--font-space)] tracking-tight">
-                Reportes y métricas
-              </h1>
-              <p className="mt-2 max-w-3xl text-base text-base-muted">
-                Visualizá KPIs financieros, tendencias y salud de cartera con un tablero
-                minimalista/futurista.
+    <AdminLayout>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <h1 className="text-3xl font-bold font-[var(--font-space)] tracking-tight">
+            Reportes de Socios
+          </h1>
+          <p className="text-base-muted">
+            Panel minimalista con métricas clave y gestión de socios
+          </p>
+        </motion.div>
+
+        {/* Contadores */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        >
+          <MotionCard
+            className="neo-panel p-6 border border-base-border/40"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Total Socios</p>
+              <p className="text-2xl font-bold">{statsLoading ? "..." : stats?.total || 0}</p>
+            </div>
+          </MotionCard>
+
+          <MotionCard
+            className="neo-panel p-6 border border-state-active/40 bg-state-active/5"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+          >
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Activos</p>
+              <p className="text-2xl font-bold text-state-active">
+                {statsLoading ? "..." : stats?.activo || 0}
               </p>
             </div>
-            <motion.div
-              className="rounded-full border border-base-border/70 px-4 py-2 text-xs uppercase tracking-[0.3em] text-base-muted"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              Última sincronización{" "}
-              {reportsQuery.data ? new Date(reportsQuery.data.generatedAt).toLocaleString() : "—"}
-            </motion.div>
-          </div>
-        </div>
-      </motion.header>
+          </MotionCard>
 
-      <form
-        className="neo-panel flex flex-col gap-6 p-6 md:flex-row md:items-end md:justify-between"
-        onSubmit={handleSubmit}
-      >
-        <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-base-muted">
-            Fecha desde
+          <MotionCard
+            className="neo-panel p-6 border border-accent-success/40 bg-accent-success/5"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Activos al Día</p>
+              <p className="text-2xl font-bold text-accent-success">
+                {statsLoading ? "..." : stats?.alDia || 0}
+              </p>
+            </div>
+          </MotionCard>
+
+          <MotionCard
+            className="neo-panel p-6 border border-accent-critical/40 bg-accent-critical/5"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 }}
+          >
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-base-muted">Inactivos</p>
+              <p className="text-2xl font-bold text-accent-critical">
+                {statsLoading ? "..." : stats?.inactivo || 0}
+              </p>
+            </div>
+          </MotionCard>
+        </motion.div>
+
+        {/* Filtros y búsqueda */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="neo-panel p-6 space-y-4"
+        >
+          <h2 className="text-xl font-semibold font-[var(--font-space)]">Búsqueda y Filtros</h2>
+
+          <div className="grid gap-4 md:grid-cols-4">
             <input
-              type="date"
+              type="text"
+              placeholder="Buscar por nombre o DNI..."
               className="input-minimal"
-              value={formState.dateFrom.slice(0, 10)}
-              max={formState.dateTo.slice(0, 10)}
-              onChange={(event) =>
-                handleFormChange("dateFrom", new Date(event.target.value).toISOString())
-              }
-              required
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-          </label>
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-base-muted">
-            Fecha hasta
-            <input
-              type="date"
-              className="input-minimal"
-              value={formState.dateTo.slice(0, 10)}
-              min={formState.dateFrom.slice(0, 10)}
-              onChange={(event) =>
-                handleFormChange("dateTo", new Date(event.target.value).toISOString())
-              }
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-base-muted">
-            Granularidad
+
             <select
               className="select-base"
-              value={formState.granularity}
-              onChange={(event) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  granularity: event.target.value as typeof prev.granularity,
-                }))
-              }
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensual</option>
+              <option value="">Todos los estados</option>
+              <option value="vitalicio-activo">Vitalicio Activo</option>
+              <option value="vitalicio-inactivo">Vitalicio Inactivo</option>
+              <option value="regular-activo">Regular Activo</option>
+              <option value="regular-inactivo">Regular Inactivo</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="inactivo">Inactivo</option>
             </select>
-          </label>
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-base-muted">
-            Código de plan (opcional)
-            <input
-              type="text"
-              className="input-minimal"
-              value={formState.planId ?? ""}
-              placeholder="UUID del plan"
-              onChange={(event) =>
-                handleFormChange(
-                  "planId",
-                  event.target.value.length ? event.target.value : undefined
-                )
-              }
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.3em] text-base-muted sm:col-span-2 lg:col-span-1">
-            Moneda (ISO 4217)
-            <input
-              type="text"
-              maxLength={3}
-              className="input-minimal uppercase"
-              value={formState.currency ?? ""}
-              onChange={(event) =>
-                handleFormChange(
-                  "currency",
-                  event.target.value.length ? event.target.value.toUpperCase() : undefined
-                )
-              }
-            />
-          </label>
-        </div>
-        <div className="flex flex-col gap-2 md:w-48">
-          <motion.button
-            type="submit"
-            className="btn-primary"
-            disabled={reportsQuery.isFetching}
-            whileTap={{ scale: 0.96 }}
-            whileHover={{ scale: 1.02 }}
-          >
-            Aplicar filtros
-          </motion.button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleReset}
-            disabled={reportsQuery.isFetching}
-          >
-            Resetear
-          </button>
-        </div>
-      </form>
 
-      <MotionSection
-        className="flex flex-col gap-4"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.1 }}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold font-[var(--font-space)]">KPIs destacados</h2>
-          <p className="text-sm text-base-muted">
-            Última actualización{" "}
-            {reportsQuery.data ? new Date(reportsQuery.data.generatedAt).toLocaleString() : "—"}
-          </p>
-        </div>
-
-        {reportsQuery.isLoading && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={`report-skeleton-${index}`}
-                className="neo-panel animate-pulse border border-base-border/30 p-4"
-              >
-                <div className="h-5 w-24 rounded bg-base-border/60" />
-                <div className="mt-4 h-10 w-32 rounded bg-base-border/40" />
-                <div className="mt-6 h-4 w-full rounded bg-base-border/40" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {reportsQuery.error && (
-          <div className="neo-panel border border-accent-critical/60 bg-accent-critical/10 p-4">
-            <p className="font-semibold text-accent-critical">
-              Ocurrió un error al cargar los reportes.
-            </p>
-            <p className="text-sm text-base-muted">
-              {reportsQuery.error instanceof Error
-                ? reportsQuery.error.message
-                : "Intentá nuevamente más tarde."}
-            </p>
-            <button
-              type="button"
-              className="btn-secondary mt-3"
-              onClick={() => reportsQuery.refetch()}
+            <select
+              className="select-base"
+              value={debtFilter}
+              onChange={(e) => setDebtFilter(e.target.value)}
             >
-              Reintentar
+              <option value="">Todos</option>
+              <option value="al_dia">Al día</option>
+              <option value="deudor">Deudores</option>
+            </select>
+
+            <button className="btn-primary" onClick={handleSearch} disabled={loading}>
+              {loading ? "Buscando..." : "Buscar"}
             </button>
           </div>
-        )}
+        </motion.div>
 
-        {!reportsQuery.isLoading && !hasData && !reportsQuery.error && (
-          <div className="neo-panel border border-base-border/60 p-6 text-center">
-            <p className="text-lg font-semibold">
-              No encontramos datos para los filtros seleccionados.
-            </p>
-            <p className="mt-2 text-base-muted">
-              Ajustá el rango de fechas o quitá filtros específicos para ver tendencias.
-            </p>
+        {/* Lista de socios */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="neo-panel p-6 space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold font-[var(--font-space)]">Lista de Socios</h2>
+            <p className="text-sm text-base-muted">{pagination.total} socios encontrados</p>
           </div>
-        )}
 
-        {hasData && (
-          <>
-            <div className="grid gap-4 md:grid-cols-2">
-              {reportsQuery.data?.data.map((block, index) => (
-                <MotionCard
-                  key={block.kpiId}
-                  className="neo-panel border border-base-border/40 p-5 transition hover:border-accent-primary/40 hover:shadow-[0_0_35px_rgba(248,113,113,0.2)]"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * index, duration: 0.3 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                        {block.label}
-                      </p>
-                      <motion.p
-                        className="mt-3 text-3xl font-semibold"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1, duration: 0.2 }}
-                      >
-                        {block.value.toLocaleString("es-AR", {
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        {block.unit ? (
-                          <span className="text-base text-base-muted">{block.unit}</span>
-                        ) : null}
-                      </motion.p>
-                    </div>
-                    {block.trend && (
-                      <motion.span
-                        className={`neo-tag ${
-                          block.trend.direction === "up"
-                            ? "bg-state-active/15 text-state-active"
-                            : "bg-accent-critical/15 text-accent-critical"
-                        }`}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.1, duration: 0.2 }}
-                      >
-                        {block.trend.delta > 0 ? "+" : ""}
-                        {block.trend.delta}%
-                      </motion.span>
-                    )}
-                  </div>
-                  {block.trend && (
-                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-base-muted">
-                      {block.trend.comparisonLabel}
-                    </p>
-                  )}
-                  {block.breakdown && block.breakdown.length > 0 && (
-                    <div className="mt-5 space-y-2">
-                      {block.breakdown.map((item) => (
-                        <div
-                          key={`${block.kpiId}-${item.label}`}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="text-base-muted">{item.label}</span>
-                          <span className="font-medium">
-                            {item.value.toLocaleString("es-AR")}{" "}
-                            {item.percentage !== undefined
-                              ? `(${item.percentage.toFixed(1)}%)`
-                              : ""}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {block.description && (
-                    <p className="mt-4 text-sm text-base-muted">{block.description}</p>
-                  )}
-                </MotionCard>
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="neo-panel p-4 animate-pulse">
+                  <div className="h-4 bg-base-border/40 rounded w-1/4" />
+                </div>
               ))}
             </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-base-border/40">
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Nombre
+                    </th>
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      DNI
+                    </th>
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Estado
+                    </th>
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Plan
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((member) => (
+                    <tr
+                      key={member.id}
+                      className="border-b border-base-border/20 hover:bg-base-border/10 transition-colors"
+                    >
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium">{member.nombre}</p>
+                          <p className="text-xs text-base-muted">{member.email}</p>
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm">{member.dni}</td>
+                      <td className="p-3">
+                        <span
+                          className={`neo-tag text-xs ${
+                            member.estadoCompleto === "Vitalicio Activo"
+                              ? "bg-accent-primary/15 text-accent-primary"
+                              : member.estadoCompleto === "Vitalicio Inactivo"
+                                ? "bg-accent-primary/15 text-accent-primary/60"
+                                : member.estadoCompleto === "Regular Activo"
+                                  ? "bg-state-active/15 text-state-active"
+                                  : member.estadoCompleto === "Regular Inactivo"
+                                    ? "bg-accent-critical/15 text-accent-critical"
+                                    : member.estadoCompleto === "Pendiente"
+                                      ? "bg-accent-warning/15 text-accent-warning"
+                                      : "bg-base-border/15 text-base-muted"
+                          }`}
+                        >
+                          {member.estadoCompleto}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm capitalize">{member.plan}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-            {portfolioChartData.length > 0 && (
-              <MotionDiv
-                className="neo-panel border border-base-border/40 p-6"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.2 }}
+          {/* Paginación */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                className="btn-secondary"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-base-muted">
-                      Visualización especial
-                    </p>
-                    <h3 className="mt-2 text-2xl font-semibold">Distribución de cartera</h3>
-                    <p className="text-base-muted">
-                      Representamos el peso relativo de cada estado de cuotas para identificar
-                      cuellos de botella.
-                    </p>
-                  </div>
-                  <div className="h-64 w-full md:w-1/2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadialBarChart
-                        data={portfolioChartData}
-                        innerRadius="20%"
-                        outerRadius="90%"
-                        startAngle={90}
-                        endAngle={-270}
-                      >
-                        <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                        <Tooltip
-                          cursor={{ fill: "transparent" }}
-                          content={({ payload }) => {
-                            if (!payload?.length) return null;
-                            const entry = payload[0] as {
-                              payload: {
-                                label: string;
-                                value: number;
-                                percentage?: number;
-                              };
-                            };
-                            return (
-                              <div className="neo-panel border border-base-border/80 px-4 py-3 text-sm">
-                                <p className="font-semibold">{entry.payload.label}</p>
-                                <p>
-                                  {entry.payload.value.toLocaleString("es-AR")} (
-                                  {entry.payload.percentage?.toFixed(1)}%)
-                                </p>
-                              </div>
-                            );
-                          }}
-                        />
-                        <RadialBar background dataKey="percentage" cornerRadius={10} />
-                      </RadialBarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </MotionDiv>
-            )}
-          </>
-        )}
-      </MotionSection>
-    </div>
+                Anterior
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    className={`w-8 h-8 rounded text-sm ${
+                      currentPage === page ? "btn-primary" : "btn-secondary"
+                    }`}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                className="btn-secondary"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === pagination.totalPages}
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </AdminLayout>
   );
 }

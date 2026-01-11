@@ -12,6 +12,7 @@ import { useRecordPayment } from "@/hooks/use-payments";
 import { MemberProgressSummary } from "@/components/enrollments/member-progress-summary";
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
+import { formatCurrency } from "@/lib/number-format";
 
 type Feedback = {
   type: "success" | "error";
@@ -34,14 +35,6 @@ export type MemberSummary = {
   amountDue: number;
   amountPaid: number;
 };
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
-}
 
 export function DueTable() {
   const { data: summariesData, isLoading, error } = useMemberSummaries();

@@ -6,7 +6,7 @@ import type { MemberCredentialDTO } from "@/types/enrollment";
  * Determina si un socio está en su primer mes de cobertura (recién inscripto)
  * Los socios recién inscriptos tienen cobertura por un mes sin necesidad de cuotas
  */
-function isFirstMonthCoverage(enrollment: MemberCredentialDTO["enrollment"]): boolean {
+export function isFirstMonthCoverage(enrollment: MemberCredentialDTO["enrollment"]): boolean {
   if (!enrollment) return false;
 
   // Obtener fecha de inscripción y fecha actual

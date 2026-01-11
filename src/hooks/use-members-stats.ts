@@ -6,6 +6,7 @@ export interface MemberStats {
   vitalicioActivo: number;
   vitalicioInactivo: number;
   activo: number;
+  alDia: number;
   inactivo: number;
   pendiente: number;
   total: number;

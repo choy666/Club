@@ -19,6 +19,7 @@ import type { EnrollmentDTO } from "@/types/enrollment";
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
 import { MemberCredentialCard } from "@/components/credentials/member-credential-card";
+import { formatDateForDisplay } from "@/lib/utils/date-utils";
 
 type Feedback = {
   type: "success" | "error";
@@ -39,20 +40,6 @@ const STATUS_STYLES: Record<EnrollmentDTO["status"], { label: string; className:
     className: "text-accent-critical bg-accent-critical/10 border-accent-critical/40",
   },
 };
-
-// Función utilitaria para formatear fechas consistentemente
-function formatDisplayDate(dateStr: string): string {
-  if (dateStr.includes("T")) {
-    // Si viene como ISO, extraer solo la parte de fecha
-    const [datePart] = dateStr.split("T");
-    const [year, month, day] = datePart.split("-");
-    return `${day}/${month}/${year}`;
-  } else {
-    // Si ya viene como YYYY-MM-DD
-    const [year, month, day] = dateStr.split("-");
-    return `${day}/${month}/${year}`;
-  }
-}
 
 export function EnrollmentTable() {
   const filters = useEnrollmentFiltersStore();
@@ -262,7 +249,7 @@ export function EnrollmentTable() {
                 </span>
               </td>
               <td className="px-6 py-4 text-sm text-base-muted">
-                {formatDisplayDate(enrollment.startDate)}
+                {formatDateForDisplay(enrollment.startDate)}
               </td>
               <td className="px-6 py-4">
                 <button
@@ -339,7 +326,7 @@ export function EnrollmentTable() {
                   >
                     {statusConfig.label}
                   </span>
-                  <span>Inicio: {formatDisplayDate(enrollment.startDate)}</span>
+                  <span>Inicio: {formatDateForDisplay(enrollment.startDate)}</span>
                 </div>
 
                 <div className="grid gap-2 text-xs uppercase tracking-[0.25em]">

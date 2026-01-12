@@ -106,7 +106,7 @@ export function getMemberStatusFromReports(
   if (memberStatus === "INACTIVE") {
     if (hasVitalicio) {
       return "Vitalicio Inactivo";
-    } else if (totalPagos >= 300) {
+    } else if (totalPagos >= 360) {
       return "Vitalicio Inactivo";
     } else {
       return "Regular Inactivo";
@@ -115,7 +115,7 @@ export function getMemberStatusFromReports(
     return "Pendiente";
   } else if (memberStatus === "ACTIVE") {
     // Determinar si es vitalicio
-    if (hasVitalicio || totalPagos >= 300) {
+    if (hasVitalicio || totalPagos >= 360) {
       return "Vitalicio Activo";
     } else {
       // Es un miembro regular - aplicar lógica de cobertura
@@ -218,13 +218,15 @@ export function testCredentialStatus(
 
   console.log("🧪 [TEST] Estado final calculado:", estadoFinal);
 
-  // Retornar resultado
+  // Retornar resultado con todos los casos manejados
   switch (estadoFinal) {
     case "Regular Activo":
       return {
         label: "Socio Regular Activo",
         tone: "success",
-        message: "Credencial activa, La cuota del mes actual está pagada.",
+        message: isFirstMonth
+          ? "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción."
+          : "Credencial activa, La cuota del mes actual está pagada.",
       };
     case "Regular Inactivo":
       return {
@@ -248,25 +250,36 @@ export function getCredentialStatus(
   credential: MemberCredentialDTO | null,
   duesStats: { paidCount: number; totalCount: number; percentage: number } | null
 ) {
-  // TEMPORAL: Usar función de prueba para debug intensivo
-  return testCredentialStatus(credential, duesStats);
+  console.log("🔍 [CREDENTIAL] INICIO - getCredentialStatus llamado");
+  console.log("📊 [CREDENTIAL] Datos recibidos:");
+  console.log("  - credential:", credential);
+  console.log("  - duesStats:", duesStats);
 
-  /*
-  // Lógica original (comentada temporalmente)
-  if (!credential)
+  if (!credential) {
+    console.log("❌ [CREDENTIAL] No hay credencial - retornando Sin datos");
     return {
       label: "Sin datos",
       tone: "neutral",
       message: "Esperando datos para generar tu credencial",
     };
-  if (!credential.enrollment)
+  }
+
+  if (!credential.enrollment) {
+    console.log("❌ [CREDENTIAL] No hay inscripción - retornando Sin inscripción");
     return {
       label: "Sin inscripción",
       tone: "neutral",
       message: "Esperando datos para generar tu credencial",
     };
+  }
+
   if (!credential.isReady) {
+    console.log("⚠️ [CREDENTIAL] Credencial no está ready - isReady:", credential.isReady);
     if (credential.enrollment.status !== "ACTIVE") {
+      console.log(
+        "⚠️ [CREDENTIAL] Inscripción no está activa - status:",
+        credential.enrollment.status
+      );
       return {
         label: "Inscripción pendiente",
         tone: "warning",
@@ -274,6 +287,9 @@ export function getCredentialStatus(
       };
     }
     // Si isReady es false pero la inscripción está activa, tratar como socio regular inactivo
+    console.log(
+      "⚠️ [CREDENTIAL] isReady false pero inscripción activa - tratando como Regular Inactivo"
+    );
     return {
       label: "Socio Regular Inactivo",
       tone: "warning",
@@ -285,20 +301,30 @@ export function getCredentialStatus(
   const memberStatus = credential.member.status;
   const hasVitalicio = credential.enrollment.planName === "VITALICIO";
   const totalPagos = duesStats?.paidCount || 0;
-  
+
+  console.log("🔍 [CREDENTIAL] Análisis de estado:");
+  console.log("  - member.status:", memberStatus);
+  console.log("  - member.status type:", typeof memberStatus);
+  console.log("  - enrollment.planName:", credential.enrollment.planName);
+  console.log("  - enrollment.planName type:", typeof credential.enrollment.planName);
+  console.log("  - hasVitalicio:", hasVitalicio);
+  console.log("  - totalPagos:", totalPagos);
+  console.log("  - totalPagos >= 300:", totalPagos >= 300);
+  console.log("  - totalPagos >= 360:", totalPagos >= 360);
+  console.log("  - credential.isReady:", credential.isReady);
+  console.log("  - credential.enrollment.status:", credential.enrollment.status);
+  console.log("  - credential.enrollment.status type:", typeof credential.enrollment.status);
+
   // Verificar si está en primer mes de cobertura (recién inscripto)
   const isFirstMonth = isFirstMonthCoverage(credential.enrollment);
-  
+  console.log("  - isFirstMonth:", isFirstMonth);
+
   // Para la lógica de reportes, necesitamos verificar si está al día con el mes actual
   // Usamos la misma lógica que el API: si tiene cobertura vigente o es primer mes, está al día
   const hasCoverage = hasActiveCoverage(credential.enrollment, totalPagos);
   const isCurrentMonthPaid = hasCoverage || isFirstMonth;
 
-  console.log("🔍 [CREDENTIAL STATUS] Debug:");
-  console.log("  - memberStatus:", memberStatus);
-  console.log("  - hasVitalicio:", hasVitalicio);
-  console.log("  - totalPagos:", totalPagos);
-  console.log("  - isFirstMonth:", isFirstMonth);
+  console.log("🔍 [CREDENTIAL] Análisis de cobertura:");
   console.log("  - hasCoverage:", hasCoverage);
   console.log("  - isCurrentMonthPaid:", isCurrentMonthPaid);
 
@@ -311,48 +337,68 @@ export function getCredentialStatus(
     isCurrentMonthPaid
   );
 
-  console.log("🎯 [CREDENTIAL STATUS] Estado final:", estadoCompleto);
+  console.log("🎯 [CREDENTIAL] Estado final calculado:", estadoCompleto);
+  console.log("🔍 [CREDENTIAL] Análisis detallado:");
+  console.log("  - memberStatus:", memberStatus);
+  console.log("  - hasVitalicio:", hasVitalicio);
+  console.log("  - totalPagos:", totalPagos);
+  console.log("  - totalPagos >= 300:", totalPagos >= 300);
+  console.log("  - totalPagos >= 360:", totalPagos >= 360);
+  console.log("  - isFirstMonth:", isFirstMonth);
+  console.log("  - isCurrentMonthPaid:", isCurrentMonthPaid);
+  console.log("  - estadoCompleto:", estadoCompleto);
 
   // Mapear el estado al formato de credencial
+  let resultado;
   switch (estadoCompleto) {
     case "Vitalicio Activo":
-      return {
+      resultado = {
         label: "Socio Vitalicio Activo",
         tone: "success",
         message: "Tu credencial vitalicia está activada. Socio activo.",
       };
+      break;
     case "Vitalicio Inactivo":
-      return {
+      resultado = {
         label: "Socio Vitalicio Inactivo",
         tone: "warning",
         message: "Pago 360 cuotas, pero esta inactivo como socio",
       };
+      break;
     case "Regular Activo":
-      return {
+      resultado = {
         label: "Socio Regular Activo",
         tone: "success",
-        message: isFirstMonth 
+        message: isFirstMonth
           ? "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción."
           : "Credencial activa, La cuota del mes actual está pagada.",
       };
+      break;
     case "Regular Inactivo":
-      return {
+      resultado = {
         label: "Socio Regular Inactivo",
         tone: "warning",
         message: "Tu credencial está inactiva. La cuota del mes actual está pendiente.",
       };
+      break;
     case "Pendiente":
-      return {
+      resultado = {
         label: "Inscripción pendiente",
         tone: "warning",
         message: "Completá los pasos necesarios para activar tu credencial",
       };
+      break;
     default:
-      return {
+      resultado = {
         label: "Estado desconocido",
         tone: "neutral",
         message: "Contactar con el administrador",
       };
+      break;
   }
-  */
+
+  console.log("📤 [CREDENTIAL] Resultado final:", resultado);
+  console.log("🔍 [CREDENTIAL] FIN - getCredentialStatus completado");
+
+  return resultado;
 }

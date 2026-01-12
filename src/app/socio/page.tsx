@@ -81,6 +81,20 @@ export default function SocioPage() {
               title="Tu credencial de socio"
               subtitle="Necesitás una inscripción activa y el primer pago registrado. El código se actualiza de forma automática."
             />
+            <div className="flex flex-wrap gap-4 mt-4">
+              <motion.button
+                className="btn-secondary"
+                type="button"
+                onClick={() => credentialQuery.refetch()}
+                disabled={credentialQuery.isFetching}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.96 }}
+              >
+                {credentialQuery.isFetching
+                  ? "Actualizando..."
+                  : "Forzar actualización de credencial"}
+              </motion.button>
+            </div>
           </>
         )}
 

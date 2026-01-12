@@ -34,6 +34,9 @@ export function useMemberCurrentDues(memberId: string) {
       }
     },
     enabled: !!memberId,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Sin cache - siempre fresco
+    gcTime: 0, // Sin garbage collection - siempre fresh
+    refetchOnMount: true, // Forzar refresco al montar
+    refetchOnWindowFocus: true, // Forzar refresco al cambiar de ventana
   });
 }

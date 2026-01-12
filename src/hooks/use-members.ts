@@ -136,10 +136,15 @@ export function useMyCredential(options?: { enabled?: boolean }) {
     queryKey: MEMBER_SELF_CREDENTIAL_KEY,
     enabled,
     queryFn: async () => {
+      console.log("🔄 [HOOK] Refrescando credencial desde API - SIN CACHE");
       const response = await apiFetch<MemberCredentialResponse>("/api/socios/me/credential");
       return response.data;
     },
-    staleTime: 1000 * 30,
+    staleTime: 0, // Sin cache - siempre fresco
+    gcTime: 0, // Sin garbage collection - siempre fresh
+    refetchOnMount: true, // Forzar refresco al montar
+    refetchOnWindowFocus: true, // Forzar refresco al cambiar de ventana
+    refetchInterval: false, // Sin intervalo automático
   });
 }
 

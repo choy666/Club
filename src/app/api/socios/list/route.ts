@@ -273,7 +273,7 @@ export async function GET(request: NextRequest) {
           if (hasVitalicio) {
             estadoCompleto = "Vitalicio Inactivo";
             console.log("→ Clasificado como Vitalicio Inactivo (tiene inscripción vitalicia)");
-          } else if (totalPagos >= 300) {
+          } else if (totalPagos >= 360) {
             estadoCompleto = "Vitalicio Inactivo";
             console.log("→ Clasificado como Vitalicio Inactivo (tiene 300+ pagos)");
           } else {
@@ -285,7 +285,7 @@ export async function GET(request: NextRequest) {
           console.log("→ Mantenido como Pendiente (estado PENDING)");
         } else if (member.estado === "ACTIVE") {
           // Determinar si es vitalicio
-          if (hasVitalicio || totalPagos >= 300) {
+          if (hasVitalicio || totalPagos >= 360) {
             estadoCompleto = "Vitalicio Activo";
             console.log("→ Clasificado como Vitalicio Activo");
           } else {

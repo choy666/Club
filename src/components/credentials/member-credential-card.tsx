@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useMemberDuesStats } from "@/hooks/use-member-stats";
 import { useMemberCurrentDues } from "@/hooks/use-member-current-dues";
 import { getCredentialStatus } from "@/lib/utils/member-status-utils";
@@ -34,9 +34,41 @@ export function MemberCredentialCard({
   console.log("📊 [CREDENTIAL] credential?.member.id:", credential?.member.id);
   console.log("💳 [CREDENTIAL] duesStats:", duesStats);
   console.log("💳 [CREDENTIAL] currentDuesData:", currentDuesData);
+  console.log("🔍 [CREDENTIAL] TIPO DE DATOS:");
+  console.log("  - credential tipo:", typeof credential);
+  console.log("  - credential es null:", credential === null);
+  console.log("  - duesStats tipo:", typeof duesStats);
+  console.log("  - duesStats es null:", duesStats === null);
+
+  // Forzar cálculo del status siempre para debug
+  console.log("🔄 [CREDENTIAL] Forzando cálculo de status para debug");
+  const statusForzado = getCredentialStatus(credential || null, duesStats || null);
+  console.log("🎯 [CREDENTIAL] Status forzado:", statusForzado);
+
+  // Efecto para detectar cambios en los datos
+  useEffect(() => {
+    console.log("🔄 [CREDENTIAL] useEffect detectado cambio en datos");
+    console.log("📊 [CREDENTIAL] credential cambió:", credential);
+    console.log("📊 [CREDENTIAL] duesStats cambió:", duesStats);
+
+    if (credential && duesStats) {
+      const nuevoStatus = getCredentialStatus(credential, duesStats);
+      console.log("🎯 [CREDENTIAL] Nuevo status calculado en useEffect:", nuevoStatus);
+    }
+  }, [credential, duesStats]);
 
   const status = useMemo(() => {
-    return getCredentialStatus(credential || null, duesStats || null);
+    console.log("🔄 [CREDENTIAL CARD] useMemo ejecutado - calculando status");
+    console.log("📊 [CREDENTIAL CARD] Datos en useMemo:");
+    console.log("  - credential?.member.id:", credential?.member?.id);
+    console.log("  - credential:", credential);
+    console.log("  - duesStats:", duesStats);
+
+    const result = getCredentialStatus(credential || null, duesStats || null);
+
+    console.log("🎯 [CREDENTIAL CARD] Status calculado en useMemo:", result);
+
+    return result;
   }, [credential, duesStats]);
 
   return (

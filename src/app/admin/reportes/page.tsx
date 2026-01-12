@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { useMembersStats } from "@/hooks/use-members-stats";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateDDMMYYYY } from "@/lib/utils/date-utils";
 
 interface Member {
   id: number;
@@ -25,6 +26,10 @@ interface Member {
   fechaIngreso: string;
   plan: "mensual" | "anual" | "vitalicio";
   ultimaCuota: string | null;
+  fechaInscripcion: string | null;
+  fechaCobertura: string | null;
+  cuotasPagadas: number;
+  cuotasPendientes: number;
 }
 
 interface MembersResponse {
@@ -252,7 +257,13 @@ export default function AdminReportesPage() {
                       Estado
                     </th>
                     <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
-                      Plan
+                      Fecha de Inscripción
+                    </th>
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Fecha de Cobertura
+                    </th>
+                    <th className="text-left p-3 text-xs uppercase tracking-[0.3em] text-base-muted">
+                      Cuotas / Pagadas
                     </th>
                   </tr>
                 </thead>
@@ -288,7 +299,34 @@ export default function AdminReportesPage() {
                           {member.estadoCompleto}
                         </span>
                       </td>
-                      <td className="p-3 text-sm capitalize">{member.plan}</td>
+                      <td className="p-3 text-sm">
+                        {member.fechaInscripcion ? formatDateDDMMYYYY(member.fechaInscripcion) : "Inexistente"}
+                      </td>
+                      <td className="p-3 text-sm">
+                        {(() => {
+                          if (!member.fechaCobertura) {
+                            return "Inexistente";
+                          } else if (member.fechaCobertura === "Vitalicio Activo") {
+                            return "Vitalicio Activo";
+                          } else if (member.fechaCobertura.includes("\nbaja")) {
+                            const [fecha] = member.fechaCobertura.split("\nbaja");
+                            return (
+                              <div>
+                                <div>{formatDateDDMMYYYY(fecha)}</div>
+                                <div className="text-xs text-base-muted font-medium">baja</div>
+                              </div>
+                            );
+                          } else {
+                            return formatDateDDMMYYYY(member.fechaCobertura);
+                          }
+                        })()}
+                      </td>
+                      <td className="p-3 text-sm">
+                        {member.fechaInscripcion ? 
+                          `${member.cuotasPagadas}/${member.cuotasPagadas + member.cuotasPendientes}` : 
+                          "Inexistente"
+                        }
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { eq, and, ilike, desc, count, or, sql } from "drizzle-orm";
 import { members, enrollments, users, dues, payments } from "@/db/schema";
-import { getTodayLocal } from "@/lib/utils/date-utils";
+import { getTodayLocal, addMonthsLocal, fromLocalDateOnly } from "@/lib/utils/date-utils";
 import { isFirstMonthCoverage, isCurrentMonthDuePaid } from "@/lib/utils/member-status-utils";
 
 export async function GET(request: NextRequest) {
@@ -365,6 +365,73 @@ export async function GET(request: NextRequest) {
         console.log(`Estado final: ${estadoCompleto}`);
         console.log("=== FIN MIEMBRO ===");
 
+        // Calcular cuotas pagadas y pendientes primero (necesario para fecha de cobertura)
+        let cuotasPagadas = 0;
+        let cuotasPendientes = 0;
+        
+        if (member.enrollmentId) {
+          const duesStats = await db
+            .select({
+              paid: count(sql`CASE WHEN ${dues.status} = 'PAID' THEN 1 END`),
+              pending: count(sql`CASE WHEN ${dues.status} = 'PENDING' THEN 1 END`),
+              total: count()
+            })
+            .from(dues)
+            .where(eq(dues.enrollmentId, member.enrollmentId));
+          
+          if (duesStats.length > 0) {
+            cuotasPagadas = duesStats[0].paid || 0;
+            cuotasPendientes = duesStats[0].pending || 0;
+          }
+        }
+
+        // Calcular fecha de cobertura usando la misma lógica que las credenciales
+        let fechaCobertura: string | null = null;
+        
+        // Primero verificar si el socio tiene credencial (isReady)
+        const hasCredential = member.estado !== "PENDING" && member.enrollmentId;
+        
+        if (!hasCredential) {
+          fechaCobertura = null; // Sin credencial: inexistente
+        } else if (member.estado === "INACTIVE") {
+          // Para socios inactivos, mostrar fecha de baja (igual que credenciales)
+          // Obtener la inscripción actual (no necesariamente CANCELLED)
+          const currentEnrollment = await db
+            .select({ updatedAt: enrollments.updatedAt })
+            .from(enrollments)
+            .where(and(
+              eq(enrollments.memberId, member.id)
+            ))
+            .orderBy(desc(enrollments.updatedAt))
+            .limit(1);
+          
+          if (currentEnrollment.length > 0) {
+            // Usar updatedAt del enrollment como fecha de cambio de estado (igual que credenciales)
+            const fechaBaja = currentEnrollment[0].updatedAt?.toISOString().split("T")[0] || null;
+            // Agregar etiqueta "baja" para indicar baja administrativa
+            fechaCobertura = `${fechaBaja}\nbaja`;
+          }
+        } else if (member.estado === "VITALICIO" || (hasVitalicio || totalPagos >= 360)) {
+          fechaCobertura = "Vitalicio Activo";
+        } else if (member.startDate) {
+          // Para socios regulares: calcular cobertura como en las credenciales
+          // Calcular meses de cobertura: mes de inscripción + cuotas pagadas
+          const coverageMonths = cuotasPagadas + 1; // +1 por el mes de inscripción
+          
+          // Usar utilidad local para agregar meses manteniendo timezone
+          const coverageDate = addMonthsLocal(
+            fromLocalDateOnly(member.startDate),
+            coverageMonths
+          );
+          
+          // Formatear a YYYY-MM-DD para consistencia
+          const day = String(coverageDate.getDate()).padStart(2, "0");
+          const month = String(coverageDate.getMonth() + 1).padStart(2, "0");
+          const year = coverageDate.getFullYear();
+          
+          fechaCobertura = `${year}-${month}-${day}`;
+        }
+
         return {
           id: member.id,
           nombre: member.nombre || "Sin nombre",
@@ -377,6 +444,10 @@ export async function GET(request: NextRequest) {
           fechaIngreso: member.fechaIngreso?.toISOString().split("T")[0] || "",
           plan: member.plan?.toLowerCase() || "mensual",
           ultimaCuota: null,
+          fechaInscripcion: member.startDate?.split("T")[0] || null,
+          fechaCobertura,
+          cuotasPagadas,
+          cuotasPendientes,
         };
       })
     );

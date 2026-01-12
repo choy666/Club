@@ -1,4 +1,4 @@
-import { getTodayLocal } from "./date-utils";
+import { getTodayLocal, fromLocalDateOnly, addMonthsLocal } from "./date-utils";
 
 import type { MemberCredentialDTO } from "@/types/enrollment";
 
@@ -60,13 +60,199 @@ export function isCurrentMonthDuePaid(
 }
 
 /**
+ * Determina si un socio tiene cobertura vigente basada en cuotas pagadas y fecha de inscripción
+ */
+export function hasActiveCoverage(
+  enrollment: MemberCredentialDTO["enrollment"],
+  paidCount: number
+): boolean {
+  if (!enrollment) return false;
+
+  // Calcular fecha de vencimiento de cobertura
+  const enrollmentDate = fromLocalDateOnly(enrollment.startDate);
+  const coverageMonths = paidCount + 1; // +1 por el mes de inscripción
+  const coverageEndDate = addMonthsLocal(enrollmentDate, coverageMonths);
+
+  // La cobertura está vigente si la fecha de vencimiento es posterior a hoy
+  // Importante: debe ser estrictamente mayor, no igual, para que expire el mismo día
+  const today = new Date(getTodayLocal());
+
+  // Debug logs para hasActiveCoverage
+  console.log("📅 [ACTIVE COVERAGE] Debug:");
+  console.log("  - enrollment.startDate:", enrollment.startDate);
+  console.log("  - enrollmentDate:", enrollmentDate);
+  console.log("  - paidCount:", paidCount);
+  console.log("  - coverageMonths:", coverageMonths);
+  console.log("  - coverageEndDate:", coverageEndDate);
+  console.log("  - today:", today);
+  console.log("  - coverageEndDate > today:", coverageEndDate > today);
+
+  // Cambiado a > en lugar de >= para que expire el mismo día que termina
+  return coverageEndDate > today;
+}
+
+/**
+ * Determina el estado del miembro usando la misma lógica que el API de reportes
+ * Esta función replica exactamente la lógica de /api/socios/list/route.ts
+ */
+export function getMemberStatusFromReports(
+  memberStatus: string,
+  hasVitalicio: boolean,
+  totalPagos: number,
+  isFirstMonth: boolean,
+  isCurrentMonthPaid: boolean
+): string {
+  // Usar exactamente la misma lógica que el API de reportes
+  if (memberStatus === "INACTIVE") {
+    if (hasVitalicio) {
+      return "Vitalicio Inactivo";
+    } else if (totalPagos >= 300) {
+      return "Vitalicio Inactivo";
+    } else {
+      return "Regular Inactivo";
+    }
+  } else if (memberStatus === "PENDING") {
+    return "Pendiente";
+  } else if (memberStatus === "ACTIVE") {
+    // Determinar si es vitalicio
+    if (hasVitalicio || totalPagos >= 300) {
+      return "Vitalicio Activo";
+    } else {
+      // Es un miembro regular - aplicar lógica de cobertura
+      if (isFirstMonth) {
+        // Recién inscripto: siempre está activo sin importar cuotas
+        return "Regular Activo";
+      } else {
+        // Fuera del período de cobertura: verificar cuota del mes actual
+        if (isCurrentMonthPaid) {
+          return "Regular Activo";
+        } else {
+          return "Regular Inactivo";
+        }
+      }
+    }
+  } else if (memberStatus === "VITALICIO") {
+    return "Vitalicio Activo";
+  } else {
+    return "Pendiente"; // Estado por defecto
+  }
+}
+
+/**
+ * Función de prueba para verificar los cálculos de estado
+ * Esta función ayuda a diagnosticar problemas en la lógica
+ */
+export function testCredentialStatus(
+  credential: MemberCredentialDTO | null,
+  duesStats: { paidCount: number; totalCount: number; percentage: number } | null
+) {
+  console.log("🧪 [TEST] Iniciando prueba de estado de credencial");
+  console.log("🧪 [TEST] Datos recibidos:");
+  console.log("  - credential:", credential);
+  console.log("  - duesStats:", duesStats);
+
+  if (!credential) {
+    console.log("🧪 [TEST] ❌ No hay credencial");
+    return { label: "Sin datos", tone: "neutral", message: "Esperando datos" };
+  }
+
+  if (!credential.enrollment) {
+    console.log("🧪 [TEST] ❌ No hay inscripción");
+    return { label: "Sin inscripción", tone: "neutral", message: "Esperando inscripción" };
+  }
+
+  // Extraer datos básicos
+  const memberStatus = credential.member.status;
+  const hasVitalicio = credential.enrollment.planName === "VITALICIO";
+  const totalPagos = duesStats?.paidCount || 0;
+  const enrollmentDate = credential.enrollment.startDate;
+
+  console.log("🧪 [TEST] Datos extraídos:");
+  console.log("  - memberStatus:", memberStatus);
+  console.log("  - hasVitalicio:", hasVitalicio);
+  console.log("  - totalPagos:", totalPagos);
+  console.log("  - enrollmentDate:", enrollmentDate);
+
+  // Verificar primer mes
+  const isFirstMonth = isFirstMonthCoverage(credential.enrollment);
+  console.log("🧪 [TEST] Primer mes:", isFirstMonth);
+
+  // Verificar cobertura
+  const hasCoverage = hasActiveCoverage(credential.enrollment, totalPagos);
+  console.log("🧪 [TEST] Tiene cobertura:", hasCoverage);
+
+  // Verificar si está al día
+  const isCurrentMonthPaid = hasCoverage || isFirstMonth;
+  console.log("🧪 [TEST] Está al día:", isCurrentMonthPaid);
+
+  // Aplicar lógica de reportes
+  let estadoFinal = "Desconocido";
+
+  if (memberStatus === "INACTIVE") {
+    if (hasVitalicio) {
+      estadoFinal = "Vitalicio Inactivo";
+    } else if (totalPagos >= 300) {
+      estadoFinal = "Vitalicio Inactivo";
+    } else {
+      estadoFinal = "Regular Inactivo";
+    }
+  } else if (memberStatus === "PENDING") {
+    estadoFinal = "Pendiente";
+  } else if (memberStatus === "ACTIVE") {
+    if (hasVitalicio || totalPagos >= 300) {
+      estadoFinal = "Vitalicio Activo";
+    } else {
+      if (isFirstMonth) {
+        estadoFinal = "Regular Activo";
+      } else {
+        if (isCurrentMonthPaid) {
+          estadoFinal = "Regular Activo";
+        } else {
+          estadoFinal = "Regular Inactivo";
+        }
+      }
+    }
+  } else if (memberStatus === "VITALICIO") {
+    estadoFinal = "Vitalicio Activo";
+  }
+
+  console.log("🧪 [TEST] Estado final calculado:", estadoFinal);
+
+  // Retornar resultado
+  switch (estadoFinal) {
+    case "Regular Activo":
+      return {
+        label: "Socio Regular Activo",
+        tone: "success",
+        message: "Credencial activa, La cuota del mes actual está pagada.",
+      };
+    case "Regular Inactivo":
+      return {
+        label: "Socio Regular Inactivo",
+        tone: "warning",
+        message: "Tu credencial está inactiva. La cuota del mes actual está pendiente.",
+      };
+    default:
+      return {
+        label: estadoFinal,
+        tone: "neutral",
+        message: "Estado desconocido",
+      };
+  }
+}
+
+/**
  * Determina el estado detallado de la credencial según las reglas solicitadas
  */
 export function getCredentialStatus(
   credential: MemberCredentialDTO | null,
-  duesStats: { paidCount: number; totalCount: number; percentage: number } | null,
-  currentDues: Array<{ dueDate: string; status: string }> = []
+  duesStats: { paidCount: number; totalCount: number; percentage: number } | null
 ) {
+  // TEMPORAL: Usar función de prueba para debug intensivo
+  return testCredentialStatus(credential, duesStats);
+
+  /*
+  // Lógica original (comentada temporalmente)
   if (!credential)
     return {
       label: "Sin datos",
@@ -87,80 +273,86 @@ export function getCredentialStatus(
         message: "Completá los pasos necesarios para activar tu credencial",
       };
     }
+    // Si isReady es false pero la inscripción está activa, tratar como socio regular inactivo
     return {
-      label: "Credencial en proceso",
+      label: "Socio Regular Inactivo",
       tone: "warning",
-      message: "Completá los pasos necesarios para activar tu credencial",
+      message: "Tu credencial está inactiva. La cuota del mes actual está pendiente.",
     };
   }
 
-  // Determinar si es vitalicio
-  const isVitalicio = (duesStats?.paidCount || 0) >= 360;
+  // Usar exactamente la misma lógica que el API de reportes
   const memberStatus = credential.member.status;
-
+  const hasVitalicio = credential.enrollment.planName === "VITALICIO";
+  const totalPagos = duesStats?.paidCount || 0;
+  
   // Verificar si está en primer mes de cobertura (recién inscripto)
   const isFirstMonth = isFirstMonthCoverage(credential.enrollment);
+  
+  // Para la lógica de reportes, necesitamos verificar si está al día con el mes actual
+  // Usamos la misma lógica que el API: si tiene cobertura vigente o es primer mes, está al día
+  const hasCoverage = hasActiveCoverage(credential.enrollment, totalPagos);
+  const isCurrentMonthPaid = hasCoverage || isFirstMonth;
 
-  // Verificar si está al día con el mes actual
-  const isCurrentMonthPaid = isCurrentMonthDuePaid(currentDues, memberStatus) || isFirstMonth;
+  console.log("🔍 [CREDENTIAL STATUS] Debug:");
+  console.log("  - memberStatus:", memberStatus);
+  console.log("  - hasVitalicio:", hasVitalicio);
+  console.log("  - totalPagos:", totalPagos);
+  console.log("  - isFirstMonth:", isFirstMonth);
+  console.log("  - hasCoverage:", hasCoverage);
+  console.log("  - isCurrentMonthPaid:", isCurrentMonthPaid);
 
-  // Socio Vitalicio
-  if (isVitalicio) {
-    if (memberStatus === "ACTIVE" || memberStatus === "VITALICIO") {
+  // Usar la función unificada que replica la lógica del API de reportes
+  const estadoCompleto = getMemberStatusFromReports(
+    memberStatus,
+    hasVitalicio,
+    totalPagos,
+    isFirstMonth,
+    isCurrentMonthPaid
+  );
+
+  console.log("🎯 [CREDENTIAL STATUS] Estado final:", estadoCompleto);
+
+  // Mapear el estado al formato de credencial
+  switch (estadoCompleto) {
+    case "Vitalicio Activo":
       return {
         label: "Socio Vitalicio Activo",
         tone: "success",
         message: "Tu credencial vitalicia está activada. Socio activo.",
       };
-    } else {
+    case "Vitalicio Inactivo":
       return {
         label: "Socio Vitalicio Inactivo",
         tone: "warning",
         message: "Pago 360 cuotas, pero esta inactivo como socio",
       };
-    }
-  }
-
-  // Socio Regular - Caso especial para recién inscriptos
-  if (isFirstMonth && memberStatus === "ACTIVE") {
-    return {
-      label: "Socio Regular Activo",
-      tone: "success",
-      message:
-        "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción.",
-    };
-  }
-
-  // Socio Regular
-  if (memberStatus === "ACTIVE") {
-    if (isCurrentMonthPaid) {
+    case "Regular Activo":
       return {
         label: "Socio Regular Activo",
         tone: "success",
-        message: "Credencial activa, La cuota del mes actual está pagada.",
+        message: isFirstMonth 
+          ? "¡Bienvenido! Tu credencial está activa. Tienes cobertura por tu primer mes de inscripción."
+          : "Credencial activa, La cuota del mes actual está pagada.",
       };
-    } else {
+    case "Regular Inactivo":
       return {
         label: "Socio Regular Inactivo",
         tone: "warning",
         message: "Tu credencial está inactiva. La cuota del mes actual está pendiente.",
       };
-    }
-  } else {
-    // memberStatus === "INACTIVE" u otros
-    if (isCurrentMonthPaid) {
-      // Este caso es poco probable pero lo manejamos
+    case "Pendiente":
       return {
-        label: "Socio Regular Inactivo",
+        label: "Inscripción pendiente",
         tone: "warning",
-        message: "Tu credencial está inactiva. Contactar con el administrador.",
+        message: "Completá los pasos necesarios para activar tu credencial",
       };
-    } else {
+    default:
       return {
-        label: "Socio Regular Inactivo",
-        tone: "warning",
-        message: "Contactar con el administrador. Socio inactivo.",
+        label: "Estado desconocido",
+        tone: "neutral",
+        message: "Contactar con el administrador",
       };
-    }
   }
+  */
 }

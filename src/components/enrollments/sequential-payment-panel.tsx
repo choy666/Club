@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePaySequentialDues } from "@/hooks/use-enrollments";
+import { fromLocalDateOnly, addMonthsLocal, toLocalDateOnly } from "@/lib/utils/date-utils";
 import type { MemberSummary } from "@/components/enrollments/due-table";
 import { formatCurrency } from "@/lib/number-format";
 
@@ -46,11 +47,11 @@ export function SequentialPaymentPanel({
     // Fecha de cobertura hasta (fecha de inscripción + cuotas pagadas + cuotas a pagar + 1 mes de inscripción)
     const coverageUntilDate = coverageFromDate
       ? (() => {
-          const enrollmentDate = new Date(coverageFromDate);
+          const enrollmentDate = fromLocalDateOnly(coverageFromDate);
           // Sumar cuotas pagadas + cuotas seleccionadas + 1 mes (el mes de inscripción)
           // Ejemplo: 0 pagadas + 1 a pagar + 1 inscripción = 2 meses totales
-          enrollmentDate.setMonth(enrollmentDate.getMonth() + paidDues + numberOfDues + 1);
-          return enrollmentDate.toISOString();
+          const coverageDate = addMonthsLocal(enrollmentDate, paidDues + numberOfDues + 1);
+          return toLocalDateOnly(coverageDate);
         })()
       : null;
 
@@ -124,7 +125,9 @@ export function SequentialPaymentPanel({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-AR", {
+    // Usar utilidad de fecha local para evitar desfasaje de timezone
+    const date = fromLocalDateOnly(dateString);
+    return date.toLocaleDateString("es-AR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

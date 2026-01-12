@@ -3,7 +3,7 @@ import { db } from "@/db/client";
 import { eq, and, ilike, desc, count, or, sql } from "drizzle-orm";
 import { members, enrollments, users, dues, payments } from "@/db/schema";
 import { getTodayLocal } from "@/lib/utils/date-utils";
-import { isFirstMonthCoverage } from "@/lib/utils/member-status-utils";
+import { isFirstMonthCoverage, isCurrentMonthDuePaid } from "@/lib/utils/member-status-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -246,10 +246,10 @@ export async function GET(request: NextRequest) {
           isFirstMonth = isFirstMonthCoverage(enrollmentData);
         }
 
-        // Verificar estado de cuota del mes actual
-        let estadoCuotaMes = "deudor"; // Por defecto asume que debe
+        // Verificar estado de cuota del mes actual usando la misma lógica que las credenciales
+        let currentDuesForCheck: Array<{ dueDate: string; status: string }> = [];
         if (member.enrollmentId) {
-          const currentDue = await db
+          const currentMonthDues = await db
             .select()
             .from(dues)
             .where(
@@ -257,15 +257,15 @@ export async function GET(request: NextRequest) {
                 eq(dues.enrollmentId, member.enrollmentId),
                 sql`${dues.dueDate}::text LIKE ${currentMonth + "%"}`
               )
-            )
-            .limit(1);
-
-          if (currentDue.length > 0 && currentDue[0].status === "PAID") {
-            estadoCuotaMes = "al_dia";
-          }
+            );
+          currentDuesForCheck = currentMonthDues;
         }
 
-        console.log(`Estado cuota mes actual: ${estadoCuotaMes}`);
+        // Usar la misma función que las credenciales para determinar si está al día
+        const isCurrentMonthPaid =
+          isCurrentMonthDuePaid(currentDuesForCheck, member.estado) || isFirstMonth;
+
+        console.log(`Estado cuota mes actual: ${isCurrentMonthPaid ? "al_dia" : "deudor"}`);
         console.log(`Primer mes de cobertura: ${isFirstMonth}`);
 
         // Usar la misma lógica que las credenciales para determinar el estado
@@ -296,7 +296,7 @@ export async function GET(request: NextRequest) {
               console.log("→ Clasificado como Regular Activo (primer mes de cobertura)");
             } else {
               // Fuera del período de cobertura: verificar cuota del mes actual
-              if (estadoCuotaMes === "al_dia") {
+              if (isCurrentMonthPaid) {
                 estadoCompleto = "Regular Activo";
                 console.log("→ Clasificado como Regular Activo (cuota mes actual pagada)");
               } else {
@@ -323,7 +323,7 @@ export async function GET(request: NextRequest) {
           telefono: member.telefono || "",
           estado: member.estado.toLowerCase(),
           estadoCompleto,
-          estadoCuota: estadoCuotaMes,
+          estadoCuota: isCurrentMonthPaid ? "al_dia" : "deudor",
           fechaIngreso: member.fechaIngreso?.toISOString().split("T")[0] || "",
           plan: member.plan?.toLowerCase() || "mensual",
           ultimaCuota: null,

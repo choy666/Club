@@ -44,11 +44,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
         },
       };
 
-      const result = getCredentialStatus(
-        newCredential,
-        { paidCount: 0, totalCount: 0, percentage: 0 },
-        []
-      );
+      const result = getCredentialStatus(newCredential, {
+        paidCount: 0,
+        totalCount: 0,
+        percentage: 0,
+      });
 
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
@@ -75,11 +75,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
         },
       };
 
-      const result = getCredentialStatus(
-        newCredential,
-        { paidCount: 0, totalCount: 0, percentage: 0 },
-        []
-      );
+      const result = getCredentialStatus(newCredential, {
+        paidCount: 0,
+        totalCount: 0,
+        percentage: 0,
+      });
 
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
@@ -94,15 +94,12 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
 
-      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
-
-      const result = getCredentialStatus(
-        mockCredential,
-        { paidCount: 5, totalCount: 360, percentage: 1 },
-        currentDues
-      );
+      const result = getCredentialStatus(mockCredential, {
+        paidCount: 5,
+        totalCount: 360,
+        percentage: 1,
+      });
 
       expect(result.label).toBe("Socio Regular Activo");
       expect(result.tone).toBe("success");
@@ -113,17 +110,12 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
 
     it("debe detectar cuota pendiente del mes actual", () => {
       const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
 
-      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
-
-      const result = getCredentialStatus(
-        mockCredential,
-        { paidCount: 5, totalCount: 360, percentage: 1 },
-        currentDues
-      );
+      const result = getCredentialStatus(mockCredential, {
+        paidCount: 5,
+        totalCount: 360,
+        percentage: 1,
+      });
 
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
@@ -133,11 +125,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
     });
 
     it("debe detectar cuando no hay cuota generada para el mes actual", () => {
-      const result = getCredentialStatus(
-        mockCredential,
-        { paidCount: 5, totalCount: 360, percentage: 1 },
-        []
-      );
+      const result = getCredentialStatus(mockCredential, {
+        paidCount: 5,
+        totalCount: 360,
+        percentage: 1,
+      });
 
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
@@ -158,17 +150,12 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
       };
 
       const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
 
-      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
-
-      const result = getCredentialStatus(
-        inactiveCredential,
-        { paidCount: 5, totalCount: 360, percentage: 1 },
-        currentDues
-      );
+      const result = getCredentialStatus(inactiveCredential, {
+        paidCount: 5,
+        totalCount: 360,
+        percentage: 1,
+      });
 
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
@@ -187,17 +174,12 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
       };
 
       const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
 
-      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
-
-      const result = getCredentialStatus(
-        inactiveCredential,
-        { paidCount: 5, totalCount: 360, percentage: 1 },
-        currentDues
-      );
+      const result = getCredentialStatus(inactiveCredential, {
+        paidCount: 5,
+        totalCount: 360,
+        percentage: 1,
+      });
 
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
@@ -209,11 +191,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
 
   describe("Socio vitalicio", () => {
     it("debe mostrar vitalicio activo con 360+ cuotas pagadas", () => {
-      const result = getCredentialStatus(
-        mockCredential,
-        { paidCount: 360, totalCount: 360, percentage: 100 },
-        []
-      );
+      const result = getCredentialStatus(mockCredential, {
+        paidCount: 360,
+        totalCount: 360,
+        percentage: 100,
+      });
 
       expect(result.label).toBe("Socio Vitalicio Activo");
       expect(result.tone).toBe("success");
@@ -229,11 +211,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
         },
       };
 
-      const result = getCredentialStatus(
-        inactiveVitalicioCredential,
-        { paidCount: 360, totalCount: 360, percentage: 100 },
-        []
-      );
+      const result = getCredentialStatus(inactiveVitalicioCredential, {
+        paidCount: 360,
+        totalCount: 360,
+        percentage: 100,
+      });
 
       expect(result.label).toBe("Socio Vitalicio Inactivo");
       expect(result.tone).toBe("warning");
@@ -243,11 +225,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
     });
 
     it("debe mostrar vitalicio activo con más de 360 cuotas pagadas", () => {
-      const result = getCredentialStatus(
-        mockCredential,
-        { paidCount: 361, totalCount: 361, percentage: 100 },
-        []
-      );
+      const result = getCredentialStatus(mockCredential, {
+        paidCount: 361,
+        totalCount: 361,
+        percentage: 100,
+      });
 
       expect(result.label).toBe("Socio Vitalicio Activo");
       expect(result.tone).toBe("success");
@@ -273,18 +255,11 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
         },
       };
 
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
-
-      const currentDues = [{ dueDate: currentDueDate, status: "PENDING" }];
-
-      const result = getCredentialStatus(
-        pastCredential,
-        { paidCount: 0, totalCount: 1, percentage: 0 },
-        currentDues
-      );
+      const result = getCredentialStatus(pastCredential, {
+        paidCount: 0,
+        totalCount: 1,
+        percentage: 0,
+      });
 
       expect(result.label).toBe("Socio Regular Inactivo");
       expect(result.tone).toBe("warning");
@@ -310,17 +285,9 @@ describe("getCredentialStatus - Validación de escenarios en tiempo real", () =>
         },
       };
 
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const currentDueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-10`;
-
-      const currentDues = [{ dueDate: currentDueDate, status: "PAID" }];
-
       const result = getCredentialStatus(
         pastCredential,
-        { paidCount: 1, totalCount: 1, percentage: 100 },
-        currentDues
+        { paidCount: 1, totalCount: 1, percentage: 100 }
       );
 
       expect(result.label).toBe("Socio Regular Activo");

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useMemberDuesStats } from "@/hooks/use-member-stats";
 import { useMemberCurrentDues } from "@/hooks/use-member-current-dues";
 import { getCredentialStatus } from "@/lib/utils/member-status-utils";
+import { fromLocalDateOnly, addMonthsLocal } from "@/lib/utils/date-utils";
 
 import type { MemberCredentialDTO } from "@/types/enrollment";
 
@@ -35,8 +36,8 @@ export function MemberCredentialCard({
   console.log("💳 [CREDENTIAL] currentDuesData:", currentDuesData);
 
   const status = useMemo(() => {
-    return getCredentialStatus(credential || null, duesStats || null, currentDuesData?.dues || []);
-  }, [credential, duesStats, currentDuesData]);
+    return getCredentialStatus(credential || null, duesStats || null);
+  }, [credential, duesStats]);
 
   return (
     <div className="neo-panel space-y-5">
@@ -139,11 +140,70 @@ export function MemberCredentialCard({
                         style={{ width: `${duesStats?.percentage || 0}%` }}
                       />
                     </div>
-                    <p className="text-xs text-base-muted text-center">
-                      {(duesStats?.paidCount || 0) >= 360
-                        ? "Socio Vitalicio 🥇"
-                        : `${360 - (duesStats?.paidCount || 0)} cuotas restantes para socio vitalicio`}
-                    </p>
+                    <div className="text-xs text-base-muted text-center">
+                      {(duesStats?.paidCount || 0) >= 360 ? (
+                        // Socio Vitalicio completado
+                        <>
+                          Socio Vitalicio 🥇
+                          {/* Mostrar fecha de baja para vitalicios inactivos */}
+                          {credential?.member.status === "INACTIVE" && (
+                            <div className="mt-2 pt-2 border-t border-base-border/30">
+                              <span className="text-xs text-base-muted">
+                                Baja desde:{" "}
+                                {(() => {
+                                  // Usar updatedAt del enrollment como fecha de cambio de estado
+                                  const enrollment = credential?.enrollment;
+                                  if (enrollment && enrollment.updatedAt) {
+                                    const updateDate = new Date(enrollment.updatedAt);
+                                    const day = String(updateDate.getDate()).padStart(2, "0");
+                                    const month = String(updateDate.getMonth() + 1).padStart(
+                                      2,
+                                      "0"
+                                    );
+                                    const year = updateDate.getFullYear();
+                                    return `${day}/${month}/${year}`;
+                                  }
+                                  return "Desconocida";
+                                })()}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        // Socio regular o en progreso
+                        <>
+                          {360 - (duesStats?.paidCount || 0)} cuotas restantes para socio vitalicio
+                          {/* Mostrar cobertura para socios regulares (activos e inactivos) */}
+                          <div className="mt-2 pt-2 border-t border-base-border/30">
+                            <span className="text-xs text-base-muted">
+                              {(() => {
+                                // Calcular fecha de vencimiento de cobertura usando fechas locales
+                                if (credential?.enrollment?.startDate) {
+                                  const enrollmentDate = fromLocalDateOnly(
+                                    credential.enrollment.startDate
+                                  );
+                                  // Calcular meses de cobertura: mes de inscripción + cuotas pagadas
+                                  const coverageMonths = (duesStats?.paidCount || 0) + 1; // +1 por el mes de inscripción
+                                  // Usar utilidad local para agregar meses manteniendo timezone
+                                  const coverageDate = addMonthsLocal(
+                                    enrollmentDate,
+                                    coverageMonths
+                                  );
+                                  const day = String(coverageDate.getDate()).padStart(2, "0");
+                                  const month = String(coverageDate.getMonth() + 1).padStart(
+                                    2,
+                                    "0"
+                                  );
+                                  const year = coverageDate.getFullYear();
+                                  return `Cobertura hasta: ${day}/${month}/${year}`;
+                                }
+                                return "Fecha no disponible";
+                              })()}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

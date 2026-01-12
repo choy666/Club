@@ -58,12 +58,6 @@ export default function RootLayout({
                   >
                     Portal socio
                   </Link>
-                  <Link
-                    href="/showcase"
-                    className="rounded-full border border-white/15 px-4 py-1 text-xs uppercase tracking-[0.35em] transition hover:border-accent-primary hover:text-accent-primary"
-                  >
-                    Showcase
-                  </Link>
                   <span className="text-[0.6rem] uppercase tracking-[0.4em] text-base-muted">
                     Transparencia · Roadmap vivo
                   </span>

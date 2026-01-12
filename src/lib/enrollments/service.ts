@@ -1089,8 +1089,23 @@ export async function getMemberFinancialSnapshot(
   };
 }
 
-export async function getMemberSummaries(): Promise<MemberSummary[]> {
-  console.log("🔍 [SERVICE] Obteniendo resúmenes completos de socios...");
+export async function getMemberSummaries(filters?: { search?: string }): Promise<MemberSummary[]> {
+  console.log("🔍 [SERVICE] Obteniendo resúmenes completos de socios con filtros:", filters);
+
+  // Construir las condiciones WHERE
+  const whereConditions = [];
+
+  // Aplicar filtros de búsqueda por nombre, email o DNI
+  if (filters?.search && filters.search.trim()) {
+    const searchTerm = `%${filters.search.trim()}%`;
+    whereConditions.push(
+      or(
+        ilike(users.name, searchTerm),
+        ilike(users.email, searchTerm),
+        ilike(members.documentNumber, searchTerm)
+      )
+    );
+  }
 
   const allDues = await db
     .select({
@@ -1126,6 +1141,7 @@ export async function getMemberSummaries(): Promise<MemberSummary[]> {
     .innerJoin(members, eq(dues.memberId, members.id))
     .innerJoin(users, eq(members.userId, users.id))
     .innerJoin(enrollments, eq(dues.enrollmentId, enrollments.id))
+    .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
     .orderBy(dues.dueDate);
 
   console.log(`📊 [SERVICE] Procesando ${allDues.length} cuotas para resumen...`);

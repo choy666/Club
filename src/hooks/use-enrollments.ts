@@ -234,11 +234,24 @@ export function useDuesList() {
 }
 
 export function useMemberSummaries() {
+  const filters = useDueFiltersStore();
+
   return useQuery({
-    queryKey: ["member-summaries"],
+    queryKey: ["member-summaries", filters],
     queryFn: async () => {
-      console.log("🔍 [HOOK] Obteniendo resúmenes completos de socios...");
-      const response = await apiFetch<{ data: MemberSummary[] }>("/api/cuotas/resumen");
+      console.log("🔍 [HOOK] Obteniendo resúmenes completos de socios con filtros:", filters);
+
+      const params = new URLSearchParams();
+
+      // Aplicar filtros de búsqueda
+      if (filters.search.trim()) {
+        params.set("search", filters.search.trim());
+      }
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/api/cuotas/resumen?${queryString}` : "/api/cuotas/resumen";
+
+      const response = await apiFetch<{ data: MemberSummary[] }>(endpoint);
       console.log("📥 [HOOK] Resúmenes recibidos:", response.data);
       return response.data;
     },

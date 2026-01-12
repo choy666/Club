@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMemberPaymentsIndividual } from "@/hooks/use-enrollments";
 import { useMemberSummaries } from "@/hooks/use-enrollments";
+import { calculateDuePeriod } from "@/lib/utils/date-utils";
 
 interface PaymentTransaction {
   transactionId: string;
@@ -177,19 +178,25 @@ export default function PaymentHistoryPage() {
                           <div>
                             <span className="text-xs text-base-muted">Período: </span>
                             <span className="text-sm font-medium text-base-foreground">
-                              {new Date(payment.dues[0]?.dueDate).toLocaleDateString("es-AR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              })}{" "}
-                              -{" "}
-                              {new Date(
-                                payment.dues[payment.dues.length - 1]?.dueDate
-                              ).toLocaleDateString("es-AR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              })}
+                              {(() => {
+                                const firstDue = payment.dues[0]?.dueDate;
+                                const lastDue = payment.dues[payment.dues.length - 1]?.dueDate;
+                                
+                                if (!firstDue || !lastDue) {
+                                  return "N/A";
+                                }
+                                
+                                // Para una sola cuota, mostrar el período de cobertura
+                                if (payment.duesCount === 1) {
+                                  const period = calculateDuePeriod(firstDue);
+                                  return `${period.start} - ${period.end}`;
+                                }
+                                
+                                // Para múltiples cuotas, mostrar rango completo
+                                const firstPeriod = calculateDuePeriod(firstDue);
+                                const lastPeriod = calculateDuePeriod(lastDue);
+                                return `${firstPeriod.start} - ${lastPeriod.end}`;
+                              })()}
                             </span>
                           </div>
                         </div>

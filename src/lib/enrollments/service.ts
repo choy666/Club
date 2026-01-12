@@ -260,6 +260,24 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
       monthlyAmount,
     });
 
+    // Logging detallado de las primeras cuotas para depuración
+    logger.info(
+      `Cuotas generadas para depuración`,
+      {
+        enrollmentId: createdEnrollmentId,
+        startDate: startDateValue,
+        primerasCuotas: dueSchedule.slice(0, 5).map((due, index) => ({
+          index: index + 1,
+          dueDate: due.dueDate,
+          parsedDate: new Date(due.dueDate).toISOString(),
+          displayDate: new Date(due.dueDate).toLocaleDateString('es-AR'),
+        })),
+        totalCuotas: dueSchedule.length,
+      },
+      createdEnrollmentId,
+      "dues_debug"
+    );
+
     if (dueSchedule.length > 0) {
       await db.insert(dues).values(dueSchedule);
 
@@ -1373,7 +1391,7 @@ export async function getMemberPaymentsByTransaction(memberId: string): Promise<
     .from(payments)
     .innerJoin(dues, eq(payments.dueId, dues.id))
     .where(eq(payments.memberId, memberId))
-    .orderBy(desc(payments.paidAt));
+    .orderBy(asc(payments.paidAt));
 
   console.log("📥 [SERVICE] Pagos encontrados en DB:", allPayments.length);
 
@@ -1444,7 +1462,7 @@ export async function getMemberPaymentsByTransaction(memberId: string): Promise<
       notes: data.notes,
       dues: data.dues.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
     }))
-    .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+    .sort((a, b) => new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime());
 
   console.log("✅ [SERVICE] Transacciones agrupadas:", result.length);
   console.log(

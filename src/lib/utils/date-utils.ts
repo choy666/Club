@@ -90,6 +90,44 @@ export function compareDates(a: string, b: string): number {
 }
 
 /**
+ * Formatea una fecha YYYY-MM-DD a DD/MM/YYYY para visualización
+ * Evita problemas de timezone al parsear directamente
+ */
+export function formatDateDDMMYYYY(dateString: string): string {
+  if (!dateString || !DATE_ONLY_REGEX.test(dateString)) {
+    return "N/A";
+  }
+  
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Calcula el período de cobertura de una cuota
+ * Si la cuota vence el 12/02/2026, cubre desde 12/02/2026 hasta 11/03/2026
+ */
+export function calculateDuePeriod(dueDateString: string): { start: string; end: string } {
+  if (!dueDateString || !DATE_ONLY_REGEX.test(dueDateString)) {
+    return { start: "N/A", end: "N/A" };
+  }
+  
+  const [year, month, day] = dueDateString.split('-').map(Number);
+  
+  // Fecha de inicio: el día de la cuota
+  const startDate = formatDateDDMMYYYY(dueDateString);
+  
+  // Fecha de fin: un mes después, un día antes
+  const endDate = new Date(year, month - 1, day); // month-1 porque JS usa 0-11
+  endDate.setMonth(endDate.getMonth() + 1);
+  endDate.setDate(endDate.getDate() - 1);
+  
+  const endString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+  const endDateFormatted = formatDateDDMMYYYY(endString);
+  
+  return { start: startDate, end: endDateFormatted };
+}
+
+/**
  * Verifica si una fecha está entre un rango (inclusive)
  */
 export function isDateInRange(date: string, startDate: string, endDate: string): boolean {

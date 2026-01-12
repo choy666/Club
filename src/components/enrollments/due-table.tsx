@@ -13,6 +13,7 @@ import { MemberProgressSummary } from "@/components/enrollments/member-progress-
 import { clientLogger } from "@/lib/client-logger";
 import { getErrorMessage } from "@/lib/errors-client";
 import { formatCurrency } from "@/lib/number-format";
+import { calculateDuePeriod } from "@/lib/utils/date-utils";
 
 type Feedback = {
   type: "success" | "error";
@@ -468,7 +469,7 @@ export function DueTable() {
                 <div className="space-y-2">
                   {/* Mostrar solo el último pago */}
                   {(() => {
-                    const lastPayment = paymentsData.data[0];
+                    const lastPayment = paymentsData.data[paymentsData.data.length - 1];
                     return (
                       <motion.div
                         key={`last-payment-${lastPayment.transactionId}`}
@@ -509,22 +510,25 @@ export function DueTable() {
                                   Período:
                                 </span>
                                 <span className="text-sm font-medium text-base-foreground">
-                                  {new Date(lastPayment.dues[0]?.dueDate).toLocaleDateString(
-                                    "es-AR",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
+                                  {(() => {
+                                    const firstDue = lastPayment.dues[0]?.dueDate;
+                                    const lastDue = lastPayment.dues[lastPayment.dues.length - 1]?.dueDate;
+                                    
+                                    if (!firstDue || !lastDue) {
+                                      return "N/A";
                                     }
-                                  )}{" "}
-                                  -{" "}
-                                  {new Date(
-                                    lastPayment.dues[lastPayment.dues.length - 1]?.dueDate
-                                  ).toLocaleDateString("es-AR", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  })}
+                                    
+                                    // Para una sola cuota, mostrar el período de cobertura
+                                    if (lastPayment.duesCount === 1) {
+                                      const period = calculateDuePeriod(firstDue);
+                                      return `${period.start} - ${period.end}`;
+                                    }
+                                    
+                                    // Para múltiples cuotas, mostrar rango completo
+                                    const firstPeriod = calculateDuePeriod(firstDue);
+                                    const lastPeriod = calculateDuePeriod(lastDue);
+                                    return `${firstPeriod.start} - ${lastPeriod.end}`;
+                                  })()}
                                 </span>
                               </div>
                               {lastPayment.reference && (

@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 
 import { AdminLayout } from "@/components/admin/admin-layout";
+import { PrintButton } from "@/components/ui/print-button";
 import { useMembersStats } from "@/hooks/use-members-stats";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateDDMMYYYY } from "@/lib/utils/date-utils";
+import { generateMembersPDF } from "@/lib/pdf/pdf-generator";
 
 interface Member {
   id: number;
@@ -91,6 +93,36 @@ export default function AdminReportesPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePrint = async () => {
+    // Obtener todos los socios con los filtros actuales (sin paginación)
+    try {
+      const params = new URLSearchParams({
+        limit: "1000", // Obtener todos los resultados
+        ...(search && { search }),
+        ...(statusFilter && { status: statusFilter }),
+        ...(debtFilter && { debtStatus: debtFilter }),
+      });
+
+      const response = await apiFetch<MembersResponse>(`/api/socios/list?${params}`);
+      
+      const pdfConfig = {
+        title: "Reporte de Socios - AppClub",
+        filters: {
+          search,
+          statusFilter,
+          debtFilter,
+        },
+        totalRecords: response.pagination.total,
+        generatedAt: new Date().toLocaleString("es-AR"),
+      };
+
+      generateMembersPDF(response.data, pdfConfig);
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      throw error;
+    }
   };
 
   const MotionCard = motion.div;
@@ -181,7 +213,10 @@ export default function AdminReportesPage() {
           transition={{ delay: 0.2 }}
           className="neo-panel p-6 space-y-4"
         >
-          <h2 className="text-xl font-semibold font-[var(--font-space)]">Búsqueda y Filtros</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold font-[var(--font-space)]">Búsqueda y Filtros</h2>
+            <PrintButton onPrint={handlePrint} disabled={loading || members.length === 0} />
+          </div>
 
           <div className="grid gap-4 md:grid-cols-4">
             <input

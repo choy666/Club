@@ -300,7 +300,9 @@ export default function AdminReportesPage() {
                         </span>
                       </td>
                       <td className="p-3 text-sm">
-                        {member.fechaInscripcion ? formatDateDDMMYYYY(member.fechaInscripcion) : "Inexistente"}
+                        {member.fechaInscripcion
+                          ? formatDateDDMMYYYY(member.fechaInscripcion)
+                          : "Inexistente"}
                       </td>
                       <td className="p-3 text-sm">
                         {(() => {
@@ -322,10 +324,9 @@ export default function AdminReportesPage() {
                         })()}
                       </td>
                       <td className="p-3 text-sm">
-                        {member.fechaInscripcion ? 
-                          `${member.cuotasPagadas}/${member.cuotasPagadas + member.cuotasPendientes}` : 
-                          "Inexistente"
-                        }
+                        {member.fechaInscripcion
+                          ? `${member.cuotasPagadas}/${member.cuotasPagadas + member.cuotasPendientes}`
+                          : "Inexistente"}
                       </td>
                     </tr>
                   ))}

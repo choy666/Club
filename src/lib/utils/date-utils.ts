@@ -97,8 +97,8 @@ export function formatDateDDMMYYYY(dateString: string): string {
   if (!dateString || !DATE_ONLY_REGEX.test(dateString)) {
     return "N/A";
   }
-  
-  const [year, month, day] = dateString.split('-');
+
+  const [year, month, day] = dateString.split("-");
   return `${day}/${month}/${year}`;
 }
 
@@ -110,20 +110,20 @@ export function calculateDuePeriod(dueDateString: string): { start: string; end:
   if (!dueDateString || !DATE_ONLY_REGEX.test(dueDateString)) {
     return { start: "N/A", end: "N/A" };
   }
-  
-  const [year, month, day] = dueDateString.split('-').map(Number);
-  
+
+  const [year, month, day] = dueDateString.split("-").map(Number);
+
   // Fecha de inicio: el día de la cuota
   const startDate = formatDateDDMMYYYY(dueDateString);
-  
+
   // Fecha de fin: un mes después, un día antes
   const endDate = new Date(year, month - 1, day); // month-1 porque JS usa 0-11
   endDate.setMonth(endDate.getMonth() + 1);
   endDate.setDate(endDate.getDate() - 1);
-  
-  const endString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+  const endString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
   const endDateFormatted = formatDateDDMMYYYY(endString);
-  
+
   return { start: startDate, end: endDateFormatted };
 }
 

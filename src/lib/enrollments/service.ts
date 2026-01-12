@@ -270,7 +270,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
           index: index + 1,
           dueDate: due.dueDate,
           parsedDate: new Date(due.dueDate).toISOString(),
-          displayDate: new Date(due.dueDate).toLocaleDateString('es-AR'),
+          displayDate: new Date(due.dueDate).toLocaleDateString("es-AR"),
         })),
         totalCuotas: dueSchedule.length,
       },

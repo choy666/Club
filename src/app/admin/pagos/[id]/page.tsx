@@ -181,17 +181,17 @@ export default function PaymentHistoryPage() {
                               {(() => {
                                 const firstDue = payment.dues[0]?.dueDate;
                                 const lastDue = payment.dues[payment.dues.length - 1]?.dueDate;
-                                
+
                                 if (!firstDue || !lastDue) {
                                   return "N/A";
                                 }
-                                
+
                                 // Para una sola cuota, mostrar el período de cobertura
                                 if (payment.duesCount === 1) {
                                   const period = calculateDuePeriod(firstDue);
                                   return `${period.start} - ${period.end}`;
                                 }
-                                
+
                                 // Para múltiples cuotas, mostrar rango completo
                                 const firstPeriod = calculateDuePeriod(firstDue);
                                 const lastPeriod = calculateDuePeriod(lastDue);

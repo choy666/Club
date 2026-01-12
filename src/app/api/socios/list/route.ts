@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
           "→ Filtro regular-activo aplicado (recién inscriptos + cuota mes actual pagada)"
         );
       } else if (status === "regular-inactivo") {
-        // Socios regulares inactivos: solo aquellos fuera de cobertura con cuota adeudada
+        // Socios regulares inactivos: miembros activos que no están al día con sus cuotas
         conditions.push(
           and(
             eq(members.status, "ACTIVE"),
@@ -96,18 +96,18 @@ export async function GET(request: NextRequest) {
               AND EXTRACT(YEAR FROM ${enrollments.startDate}) = EXTRACT(YEAR FROM CURRENT_DATE)
             )
             AND
-            -- Cuota del mes actual adeudada
-            EXISTS (
+            -- Cuota del mes actual adeudada (PENDING o sin cuotas generadas)
+            NOT EXISTS (
               SELECT 1 FROM ${dues} 
               WHERE ${dues.enrollmentId} = ${enrollments.id} 
                 AND ${dues.dueDate}::text LIKE ${currentMonth + "%"}
-                AND ${dues.status} = 'PENDING'
+                AND ${dues.status} = 'PAID'
             )
           )`
           )
         );
         console.log(
-          "→ Filtro regular-inactivo aplicado (fuera de cobertura + cuota mes actual adeudada)"
+          "→ Filtro regular-inactivo aplicado (fuera de cobertura + sin cuota pagada en mes actual)"
         );
       } else if (status === "pendiente") {
         conditions.push(and(eq(members.status, "PENDING"), sql`${enrollments.id} IS NULL`));
@@ -159,8 +159,58 @@ export async function GET(request: NextRequest) {
     }
 
     if (debtStatus) {
-      // Simplificado: por ahora todos como al_dia hasta implementar la lógica real
-      // TODO: Implementar consulta compleja para determinar estado de cuotas
+      console.log(`API socios/list - Aplicando filtro debtStatus: ${debtStatus}`);
+
+      if (debtStatus === "al_dia") {
+        // Al día: socios con estados Regular Activo y Vitalicio Activo
+        conditions.push(
+          sql`(
+            ${members.status} = 'VITALICIO' OR
+            (${members.status} = 'ACTIVE' AND ${enrollments.planName} = 'VITALICIO') OR
+            (${members.status} = 'ACTIVE' AND 
+             ${enrollments.planName} != 'VITALICIO' AND 
+             (
+               -- Recién inscripto (primer mes de cobertura)
+               (EXTRACT(MONTH FROM ${enrollments.startDate}) = EXTRACT(MONTH FROM CURRENT_DATE)
+                AND EXTRACT(YEAR FROM ${enrollments.startDate}) = EXTRACT(YEAR FROM CURRENT_DATE))
+               OR
+               -- Cuota del mes actual pagada
+               EXISTS (
+                 SELECT 1 FROM ${dues} 
+                 WHERE ${dues.enrollmentId} = ${enrollments.id} 
+                   AND ${dues.dueDate}::text LIKE ${currentMonth + "%"}
+                   AND ${dues.status} = 'PAID'
+               )
+             )
+            )
+          )`
+        );
+        console.log("→ Filtro al_dia aplicado (Regular Activo + Vitalicio Activo)");
+      } else if (debtStatus === "deudor") {
+        // Deudores: socios con estado Regular Inactivo
+        conditions.push(
+          and(
+            eq(members.status, "ACTIVE"),
+            sql`(${enrollments.planName} != 'VITALICIO' OR ${enrollments.planName} IS NULL)`,
+            sql`(
+            -- NO es recién inscripto (fuera del primer mes de cobertura)
+            NOT (
+              EXTRACT(MONTH FROM ${enrollments.startDate}) = EXTRACT(MONTH FROM CURRENT_DATE)
+              AND EXTRACT(YEAR FROM ${enrollments.startDate}) = EXTRACT(YEAR FROM CURRENT_DATE)
+            )
+            AND
+            -- Cuota del mes actual adeudada (PENDING o sin cuotas generadas)
+            NOT EXISTS (
+              SELECT 1 FROM ${dues} 
+              WHERE ${dues.enrollmentId} = ${enrollments.id} 
+                AND ${dues.dueDate}::text LIKE ${currentMonth + "%"}
+                AND ${dues.status} = 'PAID'
+            )
+          )`
+          )
+        );
+        console.log("→ Filtro deudor aplicado (Regular Inactivo)");
+      }
     }
 
     // Consulta principal con joins y lógica de estado

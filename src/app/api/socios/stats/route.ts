@@ -51,14 +51,14 @@ export async function GET() {
           )
         ),
 
-      // Regulares Inactivos (estado activo + plan regular + fuera de cobertura + cuota adeudada)
+      // Regulares Inactivos (estado active/inactive + plan regular + fuera de cobertura + sin cuota pagada)
       db
         .select({ count: count() })
         .from(members)
         .innerJoin(enrollments, eq(members.id, enrollments.memberId))
         .where(
           and(
-            eq(members.status, "ACTIVE"),
+            sql`(${members.status} = 'ACTIVE' OR ${members.status} = 'INACTIVE')`,
             sql`${enrollments.planName} != 'VITALICIO'`,
             sql`(
             -- NO es recién inscripto (fuera del primer mes de cobertura)
@@ -67,28 +67,51 @@ export async function GET() {
               AND EXTRACT(YEAR FROM ${enrollments.startDate}) = EXTRACT(YEAR FROM CURRENT_DATE)
             )
             AND
-            -- Cuota del mes actual adeudada
-            EXISTS (
+            -- Cuota del mes actual adeudada (PENDING o sin cuotas generadas)
+            NOT EXISTS (
               SELECT 1 FROM ${dues} 
               WHERE ${dues.enrollmentId} = ${enrollments.id} 
                 AND ${dues.dueDate}::text LIKE ${currentMonth + "%"}
-                AND ${dues.status} = 'PENDING'
+                AND ${dues.status} = 'PAID'
+            )
+            AND
+            -- Excluir vitalicios inactivos (los que tienen 300+ pagos)
+            NOT EXISTS (
+              SELECT 1 FROM ${payments} 
+              WHERE ${payments.memberId} = ${members.id}
+              GROUP BY ${payments.memberId}
+              HAVING COUNT(*) >= 300
             )
           )`
           )
         ),
 
-      // Vitalicios Activos
-      db.select({ count: count() }).from(members).where(eq(members.status, "VITALICIO")),
-
-      // Vitalicios Inactivos (estado inactivo + 300+ pagos)
+      // Vitalicios Activos (estado VITALICIO + estado ACTIVE con inscripción vitalicia)
       db
         .select({ count: count() })
         .from(members)
+        .innerJoin(enrollments, eq(members.id, enrollments.memberId))
+        .where(
+          sql`(
+            ${members.status} = 'VITALICIO' OR
+            (${members.status} = 'ACTIVE' AND ${enrollments.planName} = 'VITALICIO')
+          )`
+        ),
+
+      // Vitalicios Inactivos (estado INACTIVE + inscripción vitalicia OR 300+ pagos)
+      db
+        .select({ count: count() })
+        .from(members)
+        .leftJoin(enrollments, eq(members.id, enrollments.memberId))
         .where(
           and(
             eq(members.status, "INACTIVE"),
             sql`(
+            EXISTS (
+              SELECT 1 FROM ${enrollments} 
+              WHERE ${enrollments.memberId} = ${members.id}
+              AND ${enrollments.planName} = 'VITALICIO'
+            ) OR
             EXISTS (
               SELECT 1 FROM ${payments} 
               WHERE ${payments.memberId} = ${members.id}
@@ -123,14 +146,14 @@ export async function GET() {
 
     // Calcular contadores según lógica especificada
     const stats = {
-      total, // Total Socios = Regulares Activos + Regulares Inactivos + Vitalicios Activos + Vitalicios Inactivos + Pendientes
-      activo: regularActivo + regularInactivo + vitalicioActivo, // Activos = Regulares Activos + Regulares Inactivos + Vitalicios Activos
-      alDia: regularActivo + vitalicioActivo, // Activos al Día = Regulares Activos + Vitalicios Activos
-      inactivo: regularInactivo + vitalicioInactivo, // Inactivos = Regulares Inactivos + Vitalicios Inactivos
+      total, // Total Socios = Todos los socios existentes
+      activo: regularActivo + regularInactivo + vitalicioActivo, // Activos = Vitalicio Activo + Regular Activo + Regular Inactivo
+      alDia: regularActivo + vitalicioActivo, // Activos al Día = Regular Activo + Vitalicio Activo
+      inactivo: regularInactivo + vitalicioInactivo, // Inactivos = Regular Inactivo + Vitalicio Inactivo
       vitalicioActivo,
       vitalicioInactivo,
       pendiente: pendientes,
-      deudores: 0, // TODO: Implementar lógica de deudores
+      deudores: regularInactivo, // Deudores = Regular Inactivo
       nuevosEsteMes: 0, // TODO: Implementar con filtro de fecha
       bajaEsteMes: 0, // TODO: Implementar con filtro de fecha
     };

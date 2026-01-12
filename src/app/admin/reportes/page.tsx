@@ -106,7 +106,7 @@ export default function AdminReportesPage() {
       });
 
       const response = await apiFetch<MembersResponse>(`/api/socios/list?${params}`);
-      
+
       const pdfConfig = {
         title: "Reporte de Socios - AppClub",
         filters: {

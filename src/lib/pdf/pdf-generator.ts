@@ -71,7 +71,12 @@ export class PDFGenerator {
     this.doc.setFont("helvetica", style);
   }
 
-  private addText(text: string, x: number, y: number, options?: { align?: "left" | "center" | "right" }): void {
+  private addText(
+    text: string,
+    x: number,
+    y: number,
+    options?: { align?: "left" | "center" | "right" }
+  ): void {
     this.doc.text(text, x, y, options);
   }
 
@@ -120,7 +125,7 @@ export class PDFGenerator {
       { text: "Cuotas", x: 265 },
     ];
 
-    headers.forEach(header => {
+    headers.forEach((header) => {
       this.addText(header.text, header.x, this.currentY);
     });
 
@@ -138,7 +143,8 @@ export class PDFGenerator {
     this.setFont(8, "normal"); // 8pt para landscape
 
     // Nombre (truncado si es muy largo)
-    const nombre = member.nombre.length > 15 ? member.nombre.substring(0, 12) + "..." : member.nombre;
+    const nombre =
+      member.nombre.length > 15 ? member.nombre.substring(0, 12) + "..." : member.nombre;
     this.addText(nombre, this.margin, this.currentY);
 
     // DNI
@@ -164,8 +170,8 @@ export class PDFGenerator {
     this.doc.setTextColor(0, 0, 0); // Reset color
 
     // Fecha de inscripción
-    const fechaInscripcion = member.fechaInscripcion 
-      ? formatDateDDMMYYYY(member.fechaInscripcion) 
+    const fechaInscripcion = member.fechaInscripcion
+      ? formatDateDDMMYYYY(member.fechaInscripcion)
       : "N/A";
     this.addText(fechaInscripcion, 185, this.currentY);
 
@@ -200,12 +206,9 @@ export class PDFGenerator {
   private addFooter(pageNumber: number, totalPages: number): void {
     const footerY = this.pageHeight - 15;
     this.setFont(8, "normal");
-    this.addText(
-      `Página ${pageNumber} de ${totalPages}`,
-      this.pageWidth / 2,
-      footerY,
-      { align: "center" }
-    );
+    this.addText(`Página ${pageNumber} de ${totalPages}`, this.pageWidth / 2, footerY, {
+      align: "center",
+    });
   }
 
   public generatePDF(members: Member[], config: PDFConfig): void {
@@ -228,15 +231,12 @@ export class PDFGenerator {
     }
 
     // Descargar el PDF
-    const fileName = `reporte-socios-${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `reporte-socios-${new Date().toISOString().split("T")[0]}.pdf`;
     this.doc.save(fileName);
   }
 }
 
-export const generateMembersPDF = (
-  members: Member[],
-  config: PDFConfig
-): void => {
+export const generateMembersPDF = (members: Member[], config: PDFConfig): void => {
   const pdfGenerator = new PDFGenerator();
   pdfGenerator.generatePDF(members, config);
 };

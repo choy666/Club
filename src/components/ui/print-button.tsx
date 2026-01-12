@@ -33,11 +33,7 @@ export function PrintButton({ onPrint, disabled = false, className = "" }: Print
       disabled={disabled || isLoading}
       title="Exportar listado a PDF"
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Printer className="h-4 w-4" />
-      )}
+      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
       {isLoading ? "Generando PDF..." : "Imprimir"}
     </button>
   );

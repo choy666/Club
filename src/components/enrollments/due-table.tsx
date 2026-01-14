@@ -506,25 +506,28 @@ export function DueTable() {
                                 <span className="text-sm font-medium text-base-foreground">
                                   {(() => {
                                     if (lastPayment.dues.length === 0) return "N/A";
-                                    
+
                                     // Extraer números de cuota de los IDs (formato: due_134)
-                                    const dueNumbers = lastPayment.dues.map(due => {
-                                      const match = due.dueId.match(/due_(\d+)/);
-                                      return match ? parseInt(match[1]) : null;
-                                    }).filter(n => n !== null).sort((a, b) => a - b);
-                                    
+                                    const dueNumbers = lastPayment.dues
+                                      .map((due) => {
+                                        const match = due.dueId.match(/due_(\d+)/);
+                                        return match ? parseInt(match[1]) : null;
+                                      })
+                                      .filter((n) => n !== null)
+                                      .sort((a, b) => a - b);
+
                                     if (dueNumbers.length === 0) {
                                       return `${lastPayment.duesCount} cuota${lastPayment.duesCount !== 1 ? "s" : ""}`;
                                     }
-                                    
+
                                     if (dueNumbers.length === 1) {
                                       return `Cuota #${dueNumbers[0]}`;
                                     }
-                                    
+
                                     // Para múltiples cuotas, mostrar rango (ej: Cuotas #134-135)
                                     const first = dueNumbers[0];
                                     const last = dueNumbers[dueNumbers.length - 1];
-                                    
+
                                     if (last - first === dueNumbers.length - 1) {
                                       // Son consecutivas
                                       return `Cuotas #${first}-${last}`;
@@ -548,10 +551,15 @@ export function DueTable() {
                                     // Obtener información del socio para calcular cobertura
                                     // Usar el memberId del socio seleccionado en la modal
                                     const memberId = selectedSummary?.member.id;
-                                    console.log("🔍 [DEBUG] MemberId del socio seleccionado:", memberId);
+                                    console.log(
+                                      "🔍 [DEBUG] MemberId del socio seleccionado:",
+                                      memberId
+                                    );
                                     if (!memberId) return "N/A";
-                                    
-                                    const member = memberSummaries?.find(m => m.member.id === memberId);
+
+                                    const member = memberSummaries?.find(
+                                      (m) => m.member.id === memberId
+                                    );
                                     console.log("🔍 [DEBUG] Member encontrado:", !!member);
                                     if (!member?.enrollment?.startDate) {
                                       console.log("❌ [DEBUG] No hay enrollment.startDate");
@@ -559,52 +567,88 @@ export function DueTable() {
                                     }
 
                                     // Usar la misma lógica que la modal de pago para calcular cobertura
-                                    const enrollmentDate = fromLocalDateOnly(member.enrollment.startDate);
-                                    
+                                    const enrollmentDate = fromLocalDateOnly(
+                                      member.enrollment.startDate
+                                    );
+
                                     // Para calcular la cobertura correcta, necesitamos saber cuántas cuotas tenía
                                     // el socio ANTES de este pago específico. Como paymentsData ya está filtrado
                                     // para este socio y ordenado por fecha, podemos usarlo directamente.
-                                    
-                                    console.log("🔍 [DEBUG] Analizando pago:", lastPayment.transactionId);
+
+                                    console.log(
+                                      "🔍 [DEBUG] Analizando pago:",
+                                      lastPayment.transactionId
+                                    );
                                     console.log("🔍 [DEBUG] MemberId:", memberId);
-                                    console.log("🔍 [DEBUG] PaymentsData disponible:", !!paymentsData?.data);
-                                    
+                                    console.log(
+                                      "🔍 [DEBUG] PaymentsData disponible:",
+                                      !!paymentsData?.data
+                                    );
+
                                     // paymentsData ya contiene todos los pagos del socio ordenados por fecha
                                     const allPayments = paymentsData?.data || [];
-                                    
+
                                     console.log("🔍 [DEBUG] AllPayments:", allPayments.length);
-                                    console.log("🔍 [DEBUG] AllPayments:", allPayments.map(p => ({ id: p.transactionId, count: p.duesCount, date: p.paidAt })));
-                                    
+                                    console.log(
+                                      "🔍 [DEBUG] AllPayments:",
+                                      allPayments.map((p) => ({
+                                        id: p.transactionId,
+                                        count: p.duesCount,
+                                        date: p.paidAt,
+                                      }))
+                                    );
+
                                     // Encontrar este pago en la lista (ya está ordenada)
-                                    const currentPaymentIndex = allPayments.findIndex((p) => p.transactionId === lastPayment.transactionId);
-                                    
-                                    console.log("🔍 [DEBUG] CurrentPaymentIndex:", currentPaymentIndex);
-                                    
+                                    const currentPaymentIndex = allPayments.findIndex(
+                                      (p) => p.transactionId === lastPayment.transactionId
+                                    );
+
+                                    console.log(
+                                      "🔍 [DEBUG] CurrentPaymentIndex:",
+                                      currentPaymentIndex
+                                    );
+
                                     if (currentPaymentIndex === -1) {
                                       console.log("❌ [DEBUG] No se encontró el pago en la lista");
                                       return "N/A";
                                     }
-                                    
+
                                     // Calcular cuántas cuotas tenía el socio ANTES de este pago
                                     let paidDuesBeforeThisPayment = 0;
                                     for (let i = 0; i < currentPaymentIndex; i++) {
                                       paidDuesBeforeThisPayment += allPayments[i].duesCount;
                                     }
-                                    
-                                    console.log("🔍 [DEBUG] PaidDuesBeforeThisPayment:", paidDuesBeforeThisPayment);
-                                    console.log("🔍 [DEBUG] LastPayment.duesCount:", lastPayment.duesCount);
-                                    
+
+                                    console.log(
+                                      "🔍 [DEBUG] PaidDuesBeforeThisPayment:",
+                                      paidDuesBeforeThisPayment
+                                    );
+                                    console.log(
+                                      "🔍 [DEBUG] LastPayment.duesCount:",
+                                      lastPayment.duesCount
+                                    );
+
                                     // La cobertura total después de este pago es: cuotas antes + cuotas de este pago
-                                    const totalMonthsAfterPayment = paidDuesBeforeThisPayment + lastPayment.duesCount;
-                                    
-                                    console.log("🔍 [DEBUG] TotalMonthsAfterPayment:", totalMonthsAfterPayment);
-                                    console.log("🔍 [DEBUG] EnrollmentDate:", member.enrollment.startDate);
-                                    
+                                    const totalMonthsAfterPayment =
+                                      paidDuesBeforeThisPayment + lastPayment.duesCount;
+
+                                    console.log(
+                                      "🔍 [DEBUG] TotalMonthsAfterPayment:",
+                                      totalMonthsAfterPayment
+                                    );
+                                    console.log(
+                                      "🔍 [DEBUG] EnrollmentDate:",
+                                      member.enrollment.startDate
+                                    );
+
                                     // Calcular fecha de cobertura hasta
-                                    const coverageUntilDate = addMonthsLocal(enrollmentDate, totalMonthsAfterPayment);
-                                    
+                                    const coverageUntilDate = addMonthsLocal(
+                                      enrollmentDate,
+                                      totalMonthsAfterPayment
+                                    );
+
                                     console.log("🔍 [DEBUG] CoverageUntilDate:", coverageUntilDate);
-                                    
+
                                     // Formatear las fechas
                                     const formatDate = (date: Date) => {
                                       return date.toLocaleDateString("es-AR", {
@@ -616,8 +660,11 @@ export function DueTable() {
 
                                     const coverageFrom = formatDate(enrollmentDate);
                                     const coverageTo = formatDate(coverageUntilDate);
-                                    
-                                    console.log("🔍 [DEBUG] Resultado final:", `${coverageFrom} - ${coverageTo}`);
+
+                                    console.log(
+                                      "🔍 [DEBUG] Resultado final:",
+                                      `${coverageFrom} - ${coverageTo}`
+                                    );
 
                                     if (lastPayment.duesCount === 1) {
                                       // Para una sola cuota, mostrar el período de cobertura completo
@@ -854,6 +901,6 @@ function toDateTimeLocalInput(date: Date): string {
   const day = String(localDate.getDate()).padStart(2, "0");
   const hours = String(localDate.getHours()).padStart(2, "0");
   const minutes = String(localDate.getMinutes()).padStart(2, "0");
-  
+
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }

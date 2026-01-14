@@ -113,15 +113,15 @@ export function calculateDuePeriod(dueDateString: string): { start: string; end:
 
   // Usar utilidades de fecha local para consistencia
   const startDate = fromLocalDateOnly(dueDateString);
-  
+
   // Fecha de fin: un mes después, un día antes
   // Usar addMonthsLocal para mantener consistencia de timezone
   const endDate = addMonthsLocal(startDate, 1);
   endDate.setDate(endDate.getDate() - 1);
 
-  return { 
+  return {
     start: formatDateDDMMYYYY(dueDateString),
-    end: formatDateDDMMYYYY(toLocalDateOnly(endDate))
+    end: formatDateDDMMYYYY(toLocalDateOnly(endDate)),
   };
 }
 

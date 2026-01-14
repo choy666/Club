@@ -179,60 +179,88 @@ export default function PaymentHistoryPage() {
                             <span className="text-xs text-base-muted">Período: </span>
                             <span className="text-sm font-medium text-base-foreground">
                               {(() => {
-                                console.log("🔍 [PAGE DEBUG] Procesando pago:", payment.transactionId);
+                                console.log(
+                                  "🔍 [PAGE DEBUG] Procesando pago:",
+                                  payment.transactionId
+                                );
                                 console.log("🔍 [PAGE DEBUG] Payment dues:", payment.dues);
-                                
+
                                 // El memberId ya está disponible en la URL de la página
                                 console.log("🔍 [PAGE DEBUG] MemberId de URL:", memberId);
-                                
+
                                 if (!memberId) {
                                   console.log("❌ [PAGE DEBUG] No hay memberId en URL");
                                   return "N/A";
                                 }
-                                
-                                const member = memberSummaries?.find(m => m.member.id === memberId);
+
+                                const member = memberSummaries?.find(
+                                  (m) => m.member.id === memberId
+                                );
                                 console.log("🔍 [PAGE DEBUG] Member encontrado:", !!member);
-                                console.log("🔍 [PAGE DEBUG] Member enrollment:", member?.enrollment);
-                                
+                                console.log(
+                                  "🔍 [PAGE DEBUG] Member enrollment:",
+                                  member?.enrollment
+                                );
+
                                 if (!member?.enrollment?.startDate) {
                                   console.log("❌ [PAGE DEBUG] No hay enrollment.startDate");
                                   return "N/A";
                                 }
 
                                 // Usar la misma lógica que la modal de pago para calcular cobertura
-                                const enrollmentDate = fromLocalDateOnly(member.enrollment.startDate);
+                                const enrollmentDate = fromLocalDateOnly(
+                                  member.enrollment.startDate
+                                );
                                 console.log("🔍 [PAGE DEBUG] EnrollmentDate:", enrollmentDate);
-                                
+
                                 // Para calcular la cobertura correcta, necesitamos saber cuántas cuotas tenía
                                 // el socio ANTES de este pago específico
                                 const allPayments = payments || [];
                                 console.log("🔍 [PAGE DEBUG] AllPayments:", allPayments.length);
-                                
+
                                 // Encontrar este pago en la lista (ya está ordenada por fecha)
-                                const currentPaymentIndex = allPayments.findIndex((p) => p.transactionId === payment.transactionId);
-                                console.log("🔍 [PAGE DEBUG] CurrentPaymentIndex:", currentPaymentIndex);
-                                
+                                const currentPaymentIndex = allPayments.findIndex(
+                                  (p) => p.transactionId === payment.transactionId
+                                );
+                                console.log(
+                                  "🔍 [PAGE DEBUG] CurrentPaymentIndex:",
+                                  currentPaymentIndex
+                                );
+
                                 if (currentPaymentIndex === -1) {
                                   console.log("❌ [PAGE DEBUG] No se encontró el pago en la lista");
                                   return "N/A";
                                 }
-                                
+
                                 // Calcular cuántas cuotas tenía el socio ANTES de este pago
                                 let paidDuesBeforeThisPayment = 0;
                                 for (let i = 0; i < currentPaymentIndex; i++) {
                                   paidDuesBeforeThisPayment += allPayments[i].duesCount;
                                 }
-                                
+
                                 // La cobertura total después de este pago es: cuotas antes + cuotas de este pago
-                                const totalMonthsAfterPayment = paidDuesBeforeThisPayment + payment.duesCount;
-                                console.log("🔍 [PAGE DEBUG] PaidDuesBefore:", paidDuesBeforeThisPayment);
+                                const totalMonthsAfterPayment =
+                                  paidDuesBeforeThisPayment + payment.duesCount;
+                                console.log(
+                                  "🔍 [PAGE DEBUG] PaidDuesBefore:",
+                                  paidDuesBeforeThisPayment
+                                );
                                 console.log("🔍 [PAGE DEBUG] CurrentDues:", payment.duesCount);
-                                console.log("🔍 [PAGE DEBUG] TotalMonths:", totalMonthsAfterPayment);
-                                
+                                console.log(
+                                  "🔍 [PAGE DEBUG] TotalMonths:",
+                                  totalMonthsAfterPayment
+                                );
+
                                 // Calcular fecha de cobertura hasta
-                                const coverageUntilDate = addMonthsLocal(enrollmentDate, totalMonthsAfterPayment);
-                                console.log("🔍 [PAGE DEBUG] CoverageUntilDate:", coverageUntilDate);
-                                
+                                const coverageUntilDate = addMonthsLocal(
+                                  enrollmentDate,
+                                  totalMonthsAfterPayment
+                                );
+                                console.log(
+                                  "🔍 [PAGE DEBUG] CoverageUntilDate:",
+                                  coverageUntilDate
+                                );
+
                                 // Formatear las fechas
                                 const formatDate = (date: Date) => {
                                   return date.toLocaleDateString("es-AR", {
@@ -244,7 +272,10 @@ export default function PaymentHistoryPage() {
 
                                 const coverageFrom = formatDate(enrollmentDate);
                                 const coverageTo = formatDate(coverageUntilDate);
-                                console.log("🔍 [PAGE DEBUG] Resultado:", `${coverageFrom} - ${coverageTo}`);
+                                console.log(
+                                  "🔍 [PAGE DEBUG] Resultado:",
+                                  `${coverageFrom} - ${coverageTo}`
+                                );
 
                                 return `${coverageFrom} - ${coverageTo}`;
                               })()}

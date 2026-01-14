@@ -35,8 +35,9 @@ export function SequentialPaymentPanel({
     // Máximo de cuotas que se pueden pagar (basado en 360 cuotas totales)
     const maxPayableDues = Math.min(pendingDues, 360 - paidDues);
 
-    // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas + cuotas a pagar)
-    const monthsCoveredAfterPayment = paidDues + numberOfDues + 1;
+    // Meses cubiertos después del pago (mes de inscripción + cuotas pagadas + cuotas a pagar - 1)
+    // La primera cuota cubre el mes de inscripción, por lo que no se suma el +1
+    const monthsCoveredAfterPayment = paidDues + numberOfDues;
 
     // Total a cobrar usando el monto definido en la modal
     const totalAmount = dueAmount * numberOfDues;
@@ -44,21 +45,25 @@ export function SequentialPaymentPanel({
     // Fecha de cobertura desde (fecha de inscripción)
     const coverageFromDate = memberSummary.enrollment?.startDate || null;
 
-    // Fecha de cobertura hasta (fecha de inscripción + cuotas pagadas + cuotas a pagar + 1 mes de inscripción)
+    // Fecha de cobertura hasta (fecha de inscripción + cuotas pagadas + cuotas a pagar)
+    // Para N cuotas, la cobertura es N meses completos desde la fecha de inscripción
+    // Ejemplo: 0 pagadas + 1 a pagar = 1 mes total → fecha de inscripción + 1 mes
+    // Ejemplo: 0 pagadas + 2 a pagar = 2 meses total → fecha de inscripción + 2 meses
     const coverageUntilDate = coverageFromDate
       ? (() => {
           const enrollmentDate = fromLocalDateOnly(coverageFromDate);
-          // Sumar cuotas pagadas + cuotas seleccionadas + 1 mes (el mes de inscripción)
-          // Ejemplo: 0 pagadas + 1 a pagar + 1 inscripción = 2 meses totales
-          const coverageDate = addMonthsLocal(enrollmentDate, paidDues + numberOfDues + 1);
+          // La cobertura total es: cuotas pagadas + cuotas a pagar
+          const totalMonths = paidDues + numberOfDues;
+          const coverageDate = addMonthsLocal(enrollmentDate, totalMonths);
           return toLocalDateOnly(coverageDate);
         })()
       : null;
 
     // Fecha del próximo vencimiento después del pago
+    // El índice debe ser monthsCoveredAfterPayment - 1 porque el array es 0-based
     const nextDueDateAfterPayment =
       monthsCoveredAfterPayment < totalDues
-        ? memberSummary.dues[monthsCoveredAfterPayment]?.dueDate
+        ? memberSummary.dues[monthsCoveredAfterPayment - 1]?.dueDate
         : null;
 
     return {

@@ -26,7 +26,7 @@ import {
   mapEnrollmentRow,
 } from "@/lib/enrollments/queries";
 import { formatDateOnly, buildDueSchedule } from "@/lib/enrollments/schedule";
-import { toLocalDateOnly } from "@/lib/utils/date-utils";
+import { toLocalDateOnly, getTodayLocal, compareDates } from "@/lib/utils/date-utils";
 import { enforceFrozenDuesPolicy } from "@/lib/enrollments/frozen-policy";
 import type { MemberSummary } from "@/components/enrollments/due-table";
 import {
@@ -192,12 +192,24 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<En
   // Normalizar la fecha usando la nueva utilidad que mantiene la fecha local exacta
   const startDateValue = toLocalDateOnly(input.startDate);
 
+  // Validar fecha de inscripción
+  const today = getTodayLocal();
+  const enrollmentDate = toLocalDateOnly(input.startDate);
+
+  // No permitir fechas futuras
+  if (compareDates(enrollmentDate, today) > 0) {
+    throw new AppError("La fecha de inscripción no puede ser futura");
+  }
+
   // Logging detallado de la fecha
   logger.info(
     `Procesando fecha de inscripción - Input: ${input.startDate} -> Normalizada: ${startDateValue}`,
     {
       originalInput: input.startDate,
       normalizedValue: startDateValue,
+      todayDate: today,
+      isPastDate: compareDates(enrollmentDate, today) < 0,
+      isToday: compareDates(enrollmentDate, today) === 0,
       inputType: typeof input.startDate,
       timezoneOffset: new Date().getTimezoneOffset(),
       localDate: new Date().toISOString(),
@@ -1470,7 +1482,7 @@ export async function getMemberPaymentsByTransaction(memberId: string): Promise<
   const result = Array.from(transactionGroups.entries())
     .map(([key, data]) => ({
       transactionId: key,
-      paidAt: data.paidAt.toISOString(),
+      paidAt: toLocalDateOnly(data.paidAt),
       totalAmount: data.totalAmount,
       duesCount: data.dues.length,
       method: data.method,

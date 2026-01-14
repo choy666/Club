@@ -24,7 +24,7 @@ describe("enrollments schedule helpers", () => {
     const dues = buildDueSchedule({
       enrollmentId: "enroll-1",
       memberId: "member-1",
-      startDate: "2025-02-01",
+      startDate: "2025-02-15",
       monthsToGenerate: 360,
       monthlyAmount: 5000,
     });
@@ -33,14 +33,14 @@ describe("enrollments schedule helpers", () => {
     expect(dues[0]).toMatchObject({
       enrollmentId: "enroll-1",
       memberId: "member-1",
-      dueDate: "2025-03-01", // Siguiente mes de la inscripción
+      dueDate: "2025-02-15", // Mes de inscripción (cambio clave)
       amount: 5000,
     });
     // Verificar última cuota (30 años después)
-    expect(dues[359]?.dueDate).toBe("2055-02-01");
+    expect(dues[359]?.dueDate).toBe("2055-01-15");
   });
 
-  it("creates due schedule starting next month with expected values", () => {
+  it("creates due schedule starting enrollment month with expected values", () => {
     const dues = buildDueSchedule({
       enrollmentId: "enroll-1",
       memberId: "member-1",
@@ -53,10 +53,10 @@ describe("enrollments schedule helpers", () => {
     expect(dues[0]).toMatchObject({
       enrollmentId: "enroll-1",
       memberId: "member-1",
-      dueDate: "2025-03-01", // Siguiente mes de la inscripción
+      dueDate: "2025-02-01", // Mes de inscripción (cambio clave)
       amount: 5000,
     });
-    expect(dues[2]?.dueDate).toBe("2025-05-01");
+    expect(dues[2]?.dueDate).toBe("2025-04-01");
   });
 
   it("handles Date objects as startDate", () => {
@@ -68,7 +68,7 @@ describe("enrollments schedule helpers", () => {
       monthlyAmount: 7000,
     });
 
-    expect(dues[0]?.dueDate).toBe("2025-04-10"); // Siguiente mes manteniendo el día
+    expect(dues[0]?.dueDate).toBe("2025-03-10"); // Mes de inscripción (cambio clave)
   });
 
   it("throws when start date is invalid", () => {

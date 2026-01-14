@@ -53,10 +53,15 @@ export function buildDueSchedule(input: BuildDueScheduleInput): (typeof dues.$in
     return [];
   }
 
-  const firstDueDate = addMonths(baseDate, 1);
+  // Cambio clave: La primera cuota vence en el mes de inscripción (no el siguiente)
+  // Si inscripción es 2025-02-15, genera:
+  // Cuota 1: 2025-02-15 (mes actual)
+  // Cuota 2: 2025-03-15 (1 mes después)
+  // ...
+  // Cuota 360: 2055-01-15 (30 años después)
 
   return Array.from({ length: input.monthsToGenerate }, (_, index) => {
-    const dueDate = addMonths(firstDueDate, index);
+    const dueDate = addMonths(baseDate, index);
     return {
       enrollmentId: input.enrollmentId,
       memberId: input.memberId,

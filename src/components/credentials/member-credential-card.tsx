@@ -214,8 +214,8 @@ export function MemberCredentialCard({
                                   const enrollmentDate = fromLocalDateOnly(
                                     credential.enrollment.startDate
                                   );
-                                  // Calcular meses de cobertura: mes de inscripción + cuotas pagadas
-                                  const coverageMonths = (duesStats?.paidCount || 0) + 1; // +1 por el mes de inscripción
+                                  // Calcular meses de cobertura: las cuotas pagadas ya incluyen el mes de inscripción
+                                  const coverageMonths = duesStats?.paidCount || 0;
                                   // Usar utilidad local para agregar meses manteniendo timezone
                                   const coverageDate = addMonthsLocal(
                                     enrollmentDate,

@@ -111,20 +111,18 @@ export function calculateDuePeriod(dueDateString: string): { start: string; end:
     return { start: "N/A", end: "N/A" };
   }
 
-  const [year, month, day] = dueDateString.split("-").map(Number);
-
-  // Fecha de inicio: el día de la cuota
-  const startDate = formatDateDDMMYYYY(dueDateString);
-
+  // Usar utilidades de fecha local para consistencia
+  const startDate = fromLocalDateOnly(dueDateString);
+  
   // Fecha de fin: un mes después, un día antes
-  const endDate = new Date(year, month - 1, day); // month-1 porque JS usa 0-11
-  endDate.setMonth(endDate.getMonth() + 1);
+  // Usar addMonthsLocal para mantener consistencia de timezone
+  const endDate = addMonthsLocal(startDate, 1);
   endDate.setDate(endDate.getDate() - 1);
 
-  const endString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
-  const endDateFormatted = formatDateDDMMYYYY(endString);
-
-  return { start: startDate, end: endDateFormatted };
+  return { 
+    start: formatDateDDMMYYYY(dueDateString),
+    end: formatDateDDMMYYYY(toLocalDateOnly(endDate))
+  };
 }
 
 /**

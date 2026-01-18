@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 import { AuthButton } from "@/components/auth/auth-button";
 
@@ -49,9 +50,10 @@ export function AdminNavbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         <Link href="/admin" className="flex items-center gap-3 text-[0.65rem] tracking-[0.5em]">
           <motion.div className="relative h-10 w-10" whileHover={{ rotate: 3 }}>
-            <span className="absolute inset-0 rounded-2xl border border-white/15" />
-            <span className="absolute inset-[2px] rounded-2xl bg-accent-primary/25 blur-md" />
-            <span className="absolute inset-[6px] rounded-xl bg-gradient-to-br from-accent-primary/40 to-transparent shadow-[0_0_25px_rgba(248,113,113,0.45)]" />
+            <div className="absolute inset-0 rounded-2xl border border-white/15" />
+            <div className="absolute inset-[2px] rounded-2xl bg-accent-primary/25 blur-md" />
+            <div className="absolute inset-[6px] rounded-xl bg-gradient-to-br from-accent-primary/40 to-transparent shadow-[0_0_25px_rgba(248,113,113,0.45)]" />
+            <Image src="/logo.png" alt="Club Logo" fill className="rounded-xl object-contain p-1" />
           </motion.div>
           <span className="text-base-foreground">Control · Admin</span>
         </Link>

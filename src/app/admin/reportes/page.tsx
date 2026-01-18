@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { PrintButton } from "@/components/ui/print-button";
+import { CombinedFilters } from "@/components/ui/combined-filters";
 import { useMembersStats } from "@/hooks/use-members-stats";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateDDMMYYYY } from "@/lib/utils/date-utils";
@@ -86,10 +87,14 @@ export default function AdminReportesPage() {
     fetchMembers();
   }, [fetchMembers]);
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchMembers();
-  };
+  // Disparar búsqueda automática cuando cambia el texto (con debounce)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1); // Resetear a página 1 cuando busca
+    }, 300); // 300ms de debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [search]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -108,7 +113,7 @@ export default function AdminReportesPage() {
       const response = await apiFetch<MembersResponse>(`/api/socios/list?${params}`);
 
       const pdfConfig = {
-        title: "Reporte de Socios - AppClub",
+        title: "Club de Obreros de Catamarca - Esquiu 480",
         filters: {
           search,
           statusFilter,
@@ -211,50 +216,49 @@ export default function AdminReportesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="neo-panel p-6 space-y-4"
+          className="space-y-4"
         >
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold font-[var(--font-space)]">Búsqueda y Filtros</h2>
             <PrintButton onPrint={handlePrint} disabled={loading || members.length === 0} />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
-            <input
-              type="text"
-              placeholder="Buscar por nombre o DNI..."
-              className="input-minimal"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <select
-              className="select-base"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              <option value="vitalicio-activo">Vitalicio Activo</option>
-              <option value="vitalicio-inactivo">Vitalicio Inactivo</option>
-              <option value="regular-activo">Regular Activo</option>
-              <option value="regular-inactivo">Regular Inactivo</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
-
-            <select
-              className="select-base"
-              value={debtFilter}
-              onChange={(e) => setDebtFilter(e.target.value)}
-            >
-              <option value="">Todos</option>
-              <option value="al_dia">Al día</option>
-              <option value="deudor">Deudores</option>
-            </select>
-
-            <button className="btn-primary" onClick={handleSearch} disabled={loading}>
-              {loading ? "Buscando..." : "Buscar"}
-            </button>
-          </div>
+          <CombinedFilters
+            search={search}
+            setSearch={setSearch}
+            searchPlaceholder="Buscar por nombre o DNI"
+            searchLabel="Buscar socio"
+            filters={[
+              {
+                id: "status-filter",
+                label: "Estado",
+                value: statusFilter,
+                onChange: setStatusFilter,
+                placeholder: "Todos los estados",
+                options: [
+                  { value: "vitalicio-activo", label: "Vitalicio Activo" },
+                  { value: "vitalicio-inactivo", label: "Vitalicio Inactivo" },
+                  { value: "regular-activo", label: "Regular Activo" },
+                  { value: "regular-inactivo", label: "Regular Inactivo" },
+                  { value: "pendiente", label: "Pendiente" },
+                  { value: "inactivo", label: "Inactivo" },
+                ],
+              },
+              {
+                id: "debt-filter",
+                label: "Estado de cuota",
+                value: debtFilter,
+                onChange: setDebtFilter,
+                placeholder: "Todos",
+                options: [
+                  { value: "al_dia", label: "Al día" },
+                  { value: "deudor", label: "Deudores" },
+                ],
+              },
+            ]}
+            showSearchButton={false}
+            gridCols="3"
+          />
         </motion.div>
 
         {/* Lista de socios */}
@@ -276,6 +280,27 @@ export default function AdminReportesPage() {
                   <div className="h-4 bg-base-border/40 rounded w-1/4" />
                 </div>
               ))}
+            </div>
+          ) : members.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-base-muted mb-2">
+                {search || statusFilter || debtFilter
+                  ? "No se encontraron socios que coincidan con los filtros aplicados."
+                  : "No hay socios registrados."}
+              </div>
+              {(search || statusFilter || debtFilter) && (
+                <button
+                  className="btn-secondary mt-2"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("");
+                    setDebtFilter("");
+                    setCurrentPage(1);
+                  }}
+                >
+                  Limpiar filtros
+                </button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">

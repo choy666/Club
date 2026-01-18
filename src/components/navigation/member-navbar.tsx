@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { AuthButton } from "@/components/auth/auth-button";
 
@@ -64,9 +65,12 @@ export function MemberNavbar() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
         <Link
           href="/socio"
-          className="text-sm font-semibold uppercase tracking-[0.3em] text-base-muted"
+          className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-base-muted"
         >
-          Portal · Socio
+          <div className="relative h-8 w-8">
+            <Image src="/logo.png" alt="Club Logo" fill className="object-contain opacity-90" />
+          </div>
+          <span>Portal · Socio</span>
         </Link>
 
         <nav className="hidden items-center gap-2 rounded-full border border-base-border/60 bg-base-secondary/30 px-3 py-1 text-sm lg:flex">

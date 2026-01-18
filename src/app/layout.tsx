@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import Image from "next/image";
 import "./globals.css";
 import { AppProviders } from "@/providers/app-providers";
 import Link from "next/link";
@@ -20,6 +21,11 @@ export const metadata: Metadata = {
   title: "Club · Gestión de socios",
   description:
     "Panel administrativo y portal de socios para gestionar inscripciones, cuotas y pagos del Club.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -42,14 +48,24 @@ export default function RootLayout({
             <div className="relative flex-1">{children}</div>
 
             <footer className="relative border-t border-white/10 px-6 py-10 text-sm text-base-muted backdrop-blur-xl">
-              <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
-                    Plataforma institucional
-                  </p>
-                  <p className="text-base text-base-foreground">
-                    © {new Date().getFullYear()} Club · Gestión integral de socios
-                  </p>
+              <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-12 w-12">
+                    <Image
+                      src="/logo.png"
+                      alt="Club Logo"
+                      fill
+                      className="object-contain opacity-80"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-base-muted">
+                      Plataforma institucional
+                    </p>
+                    <p className="text-base text-base-foreground">
+                      © {new Date().getFullYear()} Club · Circulo de Obreros de Catamarca
+                    </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-base-foreground">
                   <Link
@@ -59,7 +75,7 @@ export default function RootLayout({
                     Portal socio
                   </Link>
                   <span className="text-[0.6rem] uppercase tracking-[0.4em] text-base-muted">
-                    Transparencia · Roadmap vivo
+                    ESQUIU 480 - 4700
                   </span>
                 </div>
               </div>

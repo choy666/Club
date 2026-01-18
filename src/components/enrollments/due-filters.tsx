@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchFilters } from "@/components/ui/search-filters";
 import { useDueFiltersStore } from "@/store/due-filters-store";
 
 export function DueFilters() {
@@ -11,12 +12,11 @@ export function DueFilters() {
         <label htmlFor="due-search" className="text-xs uppercase tracking-[0.3em] text-base-muted">
           Buscar socio
         </label>
-        <input
-          id="due-search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Nombre, correo o DNI"
-          className="input-minimal w-full"
+        <SearchFilters
+          search={search}
+          setSearch={setSearch}
+          placeholder="Buscar por nombre o DNI"
+          className="w-full"
         />
       </div>
     </div>

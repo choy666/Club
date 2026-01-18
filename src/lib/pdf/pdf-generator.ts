@@ -1,6 +1,10 @@
 import jsPDF from "jspdf";
 import { formatDateDDMMYYYY } from "@/lib/utils/date-utils";
 
+// Logo del club en formato base64 con prefijo correcto para jsPDF
+const logoBase64 =
+  "data:image/png;base64,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";
+
 interface Member {
   id: number;
   nombre: string;
@@ -80,7 +84,25 @@ export class PDFGenerator {
     this.doc.text(text, x, y, options);
   }
 
+  private addLogo(): void {
+    // Agregar logo en la esquina superior derecha
+    const logoSize = 25; // Tamaño del logo en mm
+    const logoX = this.pageWidth - this.margin - logoSize;
+    const logoY = this.margin;
+
+    try {
+      // Intentar agregar el logo desde la ruta pública
+      this.doc.addImage(logoBase64, "PNG", logoX, logoY, logoSize, logoSize);
+    } catch (error) {
+      // Si hay error al cargar el logo, continuar sin él
+      console.warn("No se pudo cargar el logo en el PDF:", error);
+    }
+  }
+
   private addHeader(config: PDFConfig): void {
+    // Agregar logo en la esquina superior derecha
+    this.addLogo();
+
     // Título principal
     this.setFont(20, "bold");
     this.addText(config.title, this.pageWidth / 2, this.currentY, { align: "center" });
@@ -91,6 +113,14 @@ export class PDFGenerator {
     this.addText(`Fecha de generación: ${config.generatedAt}`, this.margin, this.currentY);
     this.currentY += 6;
     this.addText(`Total de registros: ${config.totalRecords}`, this.margin, this.currentY);
+    this.currentY += 6;
+
+    // Información institucional
+    this.addText(`Cuit: 30-53106311-9`, this.margin, this.currentY);
+    this.currentY += 6;
+    this.addText(`Ing. Brutos: Exento`, this.margin, this.currentY);
+    this.currentY += 6;
+    this.addText(`Inicio de Actividad: 01/05/1896`, this.margin, this.currentY);
     this.currentY += 6;
 
     // Filtros aplicados

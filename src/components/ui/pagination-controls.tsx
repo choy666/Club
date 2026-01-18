@@ -87,19 +87,9 @@ export function PaginationControls({
         <span className="text-center md:text-left">
           {total === 0 ? (
             <span className="font-medium">No hay {itemType} para mostrar</span>
-          ) : total <= perPage ? (
-            <span className="font-medium">
-              Mostrando {total} {itemType}
-            </span>
           ) : (
             <span className="font-medium">
-              Mostrando {(page - 1) * perPage + 1} a {Math.min(page * perPage, total)} de {total}{" "}
-              {itemType}
-              {page > 1 && (
-                <span className="text-xs text-base-muted ml-2">
-                  (Página {page} de {totalPages})
-                </span>
-              )}
+              Página {page} de {totalPages}
             </span>
           )}
         </span>

@@ -95,6 +95,11 @@ export function PaginationControls({
             <span className="font-medium">
               Mostrando {(page - 1) * perPage + 1} a {Math.min(page * perPage, total)} de {total}{" "}
               {itemType}
+              {page > 1 && (
+                <span className="text-xs text-base-muted ml-2">
+                  (Página {page} de {totalPages})
+                </span>
+              )}
             </span>
           )}
         </span>

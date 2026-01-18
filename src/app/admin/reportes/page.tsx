@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { PrintButton } from "@/components/ui/print-button";
 import { CombinedFilters } from "@/components/ui/combined-filters";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useMembersStats } from "@/hooks/use-members-stats";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateDDMMYYYY } from "@/lib/utils/date-utils";
@@ -397,37 +398,17 @@ export default function AdminReportesPage() {
 
           {/* Paginación */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <button
-                className="btn-secondary"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-
-              <div className="flex gap-1">
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    className={`w-8 h-8 rounded text-sm ${
-                      currentPage === page ? "btn-primary" : "btn-secondary"
-                    }`}
-                    onClick={() => handlePageChange(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                className="btn-secondary"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === pagination.totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
+            <PaginationControls
+              pagination={{
+                page: currentPage,
+                perPage: 10,
+                total: pagination.total,
+                totalPages: pagination.totalPages,
+              }}
+              onPageChange={handlePageChange}
+              showPerPageSelector={false}
+              itemType="socios"
+            />
           )}
         </motion.div>
       </div>
